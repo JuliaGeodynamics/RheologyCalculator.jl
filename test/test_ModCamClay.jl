@@ -17,7 +17,11 @@ import RheologyCalculator.RheologyModels: ModCamClay
         for i in 2:ntime
             others = (; dt = dt, τ0 = τ_e, P0 = P_e)       # other non-differentiable variables needed to evaluate the state functions
             
-            x = solve(c, x, vars, others, verbose = false, xnorm0=xnorm)
+            # The yield function of a critical-state model is quadratic in stress,
+            # so here it is a difference of quantities of size r^2 = 1e16, where
+            # eps is 2.0. Its residual cannot get below ~2e-10 once normalized,
+            # which puts the 1e-12 default out of reach.
+            x = solve(c, x, vars, others, verbose = false, xnorm0=xnorm, atol = 1.0e-9, rtol = 1.0e-9)
             
             t += others.dt
             
