@@ -35,6 +35,9 @@ x_keys
 initial_guess_x
 normalisation_x
 solve
+tangent
+stress_index
+compute_residual
 effective_strain_rate_correction
 RheologyCalculator.second_invariant
 ```

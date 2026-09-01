@@ -53,4 +53,12 @@ using Test
             @test (@allocated solve(c, x, vars, others)) == 0
         end
     end
+
+    @testset "tangent" begin
+        for (c, vars, others, x) in cases
+            xc = solve(c, x, vars, others)
+            tangent(c, xc, vars, others)
+            @test (@allocated tangent(c, xc, vars, others)) == 0
+        end
+    end
 end

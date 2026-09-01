@@ -28,7 +28,7 @@ export CompositeModel, SeriesModel, ParallelModel
 include("core/kwargs.jl")
 
 include("equation_system/equations.jl")
-export generate_equations
+export generate_equations, compute_residual
 
 include("core/others.jl")
 
@@ -45,6 +45,9 @@ export solve
 
 include("post_processing/strain_rate_correction.jl")
 export effective_strain_rate_correction
+
+include("equation_system/tangent.jl")
+export tangent, stress_index
 
 include("display/print_rheology.jl")
 
