@@ -22,6 +22,10 @@ of the corrected effective strain-rate tensor.
 
 Throws [`NonConvergenceError`](@ref) if the iteration ends without meeting
 either tolerance, which includes the case of a residual that became `NaN`.
+The solver also stops early when the Newton update leaves the iterate unchanged
+at floating-point precision for three consecutive iterations. This prevents a
+residual floor that cannot be represented by the selected numeric type from
+consuming the full `itermax` budget.
 """
 function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0=nothing, atol::Float64 = 1.0e-12, rtol::Float64 = 1.0e-12, itermax = 1.0e4, verbose::Bool = false)
     # Pre-correct ONLY the direct elastic leafs of the outer composite
@@ -45,6 +49,7 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0=noth
     nonneg = branch_strain_rate_mask(c)
 
     α = 1e0
+    stagnant_iters = 0
     while er > atol && er > rtol * er0
         it += 1
 
@@ -54,13 +59,29 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0=noth
         if it > 1
             α = bt_line_search(Δx, x, c, vars, others, xnorm, er; α = α, ρ = 0.5, lstol = 0.95, α_min = 0.1)
         end
-        x += α .* Δx
+        x_next = x + α .* Δx
 
         # check convergence
-        r = compute_residual(c, x, vars, others)
+        r = compute_residual(c, x_next, vars, others)
         er = mynorm(r, xnorm)
 
+        # Once the update is below floating-point resolution, continuing the
+        # Newton iteration cannot change either the iterate or its residual.
+        # Also require the residual to be finite: non-finite residuals follow
+        # the existing diagnostic path below. A decreasing but slow residual
+        # must remain an iteration-limit failure, not a stagnation failure.
+        if isfinite(er) && x_next == x
+            stagnant_iters += 1
+        else
+            stagnant_iters = 0
+        end
+        x = x_next
+
         it > itermax && break
+
+        if stagnant_iters ≥ 3
+            throw(NonConvergenceError(it, er, x, :stagnation))
+        end
 
         # ε_corr = effective_strain_rate_correction(c, vars0.ε, others.τ0, others)
         # ε_eff  = vars0.ε .+ ε_corr
@@ -83,18 +104,26 @@ end
 Thrown by [`solve`](@ref) when the local Newton iteration ends without reaching
 `atol` or `rtol`, including when the residual becomes `NaN` or `Inf`.
 
-Fields hold the iteration count, the final normalized residual norm, and the
-last iterate, so a caller catching this can report or retry from them.
+Fields hold the iteration count, the final normalized residual norm, the last
+iterate, and a `reason` symbol (`:stagnation` or `:iteration_limit`), so a
+caller catching this can distinguish a floating-point floor from an ordinary
+iteration-limit failure and report or retry from the saved iterate.
 """
 struct NonConvergenceError{T, X} <: Exception
     iterations::Int
     residual::T
     x::X
+    reason::Symbol
 end
+
+NonConvergenceError(iterations, residual, x) = NonConvergenceError(iterations, residual, x, :iteration_limit)
 
 function Base.showerror(io::IO, e::NonConvergenceError)
     print(io, "NonConvergenceError: the local Newton iteration did not converge")
-    if isfinite(e.residual)
+    if e.reason === :stagnation
+        print(io, " because the iterate/residual stagnated after $(e.iterations) iterations (before the iteration limit); the normalized residual norm is $(e.residual). ")
+        print(io, "The requested tolerance is below the attainable floating-point resolution for this state.")
+    elseif isfinite(e.residual)
         print(io, " within $(e.iterations) iterations; the normalized residual norm is $(e.residual). ")
         print(io, "Either the iteration limit is too low for this composite, or the tolerances are tighter than its conditioning allows.")
     else

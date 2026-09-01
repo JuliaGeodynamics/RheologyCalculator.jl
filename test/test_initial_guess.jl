@@ -1,5 +1,6 @@
 using RheologyCalculator, Test, StaticArrays
 using RheologyCalculator.RheologyModels
+using RheologyCalculator.RheologyModels: ModCamClay
 import RheologyCalculator.RheologyModels: second_invariant_2D
 
 @testset "initial guess for parallel branch strain rates" begin
@@ -69,4 +70,25 @@ end
     @test err2 isa NonConvergenceError
     @test isfinite(err2.residual)
     @test occursin("iteration limit", sprint(showerror, err2))
+
+    @testset "floating-point stagnation is reported early" begin
+        c = SeriesModel(
+            LinearViscosity(1.0e23),
+            Elasticity(1.0e10, 2.0e11),
+            ModCamClay(; M = 0.9, N = 0.5, r = 1.0e8, β = 0.1, Pt = -1.0e5, η_vp = 1.0e20),
+        )
+        vars = (; ε = (0.0, -0.0, 0.0), θ = -7.0e-15)
+        others = (; dt = 1.0e8, τ0 = ((0.0, 0.0, 0.0),), P0 = (1.3148e8,))
+        x0 = SA[0.0, 0.0, 1.3148e8]
+        xnorm = SA[7.0e-15, 1.0e10, 7.0e-15]
+
+        err3 = try
+            solve(c, x0, vars, others; xnorm0 = xnorm)
+        catch e
+            e
+        end
+        @test err3 isa NonConvergenceError
+        @test err3.reason == :stagnation
+        @test err3.iterations < 100
+    end
 end
