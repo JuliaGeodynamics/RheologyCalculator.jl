@@ -42,14 +42,17 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0=noth
     er = Inf
     er0 = mynorm(r, xnorm)
 
+    nonneg = branch_strain_rate_mask(c)
+
     α = 1e0
     while er > atol && er > rtol * er0
         it += 1
 
         J = ForwardDiff.jacobian(y -> compute_residual(c, y, vars, others), x)
         Δx = backsolve(J, r)
+        α = max_feasible_step(x, Δx, nonneg)
         if it > 1
-            α = bt_line_search(Δx, x, c, vars, others, xnorm, er; α = 1.0, ρ = 0.5, lstol = 0.95, α_min = 0.1)
+            α = bt_line_search(Δx, x, c, vars, others, xnorm, er; α = α, ρ = 0.5, lstol = 0.95, α_min = 0.1)
         end
         x += α .* Δx
 
@@ -101,6 +104,66 @@ function Base.showerror(io::IO, e::NonConvergenceError)
     end
     return print(io, "\nLast iterate: $(e.x)")
 end
+
+# Fraction of the distance to the boundary that a bounded step may cover. The
+# iterate is held strictly inside x ≥ 0 rather than allowed to reach it: a
+# branch strain rate of exactly zero is not just infeasible but singular, since
+# d(ε^(1/n))/dε diverges there and the next Jacobian would be Inf.
+const FRACTION_TO_BOUNDARY = 0.995
+
+"""
+    max_feasible_step(x, Δx, mask)
+
+Return the largest step length in `(0, 1]` for which every entry of `x` marked
+by `mask` stays strictly positive along `x + α * Δx`.
+
+Entries that are not marked, that are already non-positive, or whose step is
+non-negative impose no bound, so the step is only ever shortened where the
+constraint is live.
+"""
+@generated function max_feasible_step(x::SVector{N}, Δx::SVector{N}, mask::SVector{N, Bool}) where {N}
+    return quote
+        @inline
+        α = 1.0
+        Base.@nexprs $N i -> begin
+            xi = x[i]
+            di = Δx[i]
+            if mask[i] && di < 0 && xi > 0
+                α = min(α, -FRACTION_TO_BOUNDARY * xi / di)
+            end
+        end
+        return α
+    end
+end
+
+"""
+    branch_strain_rate_mask(c::AbstractCompositeModel)
+
+Return an `SVector{N,Bool}` marking the entries of the solver vector of `c` that
+hold the strain rate of a parallel branch.
+
+These are second invariants and so non-negative, but the Newton iterate itself
+is not: at low imposed strain rate it overshoots below zero, where a power law's
+`ε^(1/n)` is undefined. The mask lets [`solve`](@ref) bound the step for exactly
+these entries. Stress and multiplier unknowns are left unbounded — their
+iterates are not the ones observed to leave the physical range, and bounding an
+entry that starts at zero would block the first step.
+"""
+function branch_strain_rate_mask(c::AbstractCompositeModel)
+    eqs = generate_equations(c)
+    return SA[branch_strain_rate_mask(eqs)...]
+end
+
+@generated function branch_strain_rate_mask(eqs::NTuple{N, CompositeEquation}) where {N}
+    return quote
+        @inline
+        Base.@ntuple $N i -> _is_branch_strain_rate(eqs[i].fn)
+    end
+end
+
+# The unknown of a `compute_stress` equation is a parallel branch's strain rate.
+@inline _is_branch_strain_rate(::F) where {F} = false
+@inline _is_branch_strain_rate(::typeof(compute_stress)) = true
 
 """
     bt_line_search(Δx, x, composite, vars, others, xnorm, rnorm; α=1.0, ρ=0.5, lstol=0.9, α_min=1.0e-8)
