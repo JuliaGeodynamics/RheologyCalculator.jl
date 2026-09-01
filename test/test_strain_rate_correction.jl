@@ -309,3 +309,21 @@ end
     cor = effective_strain_rate_correction(c, ε, τ0, others)
     @test only(cor) == 0.0
 end
+
+@testset "effective_strain_rate_correction — purely viscous composite" begin
+    # ε counts tensor components, τ0 counts elastic elements; a composite with no
+    # elastic element supplies τ0 = () alongside a full 3-component ε.
+    c  = SeriesModel(visc1)
+    ε  = (1.0e-3, -1.0e-3, 0.0)
+    @test effective_strain_rate_correction(c, ε, (), (;)) === 0.0
+    @test ε .+ effective_strain_rate_correction(c, ε, (), (;)) === ε
+
+    # 3D, and a multi-element viscous series, take the same path.
+    c3 = SeriesModel(visc1, visc2)
+    ε3 = (1.0e-3, -5.0e-4, -5.0e-4, 0.0, 0.0, 0.0)
+    @test effective_strain_rate_correction(c3, ε3, (), (;)) === 0.0
+
+    # Element type is carried through rather than fixed to Float64.
+    εf = (1.0f-3, -1.0f-3, 0.0f0)
+    @test effective_strain_rate_correction(c, εf, (), (;)) === 0.0f0
+end
