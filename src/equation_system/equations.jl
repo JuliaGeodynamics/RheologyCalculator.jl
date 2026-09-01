@@ -494,14 +494,17 @@ end
 # Subtract the implicit elastic correction from the first (global) residual entry.
 # The correction is a scalar function of x (through the branch strain rates), so
 # ForwardDiff differentiates through it automatically.
-@inline function subtract_elastic_correction(c::SeriesModel, eqs, residual::NTuple{N}, x::SVector{N}, others) where {N}
+# `residual` is annotated by length only: differentiating with respect to a
+# quantity that enters a single equation makes it heterogeneous (one Dual entry
+# among Float64s), which NTuple{N} would reject.
+@inline function subtract_elastic_correction(c::SeriesModel, eqs, residual::Tuple{Vararg{Any, N}}, x::SVector{N}, others) where {N}
     iselastic(c) == Val(false) && return residual
     cor = _implicit_elastic_correction(c, eqs, x, others)
     return _subtract_first(residual, cor)
 end
 
 # Return a new NTuple with the first entry decreased by `cor`.
-@inline _subtract_first(r::NTuple{N}, cor) where {N} = (r[1] - cor, Base.tail(r)...)
+@inline _subtract_first(r::Tuple{Vararg{Any, N}}, cor) where {N} = (r[1] - cor, Base.tail(r)...)
 
 function compute_residual(c, x::SVector{N, T}, vars, others, ::Int, ::Int) where {N, T}
 
