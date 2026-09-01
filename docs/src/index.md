@@ -72,5 +72,11 @@ unknowns (`τ`, `P`, and any branch-local unknowns), and `others` carries values
 that are not differentiated by the local Newton solve (`dt`, elastic history,
 grain size, temperature, pressure-dependent parameters, and similar fields).
 
+`solve` raises `NonConvergenceError` when the requested tolerances are not
+reached. The exception includes the last iterate, normalized residual, and a
+`reason` field. A `reason` of `:stagnation` indicates that the Newton update
+stopped changing the iterate at floating-point precision; `:iteration_limit`
+indicates that `itermax` was reached first.
+
 See [Composites](@ref composites) for model construction, [Rheologies](@ref) for
 the element interface, and [API](@ref) for the generated reference.
