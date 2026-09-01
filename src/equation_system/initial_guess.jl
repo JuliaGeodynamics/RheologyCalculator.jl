@@ -117,8 +117,24 @@ estimate_initial_value(eq::CompositeEquation, vars, args, others) = _estimate_in
 @inline _estimate_initial_value(::typeof(compute_volumetric_strain_rate), eq, vars, args, others) = _estimate_initial_value_harm(eq.fn, eq.rheology, eq.el_number, vars, args, others)
 @inline _estimate_initial_value(::typeof(compute_strain_rate), eq, vars, args, others) = _estimate_initial_value_harm(eq.fn, eq.rheology, eq.el_number, vars, args, others)
 # Stress-like unknowns use an arithmetic-sum estimate across the element rheologies.
-@inline _estimate_initial_value(::typeof(compute_stress), eq, vars, args, others) = _estimate_initial_value_arith(eq.fn, eq.rheology, eq.el_number, vars, args, others)
 @inline _estimate_initial_value(::typeof(compute_pressure), eq, vars, args, others) = _estimate_initial_value_arith(eq.fn, eq.rheology, eq.el_number, vars, args, others)
+
+# The unknown of a `compute_stress` equation is the strain rate of a parallel
+# branch. The arithmetic estimate sums `compute_strain_rate` over the branch
+# elements at the supplied `args.τ`, which vanishes for the usual τ = 0 seed.
+# Zero is not a usable seed: it is a singular point of the parallel effective
+# viscosity of a power law (η = τ/(2ε̇) ∝ τ^(1-n) → ∞ as τ → 0), so the first
+# Newton step is NaN. The prescribed strain-rate invariant is finite and is the
+# physical order of magnitude of a branch strain rate.
+@inline function _estimate_initial_value(::typeof(compute_stress), eq, vars, args, others)
+    est = _estimate_initial_value_arith(eq.fn, eq.rheology, eq.el_number, vars, args, others)
+    return iszero(est) ? _prescribed_strain_rate(vars) : est
+end
+
+# `vars.ε` may be a tensor or an invariant; both reduce here. A composite with no
+# prescribed deviatoric strain rate keeps the previous zero seed.
+@inline _prescribed_strain_rate(vars::NamedTuple) =
+    hasfield(typeof(vars), :ε) ? second_invariant_value(vars.ε) : 0
 
 # Base cases for empty rheology tuples.
 @inline _estimate_initial_value_harm(fn, rheology::Tuple{}, el_number, vars, args, others) = 1
