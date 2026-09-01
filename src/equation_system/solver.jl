@@ -19,6 +19,9 @@ of the corrected effective strain-rate tensor.
 - `rtol`: relative residual tolerance against the initial residual.
 - `itermax`: maximum Newton iterations.
 - `verbose`: print the final iteration count, residual norm, and line-search step.
+
+Throws [`NonConvergenceError`](@ref) if the iteration ends without meeting
+either tolerance, which includes the case of a residual that became `NaN`.
 """
 function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0=nothing, atol::Float64 = 1.0e-12, rtol::Float64 = 1.0e-12, itermax = 1.0e4, verbose::Bool = false)
     # Pre-correct ONLY the direct elastic leafs of the outer composite
@@ -65,7 +68,38 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0=noth
     if verbose && it > 1
         println("Iterations: $it, Error: $er, α = $α")
     end
+    # A NaN residual compares false against both tolerances and so exits the loop
+    # by the same door as a converged one; `isfinite` is what separates them.
+    isfinite(er) && (er ≤ atol || er ≤ rtol * er0) || throw(NonConvergenceError(it, er, x))
     return x
+end
+
+"""
+    NonConvergenceError(iterations, residual, x)
+
+Thrown by [`solve`](@ref) when the local Newton iteration ends without reaching
+`atol` or `rtol`, including when the residual becomes `NaN` or `Inf`.
+
+Fields hold the iteration count, the final normalized residual norm, and the
+last iterate, so a caller catching this can report or retry from them.
+"""
+struct NonConvergenceError{T, X} <: Exception
+    iterations::Int
+    residual::T
+    x::X
+end
+
+function Base.showerror(io::IO, e::NonConvergenceError)
+    print(io, "NonConvergenceError: the local Newton iteration did not converge")
+    if isfinite(e.residual)
+        print(io, " within $(e.iterations) iterations; the normalized residual norm is $(e.residual). ")
+        print(io, "Either the iteration limit is too low for this composite, or the tolerances are tighter than its conditioning allows.")
+    else
+        print(io, "; the normalized residual norm became $(e.residual) at iteration $(e.iterations). ")
+        print(io, "This means an iterate reached a point where the composite is not evaluable — a zero strain rate in a parallel power-law branch is one such point, since its effective viscosity diverges there. ")
+        print(io, "Check the initial guess.")
+    end
+    return print(io, "\nLast iterate: $(e.x)")
 end
 
 """
