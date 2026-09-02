@@ -1,7 +1,3 @@
-import ..RheologyCalculator: series_state_functions, parallel_state_functions
-import ..RheologyCalculator: compute_strain_rate, compute_stress
-import ..RheologyCalculator: compute_viscosity, compute_viscosity_series, compute_viscosity_parallel
-
 """
     DiffusionCreep{I,T} <: AbstractViscosity
 

@@ -1,12 +1,6 @@
-import ForwardDiff: ForwardDiff
-import ..RheologyCalculator: compute_stress_elastic, compute_pressure_elastic
-import ..RheologyCalculator: series_state_functions, parallel_state_functions, _isvolumetric
-import ..RheologyCalculator: compute_strain_rate, compute_stress, compute_pressure, compute_volumetric_strain_rate, compute_volumetric_plastic_strain_rate
-import ..RheologyCalculator: compute_plastic_strain_rate, compute_lambda
-
 # ModCamClay ------------------------------------------------------
 """
-    ModCamClay{T} <: AbstractPlasticity
+    ModCamClay{T} <: AbstractCapPlasticity
 
 Represents a Modified Cam-Clay model, see de Souza Neto book (p. 404)
 

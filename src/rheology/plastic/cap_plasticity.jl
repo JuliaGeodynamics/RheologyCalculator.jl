@@ -1,7 +1,3 @@
-import ..RheologyCalculator: series_state_functions, parallel_state_functions, _isvolumetric
-import ..RheologyCalculator: compute_strain_rate, compute_stress, compute_pressure, compute_volumetric_strain_rate, compute_volumetric_plastic_strain_rate
-import ..RheologyCalculator: compute_plastic_strain_rate, compute_lambda
-
 # State functions shared by every AbstractCapPlasticity element. A subtype
 # supplies only its struct, compute_F, and compute_Q; everything below is
 # expressed in terms of those two and so needs no per-model definition.

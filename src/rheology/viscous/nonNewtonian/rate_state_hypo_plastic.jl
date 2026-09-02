@@ -2,11 +2,6 @@
 # 
 #module RateState_HypoPlastic
 
-
-import ..RheologyCalculator: compute_stress_elastic, compute_pressure_elastic
-import ..RheologyCalculator: series_state_functions, compute_strain_rate, compute_stress
-import ..RheologyCalculator.isvolumetric
-
 """
     RateStateFriction{T} <: AbstractViscosity
 

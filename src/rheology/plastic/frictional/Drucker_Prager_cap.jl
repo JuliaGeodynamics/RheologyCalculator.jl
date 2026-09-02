@@ -1,15 +1,10 @@
 # This implements the mode1/mode2 plasticity model proposed in:
 # Popov, A. A., Berlie, N., and Kaus, B. J. P.: A dilatant visco-elasto-viscoplasticity model with globally continuous tensile cap: 
 #   stable two-field mixed formulation, EGUsphere [preprint], https://doi.org/10.5194/egusphere-2025-2469, 2025.
-import ForwardDiff: ForwardDiff
-import ..RheologyCalculator: compute_stress_elastic, compute_pressure_elastic
-import ..RheologyCalculator: series_state_functions, parallel_state_functions, _isvolumetric
-import ..RheologyCalculator: compute_strain_rate, compute_stress, compute_pressure, compute_volumetric_strain_rate, compute_volumetric_plastic_strain_rate
-import ..RheologyCalculator: compute_plastic_strain_rate, compute_lambda
 
 # DruckerPragerCap ------------------------------------------------------
 """
-    DruckerPragerCap{T} <: AbstractPlasticity
+    DruckerPragerCap{T} <: AbstractCapPlasticity
 
 Represents a Drucker-Prager plasticity model with cap for pressure-dependent yielding of mode-1 and mode-2 plasticity, 
 as described in Popov et al. (2025), Geoscientific Model Development
