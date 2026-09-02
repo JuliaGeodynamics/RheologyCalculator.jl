@@ -33,17 +33,6 @@ struct SeriesModel{L, B} <: AbstractCompositeModel # not 100% about the subtypin
 end
 
 
-# Apply `f` to each element of a tuple and splice the results together. The
-# unrolled form keeps the element types inferable, which the residual assembly
-# depends on: `f` is a compile-time constant at every call site below.
-@generated function _flatmap_state_functions(f::F, funs::NTuple{N, Any}) where {F, N}
-    return quote
-        @inline
-        t = Base.@ntuple $N i -> f(funs[i])
-        Base.IteratorsMD.flatten(t)
-    end
-end
-
 for fun in (:compute_strain_rate, :compute_volumetric_strain_rate)
     @eval @inline _local_series_state_functions(::typeof($fun)) = ()
     @eval @inline _global_series_state_functions(fn::typeof($fun)) = (fn,)
@@ -51,11 +40,11 @@ end
 
 @inline _local_series_state_functions(fn::F) where {F <: Function} = (fn,)
 
-@inline local_series_state_functions(funs::NTuple{N, Any}) where {N} = _flatmap_state_functions(_local_series_state_functions, funs)
+@inline local_series_state_functions(funs::NTuple{N, Any}) where {N} = flatmaptuple(_local_series_state_functions, funs)
 
 @inline _global_series_state_functions(::F) where {F <: Function} = ()
 
-@inline global_series_state_functions(funs::NTuple{N, Any}) where {N} = _flatmap_state_functions(_global_series_state_functions, funs)
+@inline global_series_state_functions(funs::NTuple{N, Any}) where {N} = flatmaptuple(_global_series_state_functions, funs)
 
 """
     ParallelModel(elements...)
@@ -107,14 +96,14 @@ for fun in (:compute_stress, :compute_pressure)
 end
 @inline _local_parallel_state_functions(fn::F) where {F <: Function} = (fn,)
 
-@inline local_parallel_state_functions(funs::NTuple{N, Any}) where {N} = _flatmap_state_functions(_local_parallel_state_functions, funs)
+@inline local_parallel_state_functions(funs::NTuple{N, Any}) where {N} = flatmaptuple(_local_parallel_state_functions, funs)
 
 @inline _global_parallel_state_functions(::F) where {F <: Function} = ()
 
-@inline global_parallel_state_functions(funs::NTuple{N, Any}) where {N} = _flatmap_state_functions(_global_parallel_state_functions, funs)
+@inline global_parallel_state_functions(funs::NTuple{N, Any}) where {N} = flatmaptuple(_global_parallel_state_functions, funs)
 
 # @inline series_state_functions(c::NTuple{N, ParallelModel}) where {N} = series_state_functions(first(c))..., series_state_functions(Base.tail(c))...
-@inline series_state_functions(funs::NTuple{N, Any}) where {N} = _flatmap_state_functions(series_state_functions, funs)
+@inline series_state_functions(funs::NTuple{N, Any}) where {N} = flatmaptuple(series_state_functions, funs)
 @inline series_state_functions(::Tuple{}) = (compute_strain_rate,)
 
 # @inline series_state_functions(c::ParallelModel)                      = flatten_repeated_functions(parallel_state_functions(c.leafs))

@@ -17,6 +17,8 @@ import ForwardDiff: ForwardDiff
 
 import Base.IteratorsMD.flatten
 
+include("core/tuple_utils.jl")
+
 include("core/rheology_types.jl")
 export AbstractViscosity, AbstractPlasticity, AbstractCapPlasticity, AbstractElasticity
 

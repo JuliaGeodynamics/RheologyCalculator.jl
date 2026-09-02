@@ -17,13 +17,7 @@ functions, otherwise `Val(false)`.
 isvolumetric(c::AbstractCompositeModel) = Val(_isvolumetric(c))
 isvolumetric(c::AbstractRheology) = Val(_isvolumetric(c))
 
-@generated function _isvolumetric(r::NTuple{N, AbstractRheology}) where {N}
-    return quote
-        @inline
-        b = false
-        Base.@nexprs $N i -> b = b || _isvolumetric(r[i])
-    end
-end
+@inline _isvolumetric(r::NTuple{N, AbstractRheology}) where {N} = foldtuple(|, false, _isvolumetric, r)
 
 @inline _isvolumetric(::AbstractRheology) = false
 # @inline _isvolumetric(::Elasticity) = true
@@ -34,15 +28,8 @@ end
 
 _isvolumetric(c::AbstractCompositeModel) = _isvolumetric(c.leafs, c.branches)
 
-@generated function _isvolumetric(leafs, branches::NTuple{N, Any}) where {N}
-    return quote
-        @inline
-        b1 = _isvolumetric(leafs)
-        b2 = Base.@ntuple $N i -> _isvolumetric(branches[i])
-        b = (b1, b2) |> superflatten
-        return reduce(|, b)
-    end
-end
+@inline _isvolumetric(leafs, branches::Tuple) =
+    _isvolumetric(leafs) | foldtuple(|, false, _isvolumetric, branches)
 
 # Sparsity-detection tracers (which carry no primal value)
 # can override those functions in the SparseConnectivityTracer extension. The guards only
