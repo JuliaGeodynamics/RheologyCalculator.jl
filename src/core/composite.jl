@@ -11,16 +11,6 @@ abstract type AbstractCompositeModel  end
 @inline parallel_state_functions(::AbstractCompositeModel) = ()
 
 """
-    hasbranches(c)
-
-Return `Val(true)` when a composite has nested branch models and `Val(false)`
-when its branch tuple is empty.
-"""
-hasbranches(c::AbstractCompositeModel) = hasbranches(c.branches)
-hasbranches(::Tuple{}) = Val(false)
-hasbranches(::T) where T = Val(true)
-
-"""
     SeriesModel(elements...)
 
 Build a series composite. Direct rheology elements are stored in `leafs`; nested
@@ -169,27 +159,6 @@ volumetric models it may also include `compute_volumetric_strain_rate`.
     fn_leafs = series_state_functions(c.leafs) |> flatten_repeated_functions |> global_series_state_functions
     fn_branches = series_state_functions(c.branches) |> flatten_repeated_functions |> global_series_state_functions
     return (fn_leafs..., fn_branches...) |> flatten_repeated_functions
-end
-@inline local_series_functions(c::SeriesModel) = series_state_functions(c.leafs) |> flatten_repeated_functions |> local_series_state_functions
-
-@inline global_parallel_functions(c::SeriesModel) = ntuple(i -> parallel_state_functions(c.branches[i].leafs) |> flatten_repeated_functions |> global_parallel_state_functions, Val(count_parallel_elements(c)))
-# @inline local_parallel_functions(c::SeriesModel)  = ntuple(i-> parallel_state_functions(c.branches[i].branches) |> flatten_repeated_functions |> local_parallel_state_functions, Val(count_parallel_elements(c)))
-
-"""
-    local_parallel_functions(c::SeriesModel)
-
-Return the local state-function groups needed by parallel branches nested inside
-the series composite `c`.
-"""
-@inline function local_parallel_functions(c::SeriesModel)
-    Np = count_parallel_elements(c)
-    return ntuple(Val(Np)) do i
-        branch = c.branches[i]
-        Nb = length(branch.branches)
-        ntuple(Val(Nb)) do j
-            global_series_functions(branch.branches[j])
-        end |> Base.IteratorsMD.flatten
-    end
 end
 
 # simplify working with it

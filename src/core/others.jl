@@ -44,20 +44,6 @@ _isvolumetric(c::AbstractCompositeModel) = _isvolumetric(c.leafs, c.branches)
     end
 end
 
-# @generated function harmonic_average(r::NTuple{N, AbstractRheology}, fn::F, args) where {N, F}
-#     quote
-#         v = 0e0
-#         Base.@ntuple $N i -> v += begin
-#             x = inv( fn(r[i], args) )
-#             x = isinf(x) ? 0e0 : x
-#         end
-#         return inv(v)
-#     end
-# end
-
-# harmonic_average_stress(r, args) = harmonic_average(r, compute_stress, args)
-# harmonic_average_strain_rate(r, args) = harmonic_average(r, compute_strain_rate, args)
-
 # Sparsity-detection tracers (which carry no primal value)
 # can override those functions in the SparseConnectivityTracer extension. The guards only
 # ever protected the value against Inf/NaN. The dependency pattern is the

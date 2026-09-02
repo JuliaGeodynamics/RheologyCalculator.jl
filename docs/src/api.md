@@ -66,7 +66,6 @@ RheologyCalculator.compute_viscosity_parallel
 ```@docs
 RheologyCalculator.history_kwargs
 RheologyCalculator.differentiable_kwargs
-RheologyCalculator.residual_kwargs
 RheologyCalculator.generate_args_template
 RheologyCalculator.extract_local_kwargs
 ```

@@ -1,9 +1,5 @@
 # Postprocessing calculations (not needed as part of local iterations)
 
-# now update elastic stress
-is_eq_elastic(::AbstractElasticity) = true
-is_eq_elastic(::T) where {T} = false
-
 """
     compute_stress_elastic(c, xnew, others)
     compute_stress_elastic(eqs, xnew, others)

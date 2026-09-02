@@ -242,30 +242,6 @@ end
 @inline correct_children(children, ::Val{true}) = children
 @inline correct_children(::Any, ::Val{false}) = ()
 
-@generated function add_global_equations(iparent, ilocal_childs, iparallel_childs, iself_ref, fns_own_global::NTuple{F, Any}, leafs, branches, ::Val{N}, el_number) where {F, N}
-    return quote
-        Base.@ntuple $N i -> begin
-            @inline
-            iself_ref[] += 1
-            corrected_children = correct_children(fns_own_global[i], branches, iparallel_childs)
-            children = (ilocal_childs..., corrected_children...) .+ (i - 1)
-            CompositeEquation(iparent, children, iself_ref[], fns_own_global[i], leafs, Val(true), el_number)
-        end
-    end
-end
-
-@generated function add_global_equations(iparent, ilocal_childs, iparallel_childs, iself_ref, fns_own_global::F, leafs, branches, ::Val{N}, el_number) where {F, N}
-    return quote
-        Base.@ntuple $N i -> begin
-            @inline
-            iself_ref[] += 1
-            corrected_children = correct_children(fns_own_global[i], branches, iparallel_childs)
-            children = (ilocal_childs..., corrected_children...) .+ (i - 1)
-            CompositeEquation(iparent, children, iself_ref[], fns_own_global, leafs, Val(true), el_number)
-        end
-    end
-end
-
 function add_global_equations(iparent, ilocal_childs, iparallel_childs, iself_ref, fns_own_global::F, leafs, branches, ind_input, ::Val{B}, ::Val{1}, el_number) where {F, B}
     @inline
     iself_ref[] += 1

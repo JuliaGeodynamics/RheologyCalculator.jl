@@ -31,16 +31,6 @@ abstract type AbstractViscosity <: AbstractRheology end # in case we need spacil
 
 ## METHODS FOR SERIES MODELS
 """
-    length_state_functions(r)
-
-Return the number of series state functions contributed by one rheology or by a
-tuple of rheologies.
-"""
-@inline length_state_functions(r::AbstractRheology) = length(series_state_functions(r))
-@inline length_state_functions(r::NTuple{N, AbstractRheology}) where {N} = length_state_functions(first(r))..., length_state_functions(Base.tail(r))...
-@inline length_state_functions(r::Tuple{}) = ()
-
-"""
     series_state_functions(r)
     series_state_functions(r, num)
 
@@ -114,27 +104,4 @@ state equations.
         f = Base.@ntuple $N i -> i == 1 ? (funs[1],) : (funs[i] ∉ funs[1:(i - 1)] ? (funs[i],) : ())
         Base.IteratorsMD.flatten(f)
     end
-end
-
-"""
-    get_unique_state_functions(composite, model)
-
-Collect the unique state functions for a tuple of rheologies under `:series` or
-`:parallel` composition.
-"""
-function get_unique_state_functions(composite::NTuple{N, AbstractRheology}, model::Symbol) where {N}
-    funs = if model === :series
-        get_unique_state_functions(composite, series_state_functions)
-    elseif model === :parallel
-        get_unique_state_functions(composite, parallel_state_functions)
-    else
-        error("Model not defined. Accepted models are :series or :parallel")
-    end
-    return funs
-end
-
-function get_unique_state_functions(composite::NTuple{N, AbstractRheology}, state_fn) where {N}
-    funs = state_fn(composite)
-    # get unique state functions
-    return flatten_repeated_functions(funs)
 end
