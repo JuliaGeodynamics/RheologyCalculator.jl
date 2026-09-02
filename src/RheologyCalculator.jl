@@ -23,7 +23,7 @@ export AbstractViscosity, AbstractPlasticity, AbstractElasticity
 include("core/state_functions.jl")
 
 include("core/composite.jl")
-export CompositeModel, SeriesModel, ParallelModel
+export SeriesModel, ParallelModel
 
 include("core/kwargs.jl")
 

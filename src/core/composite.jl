@@ -11,17 +11,6 @@ abstract type AbstractCompositeModel  end
 @inline parallel_state_functions(::AbstractCompositeModel) = ()
 
 """
-    CompositeModel{Nstrain,Nstress,T}
-
-Generic composite wrapper for future or experimental composite representations.
-Most user-facing models are currently built with `SeriesModel` and
-`ParallelModel`.
-"""
-struct CompositeModel{Nstrain, Nstress, T} <: AbstractCompositeModel
-    components::T
-end
-
-"""
     hasbranches(c)
 
 Return `Val(true)` when a composite has nested branch models and `Val(false)`

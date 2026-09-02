@@ -24,7 +24,6 @@ RheologyCalculator.RheologyModels.DislocationCreep
 ```@docs
 SeriesModel
 ParallelModel
-CompositeModel
 generate_equations
 x_keys
 ```
