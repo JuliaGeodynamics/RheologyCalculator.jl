@@ -150,5 +150,5 @@ Concrete rheologies may specialize this separately from `compute_viscosity`
 when the effective-viscosity estimate depends on composition.
 """ compute_viscosity_parallel
 
-# NOTE: for user defined new functions, add the template below to the appropriate rheology type file (e.g., RheologyDefinitions.jl)
+# NOTE: for user defined new functions, add the template below to the element's own file under src/rheology/
 # compute_variable(r::AbstractRheology, kwargs::NamedTuple) = compute_variable(r; kwargs...)

@@ -47,14 +47,14 @@ function _compute_stress_elastic1(r::AbstractElasticity, self, fn::F, number, xn
     @inline f(::F, ::Vararg{Any, N}) where {F, N} = ()
 
     # Direct elastic leaf of the outer SeriesModel: the effective strain-rate
-    # correction (see effective_strain_rate_correction / tensor_reduction.typ)
+    # correction (see effective_strain_rate_correction / docs/derivations/tensor_reduction.typ)
     # already absorbed τ0 into the global solve, so x[self] IS the physical
     # spring stress.
     @inline f(::typeof(compute_strain_rate), r, others, args, number, self, xnew, ::Val{true}) = xnew[self]
 
     # Elastic element nested inside a branch (Kelvin-Voigt / generalized
     # Maxwell sub-model): x[self] is NOT a simple ±τ0 shift of the physical
-    # spring stress (see tensor_reduction.typ, mixed KV-Maxwell body — the
+    # spring stress (see docs/derivations/tensor_reduction.typ, mixed KV-Maxwell body — the
     # exact correction depends on the branch's full η_KV / η_star weighting,
     # not just τ0). These are reconstructed separately by
     # `compute_stress_elastic(c::SeriesModel, xnew, others)` below, using the
@@ -86,7 +86,7 @@ by the generic `eqs`-based method.
 `x[self]` for these nested equations is not a simple `±τ0` shift of the
 physical spring stress; the correct relationship is the closed-form inversion
 of the same η_KV / η_star weighting used by `effective_strain_rate_correction`
-(tensor_reduction.typ, "Mixed Kelvin-Voigt and Maxwell Body" /
+(docs/derivations/tensor_reduction.typ, "Mixed Kelvin-Voigt and Maxwell Body" /
 "Generalized Maxwell Body"). Given the shared top-level stress `τ_shared`
 (always exactly `xnew[i]` of the model's single global equation), the local
 plastic-free strain rate of a branch is
@@ -125,7 +125,7 @@ function compute_stress_elastic(c::SeriesModel, xnew::SVector, others)
 
     # Reconstruct the physical spring stress for every elastic element nested
     # inside one of the ParallelModel branches, using the closed-form inversion
-    # described in tensor_reduction.typ and in the docstring above.
+    # described in docs/derivations/tensor_reduction.typ and in the docstring above.
     τ_branch = _kv_corrections_elastic_stress(c.branches, τ_shared, others, n_el_leafs)
 
     # Direct-leaf stresses come first, matching the τ0 tuple ordering expected
@@ -138,7 +138,7 @@ end
 # ParallelModel branches (Kelvin-Voigt / generalized Maxwell bodies)
 # -----------------------------------------------------------------------
 #
-# Background (tensor_reduction.typ, "Mixed Kelvin-Voigt and Maxwell Body"):
+# Background (docs/derivations/tensor_reduction.typ, "Mixed Kelvin-Voigt and Maxwell Body"):
 #
 # After the Newton solve, x[1] = τ_shared is the true physical total stress.
 # For a ParallelModel branch, all sub-elements carry the same stress τ_shared,
@@ -157,7 +157,7 @@ end
 # All index arithmetic is resolved at *compile time* by the @generated
 # functions below — the emitted code is a flat sequence of arithmetic with no
 # dynamic dispatch, exactly mirroring _kv_corrections / _weighted_backstress
-# in src/strain_rate_correction.jl.
+# in src/post_processing/strain_rate_correction.jl.
 # -----------------------------------------------------------------------
 
 """
@@ -228,7 +228,7 @@ first backstress entry).
     args = merge((; ε = 0.0), others)
 
     # η_KV: arithmetic sum of effective viscosities of all sub-elements.
-    # (See _η_KV in src/strain_rate_correction.jl for the definition.)
+    # (See _η_KV in src/post_processing/strain_rate_correction.jl for the definition.)
     η_KV = _checked_η_KV(branch.leafs, branch.branches, args)
 
     # Gather per-elastic-source information (η_star, τ0_II, recovery formula

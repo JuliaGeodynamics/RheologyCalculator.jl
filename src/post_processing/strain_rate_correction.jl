@@ -25,7 +25,7 @@ symmetric deviatoric tensor stored in Voigt-like component order.
 #
 # The corrected scalar invariant εII = second_invariant(ε_eff) is then what
 # the Newton solver actually sees; the elastic state functions themselves
-# are τ0-free (see RheologyDefinitions.jl, tensor_reduction.typ).
+# are τ0-free (see docs/derivations/tensor_reduction.typ).
 # -----------------------------------------------------------------------
 
 # Pre-solve helper for solve(): correct ONLY the direct elastic leafs of the
@@ -124,44 +124,6 @@ end
 @inline update_correction_index(::Val{false}, I) = I       # non-elastic: skip
 @inline update_correction_index(::Val{true},  I) = I + 1  # elastic: advance τ0 cursor
 
-# -----------------------------------------------------------------------
-# Effective-viscosity aggregation helpers
-# -----------------------------------------------------------------------
-#
-# These are used by the KV / generalized-Maxwell branch-correction machinery
-# (_η_KV, _η_eff_maxwell) to combine viscosities of tuples of leaf elements.
-# The harmonic mean (sum of reciprocals, then invert) is the correct formula
-# for elements connected in series: the softest element dominates.
-# -----------------------------------------------------------------------
-
-# Harmonic-mean effective viscosity of a tuple of elements in *parallel*
-# (stresses add → strain rates must be consistent → harmonic mean).
-@generated function compute_viscosity_parallel(branches::NTuple{N,AbstractRheology}, ε, τ, others) where {N}
-    quote
-        η_eff = zero(eltype(ε))
-        Base.@nexprs $N j -> begin
-            η = compute_viscosity_parallel(branches[j], merge((; ε, τ), others))
-            η_eff += 1 / η
-        end
-        η_eff = 1 / η_eff
-        return η_eff
-    end
-end
-
-# Harmonic-mean effective viscosity of a tuple of elements in *series*
-# (strain rates add → a stiffer element relaxes faster → harmonic mean).
-@generated function compute_viscosity_series(branches::NTuple{N,AbstractRheology}, ε, τ, others) where {N}
-    quote
-        η_eff = zero(eltype(ε))
-        Base.@nexprs $N j -> begin
-            η = compute_viscosity_series(branches[j], merge((; ε, τ), others))
-            η_eff += 1 / η
-        end
-        η_eff = 1 / η_eff
-        return η_eff
-    end
-end
-
 # Public wrapper: returns a Val so callers can dispatch on the result without
 # paying for a runtime branch (the Val is always resolved at compile time when
 # the concrete type of `r` is known, which it always is in @generated contexts).
@@ -215,7 +177,7 @@ end
 # Generalized Maxwell / Kelvin-Voigt strain-rate correction for branches
 # -----------------------------------------------------------------------
 #
-# Background (see tensor_reduction.typ for the full derivation):
+# Background (see docs/derivations/tensor_reduction.typ for the full derivation):
 #
 # For a SeriesModel whose branches contain ParallelModel elements, each
 # parallel block contributes an effective strain-rate correction beyond the
@@ -286,7 +248,7 @@ end
     _assert_kv_nesting_supported(::Type{ParallelModel{L, B}})
 
 The `_η_KV`/`_η_eff_maxwell`/`_weighted_backstress`/`_n_elastic_in_parallel`
-formulas (see `tensor_reduction.typ`) are derived for a `ParallelModel` branch
+formulas (see `docs/derivations/tensor_reduction.typ`) are derived for a `ParallelModel` branch
 whose `SeriesModel` sub-branches contain plain rheology leafs only -- i.e. at
 most one level of Series/Parallel alternation. They do not account for a
 `SeriesModel` sub-branch that itself contains a further nested `ParallelModel`.
@@ -305,7 +267,7 @@ function _assert_kv_nesting_supported(::Type{ParallelModel{L,B}}) where {L,B}
                 "inside a ParallelModel more than one level deep inside a branch ($nested). " *
                 "This is not supported by the current _η_KV / _weighted_backstress formulas, " *
                 "which are only derived for a branch whose SeriesModel sub-branches contain " *
-                "plain rheology leafs (see tensor_reduction.typ)."
+                "plain rheology leafs (see docs/derivations/tensor_reduction.typ)."
             )
         end
     end
@@ -359,7 +321,7 @@ Compute the generalized Maxwell / Kelvin-Voigt effective strain-rate correction
 for a single `ParallelModel` branch.  Returns zero immediately when the branch
 contains no elastic elements.
 
-The correction follows equation (*) in `tensor_reduction.typ`:
+The correction follows equation (*) in `docs/derivations/tensor_reduction.typ`:
 
     Σ_i η_star_i * τ0_i / (2 * η_KV)
 

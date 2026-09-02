@@ -1,6 +1,3 @@
-# This implements the mode1/mode2 plasticity model proposed in:
-# Popov, A. A., Berlie, N., and Kaus, B. J. P.: A dilatant visco-elasto-viscoplasticity model with globally continuous tensile cap: 
-#   stable two-field mixed formulation, EGUsphere [preprint], https://doi.org/10.5194/egusphere-2025-2469, 2025.
 import ForwardDiff: ForwardDiff
 import ..RheologyCalculator: compute_stress_elastic, compute_pressure_elastic
 import ..RheologyCalculator: series_state_functions, parallel_state_functions, _isvolumetric
@@ -56,23 +53,23 @@ end
     return -F* (F > -1e-8)  + λ*r.η_vp + λ*1        # last term is for regularisation below yield
 end
 
-function compute_F(r::ModCamClay, τII, P)
-    (; M, r, β, Pt) = r
+function compute_F(p::ModCamClay, τII, P)
+    (; M, r, β, Pt) = p
 
     b = P < Pt + r ? one(β) : β
 
     F  = 1/b *(P - Pt - r)^2  + (τII / M)^2 - r^2 
 
     # Note that viscoplastic regularisation is taken into account in the residual function
-    return F #*(F>-1e-8) 
+    return F
 end
 
-function compute_Q(r::ModCamClay, τII, P) 
+function compute_Q(p::ModCamClay, τII, P) 
 
     # These parameters are required to compute the constant in the plastic flow
     # potential. Note that this constant does not matter apart when plotting,
     # as we only need derivates of Q in general 
-    (; N, r, β, Pt) = r
+    (; N, r, β, Pt) = p
 
     b = P < Pt + r ? one(β) : β
 
