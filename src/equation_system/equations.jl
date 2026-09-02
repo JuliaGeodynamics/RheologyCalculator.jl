@@ -108,19 +108,13 @@ end
 
 generate_equations_unroller(::Tuple{}, ::F, el_num, global_eqs, iself_ref) where {F} = ()
 
-@generated function generate_iparallel_childs(iself, nlocal, nown, offsets_parallel, ::NTuple{N, Any}) where {N}
-    return quote
-        @inline
-        Base.@ntuple $N i -> iself + nlocal + offsets_parallel[i] + 1 + nown
-    end
-end
+# Index generators, not maps: the tuple argument supplies only its length.
+# The results are plain Int tuples, so ntuple(f, Val(N)) infers at any N.
+@inline generate_iparallel_childs(iself, nlocal, nown, offsets_parallel, ::NTuple{N, Any}) where {N} =
+    ntuple(i -> iself + nlocal + offsets_parallel[i] + 1 + nown, Val(N))
 
-@generated function generate_ilocal_childs(iself, nown, ::NTuple{N, Any}) where {N}
-    return quote
-        @inline
-        Base.@ntuple $N i -> iself + nown + i
-    end
-end
+@inline generate_ilocal_childs(iself, nown, ::NTuple{N, Any}) where {N} =
+    ntuple(i -> iself + nown + i, Val(N))
 
 """
     generate_offsets_parallel(branches, fn, el_num)
@@ -260,22 +254,17 @@ plus all other differentiable values and nondifferentiable auxiliary fields.
 @inline generate_args_template(eqs::NTuple{N, CompositeEquation}) where {N} =
     maptuple(eq -> differentiable_kwargs(eq.fn), eqs)
 
-@generated function generate_args_template(eqs::NTuple{N, Any}, x::SVector{N}, others::NamedTuple) where {N}
-    return quote
-        args_template = generate_args_template(eqs)
-        args = Base.@ntuple $N i -> begin
-            @inline
-            name = keys(args_template[i])
-            merge(NamedTuple{name}(x[i]), others)
-        end
-
-        Base.@ntuple $N i -> begin
-            diffs = Base.@ntuple $N j -> begin
-                Base.structdiff(args[j], args[i])
-            end
-            merge(args[i], diffs...)
-        end
-
+# Every equation ends up with the same key set: its own unknown bound to its
+# entry of `x`, plus every other equation's unknown, plus `others`. The second
+# pass is what fills in the keys an equation does not own, taken from whichever
+# sibling does.
+@inline function generate_args_template(eqs::NTuple{N, Any}, x::SVector{N}, others::NamedTuple) where {N}
+    template = generate_args_template(eqs)
+    args = maptuple(template, Tuple(x)) do t, xi
+        merge(NamedTuple{keys(t)}(xi), others)
+    end
+    return maptuple(args) do a
+        merge(a, maptuple(other -> Base.structdiff(other, a), args)...)
     end
 end
 
