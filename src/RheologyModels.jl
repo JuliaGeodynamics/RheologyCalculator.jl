@@ -26,10 +26,15 @@ import ..RheologyCalculator: series_state_functions, parallel_state_functions,
     compute_lambda, compute_lambda_parallel,
     compute_viscosity, compute_viscosity_series, compute_viscosity_parallel
 
+# used by the tensor helpers
+import ..RheologyCalculator: second_invariant
+
 # Basic viscous/elastic/plastic building blocks, one struct per file, grouped by
 # category (and, where the literature draws a clear line, by sub-family).
 # Advanced / application-specific models (built from these blocks) sit alongside
-# their category and are intentionally NOT exported.
+# their category and are intentionally NOT exported. This applies to the
+# material models only; the tensor helpers at the end of this file are exported,
+# since every example and test needs them to build a `vars` tuple.
 
 # viscous: Newtonian (linear stress-strain-rate) vs non-Newtonian (rate-dependent).
 # Rate-and-state friction lives here too: despite the filename, it has no yield
@@ -64,5 +69,14 @@ include("utils/tensor_helpers.jl")
 export LinearViscosity, PowerLawViscosity
 export Elasticity, BulkElasticity, IncompressibleElasticity, BulkViscosity
 export LTPViscosity, DruckerPrager, DiffusionCreep, DislocationCreep
+
+# Tensor helpers: flat-tuple deviatoric tensors in Voigt order, used to build
+# the `vars` and `τ0` arguments of `solve`.
+export second_invariant_2D, second_invariant_3D
+export tensor_strain_rate_2D, tensor_strain_rate_3D
+export vars_2D, vars_3D
+export zero_stress_tensor_2D, zero_stress_tensor_3D
+export stress_tensor_from_invariant_2D, stress_tensor_from_invariant_3D
+export elastic_stress_history_2D, elastic_stress_history_3D
 
 end
