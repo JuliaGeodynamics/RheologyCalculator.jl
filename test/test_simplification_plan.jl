@@ -61,4 +61,24 @@ struct NoViscosityRheology <: AbstractRheology end
     @test_throws BoundsError initial_guess_x(
         c_two_springs, (; ε = 1.0e-15), (; τ = 1.0e2), (; dt = 1.0e10, τ0 = (0.0, 0.0), P0 = (0.0,))
     )
+
+    # Element files under src/rheology/ extend the core generics; they do not
+    # define same-named functions local to RheologyModels. A local definition
+    # would leave the core generic on its fallback for that element, which is
+    # how a missing compute_viscosity_series silently halves a Kelvin-Voigt
+    # aggregate.
+    @testset "element files extend the core generics" begin
+        extended = (
+            :series_state_functions, :parallel_state_functions, :_isvolumetric, :isvolumetric,
+            :compute_strain_rate, :compute_stress, :compute_pressure,
+            :compute_volumetric_strain_rate, :compute_plastic_strain_rate,
+            :compute_plastic_stress, :compute_volumetric_plastic_strain_rate,
+            :compute_lambda, :compute_lambda_parallel,
+            :compute_viscosity, :compute_viscosity_series, :compute_viscosity_parallel,
+        )
+        for name in extended
+            @test getfield(RheologyCalculator.RheologyModels, name) ===
+                getfield(RheologyCalculator, name)
+        end
+    end
 end

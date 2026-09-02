@@ -60,7 +60,9 @@ a suite that allocates is not.
   gone.
 - **Done.** Phase 3, including a docs build that had been failing since the
   `NonConvergenceError` docstring was added.
-- **Pending.** Phases 4–8.
+- **Done.** Phase 4. `src/` is down to 3915 lines and the tensor helpers are
+  public API.
+- **Pending.** Phases 5–8.
 - **Done.** `CompositeModel` removed (export, struct, and Documenter entry) — see §9.
 - **Decided.** The tensor helpers become public API — see §4.4.
 
@@ -581,7 +583,10 @@ package already uses for `AbstractElasticity`/`AbstractViscosity` in
 `test_ModCamClay.jl`, `test_VEPCap.jl`, `test_Hyperbolic.jl` and the phase-0
 plastic fixture.
 
-**Risk:** low. **Reduction:** ~135 lines, and each future model ~60 lines cheaper.
+**Risk:** low. **Reduction:** 75 lines, and each future model ~25 lines
+cheaper. **Done** — the four shared blocks were confirmed character-identical
+after normalizing the type name, and all twelve state functions return
+bit-identical values for all four models across three (τ, P, λ) triples.
 
 ### 4.2 The repeated import headers — ~39 lines
 
@@ -622,6 +627,12 @@ mechanically rather than by review. Run `Pkg.test()`, and diff
 unchanged.
 
 **Risk:** low, but this is the one refactor where a mistake is *quiet*. Own commit.
+**Done** — 55 import lines removed, `methods()` counts unchanged for all sixteen
+generics. The guardrail is a test asserting
+`getfield(RheologyModels, name) === getfield(RheologyCalculator, name)` for each
+extended generic, which fails exactly when a file defines a local function
+instead of extending the core one. `ExplicitImports.jl` checks a different,
+overlapping class (implicit `using`, stale imports) and is left to phase 8.
 
 ### 4.3 Delete the redundant `compute_viscosity` methods — ~12 lines
 
@@ -676,7 +687,11 @@ Action:
 Since this widens the exported surface, `Aqua.test_undefined_exports` (already in
 the suite) covers it, and the new docstrings make `checkdocs` meaningful for them.
 
-**Risk:** (a) low; (b) additive — no existing name changes meaning.
+**Risk:** (a) low; (b) additive — no existing name changes meaning. **Done.**
+Adding the entries also revealed why the build broke: `solve`'s docstring links
+`[`NonConvergenceError`](@ref)`, and a `@ref` to a binding absent from the
+manual is a dead link, which vitepress rejects. Every exported docstring is now
+in the manual, so `checkdocs` is meaningful.
 
 ---
 
