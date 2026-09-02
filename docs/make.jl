@@ -16,7 +16,11 @@ makedocs(;
         devurl = "dev",
         sidebar_drawer = true,
     ),
-    warnonly = Documenter.except(:footnote),
+    # No blanket downgrade: a missing docstring, a dead cross-reference, or a
+    # duplicated @docs entry fails the build. `checkdocs = :exports` scopes the
+    # missing-docs check to the public surface; the package documents many
+    # internals that are deliberately absent from the manual.
+    warnonly = false,
     checkdocs = :exports,
     draft    = false,
     source   = "src",

@@ -19,6 +19,18 @@ RheologyCalculator.RheologyModels.DiffusionCreep
 RheologyCalculator.RheologyModels.DislocationCreep
 ```
 
+The cap and critical-state plastic models, and the rate-and-state friction law,
+are not exported; reach them as
+`using RheologyCalculator.RheologyModels: ModCamClay` and so on.
+
+```@docs
+RheologyCalculator.RheologyModels.DruckerPragerCap
+RheologyCalculator.RheologyModels.Hyperbolic
+RheologyCalculator.RheologyModels.ModCamClay
+RheologyCalculator.RheologyModels.Golchin
+RheologyCalculator.RheologyModels.RateStateFriction
+```
+
 ## Composite Models
 
 ```@docs
