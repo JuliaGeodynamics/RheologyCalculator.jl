@@ -44,12 +44,8 @@ Compute the initial guess for the local solution vector `x` given a tuple `eqs` 
 # Returns
 - `x0::NTuple{N}`: tuple of scalar initial guesses, one per equation.
 """
-@generated function initial_guess_x(eqs::NTuple{N, CompositeEquation}, vars, args, others) where {N}
-    return quote
-        @inline
-        Base.@ntuple $N i -> estimate_initial_value(eqs[i], vars, args, others)
-    end
-end
+@inline initial_guess_x(eqs::NTuple{N, CompositeEquation}, vars, args, others) where {N} =
+    maptuple(eq -> estimate_initial_value(eq, vars, args, others), eqs)
 
 """
     x_keys = x_keys(c::AbstractCompositeModel)
@@ -80,15 +76,8 @@ same unknown.
 # Returns
 - Flattened `NTuple` of `Symbol`s (e.g. `(:τ, :P, :ε, ...)`), one per equation.
 """
-@generated function x_keys(eqs::NTuple{N, CompositeEquation}) where {N}
-    return quote
-        @inline
-        k = Base.@ntuple $N i -> begin
-            keys(differentiable_kwargs(eqs[i].fn))
-        end
-        superflatten(k)
-    end
-end
+@inline x_keys(eqs::NTuple{N, CompositeEquation}) where {N} =
+    superflatten(maptuple(eq -> keys(differentiable_kwargs(eq.fn)), eqs))
 
 """
     estimate_initial_value(eq::CompositeEquation, vars, args, others)
@@ -221,12 +210,7 @@ Reduce tensor components to their scalar second invariant, dispatching on the ty
 """
 @inline tensor2invariant(A::Tuple{}) = A
 @inline tensor2invariant(A::NTuple{N, Real}) where N = second_invariant(A...)
-@generated function tensor2invariant(A::NTuple{N1, NTuple{N2, Real}}) where {N1, N2} 
-    quote 
-        @inline
-        Base.@ntuple $N1 i -> tensor2invariant(A[i])
-    end
-end
+@inline tensor2invariant(A::NTuple{N1, NTuple{N2, Real}}) where {N1, N2} = maptuple(tensor2invariant, A)
 @inline tensor2invariant(a::Number) = a
 
 function tensor2invariant(x::NamedTuple)

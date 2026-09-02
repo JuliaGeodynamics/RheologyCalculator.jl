@@ -16,12 +16,8 @@ function normalisation_x(c::AbstractCompositeModel, char_τ = 1.0, char_ε = 1.0
     return SA[x0...]
 end
 
-@generated function normalisation_x(eqs::NTuple{N, CompositeEquation}, char_τ, char_ε) where {N}
-    return quote
-        @inline
-        f = Base.@ntuple $N i -> _normalize_x_value(eqs[i].fn, char_τ, char_ε)
-    end
-end
+@inline normalisation_x(eqs::NTuple{N, CompositeEquation}, char_τ, char_ε) where {N} =
+    maptuple(eq -> _normalize_x_value(eq.fn, char_τ, char_ε), eqs)
 
 for fn in (:compute_stress, :compute_pressure, :compute_lambda, :compute_lambda_parallel)
     @eval _normalize_x_value(::typeof($fn), char_stress, char_strainrate) = char_stress 

@@ -182,12 +182,7 @@ for pair in fn_pairs
     end
 end
 
-@generated function get_own_functions(c::NTuple{N, AbstractCompositeModel}) where {N}
-    return quote
-        @inline
-        Base.@ntuple $N i -> get_own_functions(c[i])
-    end
-end
+@inline get_own_functions(c::NTuple{N, AbstractCompositeModel}) where {N} = maptuple(get_own_functions, c)
 @inline get_own_functions(c::SeriesModel) = get_own_functions(c, series_state_functions, global_series_state_functions, local_series_state_functions)
 @inline get_own_functions(c::ParallelModel) = get_own_functions(c, parallel_state_functions, global_parallel_state_functions, local_parallel_state_functions)
 
@@ -208,19 +203,10 @@ get_own_functions(::Tuple{}) = (), ()
     return (n1, n2)
 end
 
-@generated function global_eltype_numbering(c::NTuple{N, AbstractRheology}, counter_v::Base.RefValue, counter_el::Base.RefValue, counter_pl::Base.RefValue) where {N}
-    return quote
-        @inline
-        Base.@ntuple $N i -> global_eltype_numbering(c[i], counter_v, counter_el, counter_pl)
-    end
-end
-
-@generated function global_eltype_numbering(c::NTuple{N, AbstractCompositeModel}, counter_v::Base.RefValue, counter_el::Base.RefValue, counter_pl::Base.RefValue) where {N}
-    return quote
-        @inline
-        Base.@ntuple $N i -> global_eltype_numbering(c[i], counter_v, counter_el, counter_pl)
-    end
-end
+# maptuple walks left to right, which the counters depend on: each element takes
+# the next number in composite order.
+@inline global_eltype_numbering(c::NTuple{N, Union{AbstractRheology, AbstractCompositeModel}}, counter_v::Base.RefValue, counter_el::Base.RefValue, counter_pl::Base.RefValue) where {N} =
+    maptuple(ci -> global_eltype_numbering(ci, counter_v, counter_el, counter_pl), c)
 
 @inline global_eltype_numbering(::Tuple{}, ::Base.RefValue, ::Base.RefValue, ::Base.RefValue) = ()
 
@@ -233,12 +219,8 @@ global_eltype_numbering(c::AbstractPlasticity, counter_v::Base.RefValue, counter
 @inline has_children(::typeof(compute_volumetric_strain_rate), branch) = isvolumetric(branch)
 
 @inline correct_children(fn::F, branch::AbstractCompositeModel, children) where {F} = correct_children(children, has_children(fn, branch))
-@generated function correct_children(fn::F, branch::NTuple{N, AbstractCompositeModel}, children) where {F, N}
-    return quote
-        new_children = Base.@ntuple $N i -> correct_children(children[i], has_children(fn, branch[i]))
-        return superflatten(new_children)
-    end
-end
+@inline correct_children(fn::F, branch::NTuple{N, AbstractCompositeModel}, children) where {F, N} =
+    superflatten(maptuple((ch, b) -> correct_children(ch, has_children(fn, b)), children, branch))
 @inline correct_children(children, ::Val{true}) = children
 @inline correct_children(::Any, ::Val{false}) = ()
 
@@ -282,11 +264,8 @@ Build `NamedTuple` argument templates for each equation. With `x` and `others`,
 the returned tuple contains the differentiable value for the equation itself
 plus all other differentiable values and nondifferentiable auxiliary fields.
 """
-@generated function generate_args_template(eqs::NTuple{N, CompositeEquation}) where {N}
-    return quote
-        args = Base.@ntuple $N i -> differentiable_kwargs(eqs[i].fn)
-    end
-end
+@inline generate_args_template(eqs::NTuple{N, CompositeEquation}) where {N} =
+    maptuple(eq -> differentiable_kwargs(eq.fn), eqs)
 
 @generated function generate_args_template(eqs::NTuple{N, Any}, x::SVector{N}, others::NamedTuple) where {N}
     return quote
@@ -330,12 +309,8 @@ function extract_local_kwargs(others::NamedTuple, keys_hist::NTuple{M, Symbol}, 
     return NamedTuple{keys(others)}(vals_new)
 end
 
-@generated function extract_local_kwargs(keys_args::NTuple{N, Symbol}, vals_args::NTuple{N, Any}, keys_hist::NTuple{M, Symbol}, n::Int) where {N, M}
-    return quote
-        @inline
-        Base.@ntuple $N i -> _extract_local_kwargs(vals_args[i], keys_args[i], keys_hist, n)
-    end
-end
+@inline extract_local_kwargs(keys_args::NTuple{N, Symbol}, vals_args::NTuple{N, Any}, keys_hist::NTuple{M, Symbol}, n::Int) where {N, M} =
+    maptuple((v, k) -> _extract_local_kwargs(v, k, keys_hist, n), vals_args, keys_args)
 
 @inline _extract_local_kwargs(vals_args::Tuple, name, keys_hist, n) = ismember(name, keys_hist) ? vals_args[n] : vals_args[1]
 
@@ -351,12 +326,8 @@ Evaluate one equation, or all equations, by calling each equation's state
 function on its rheology elements and summing the element contributions.
 Element-local history fields are extracted from `others` before dispatch.
 """
-@generated function evaluate_state_functions(eqs::NTuple{N, CompositeEquation}, args, others) where {N}
-    return quote
-        @inline
-        Base.@ntuple $N i -> evaluate_state_function(eqs[i], args[i], others)
-    end
-end
+@inline evaluate_state_functions(eqs::NTuple{N, CompositeEquation}, args, others) where {N} =
+    maptuple((eq, a) -> evaluate_state_function(eq, a, others), eqs, args)
 
 """
     evaluate_state_function(eq, args, others)
@@ -372,21 +343,20 @@ end
 
 @inline evaluate_state_function(fn::F, rheology::Tuple{}, args, others, el_number) where {F} = 0
 
-@generated function evaluate_state_function(fn::F, rheology::NTuple{N, AbstractRheology}, args, others, el_number) where {N, F}
-    return quote
-        @inline
-        vals = Base.@ntuple $N i -> begin
-            keys_hist = history_kwargs(rheology[i])
-            args_local = extract_local_kwargs(others, keys_hist, el_number[i])
-            args_combined = merge(args, args_local)
-            fn(rheology[i], args_combined)
-        end
-        sum(vals)
+@inline function evaluate_state_function(fn::F, rheology::NTuple{N, AbstractRheology}, args, others, el_number) where {N, F}
+    vals = maptuple(rheology, el_number) do r, n
+        args_local = extract_local_kwargs(others, history_kwargs(r), n)
+        fn(r, merge(args, args_local))
     end
+    return sum(vals)
 end
 
 @inline evaluate_state_function(fn::F, rheology::Tuple{}, args, others) where {F} = 0.0e0
 
+# Must stay `@generated`: written as a two-tuple walk with a closure this is
+# inference-clean and allocation-free in isolation, but allocates once composed
+# into `compute_residual`. The flat unrolled body is what keeps the residual
+# path free of allocations.
 @generated function add_children(residual::NTuple{N, Any}, x::SVector{N}, eqs::NTuple{N, CompositeEquation}) where {N}
     return quote
         @inline
@@ -394,16 +364,8 @@ end
     end
 end
 
-@generated function add_child(x::SVector{M}, eqs::NTuple{N, CompositeEquation}, child::NTuple{NC}) where {M, N, NC}
-    return quote
-        @inline
-        v = Base.@ntuple $NC i -> begin
-            eq_ind = child[i]
-            add_child(x, eqs[eq_ind], eq_ind)
-        end
-        sum(v)
-    end
-end
+@inline add_child(x::SVector{M}, eqs::NTuple{N, CompositeEquation}, child::NTuple{NC}) where {M, N, NC} =
+    sum(maptuple(eq_ind -> add_child(x, eqs[eq_ind], eq_ind), child))
 
 add_child(x, ::CompositeEquation, eq_ind) = x[eq_ind]
 add_child(::SVector{N, T}, ::CompositeEquation{A, B, typeof(compute_lambda)}, eq_ind) where {N, A, B, T} = zero(T)
@@ -415,14 +377,8 @@ add_child(::SVector, ::Tuple{}) = 0.0e0
 add_child(::SVector, ::NTuple{N, CompositeEquation}, ::Tuple{}) where {N} = 0.0e0
 
 # if global, subtract the variables
-@generated function subtract_parent(residual::NTuple{N, Any}, x, eqs::NTuple{N, CompositeEquation}, vars) where {N}
-    return quote
-        @inline
-        Base.@ntuple $N i -> begin
-            residual[i] - subtract_parent(x, eqs[i], vars)
-        end
-    end
-end
+@inline subtract_parent(residual::NTuple{N, Any}, x, eqs::NTuple{N, CompositeEquation}, vars) where {N} =
+    maptuple((r, eq) -> r - subtract_parent(x, eq, vars), residual, eqs)
 
 @inline subtract_parent(::SVector, eq::CompositeEquation{true}, vars) = vars[eq.ind_input]
 @inline subtract_parent(x::SVector, eq::CompositeEquation{false}, ::NamedTuple) = x[eq.parent]
