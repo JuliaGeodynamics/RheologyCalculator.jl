@@ -21,7 +21,7 @@ struct ModCamClay{T} <: AbstractCapPlasticity
     η_vp::T     # regularisation viscosity
 end
 
-function ModCamClay(; M=0.9, N=0.9, r=1e8, β=1.0, Pt=-1e7, η_vp=1e20) 
+function ModCamClay(; M = 0.9, N = 0.9, r = 1.0e8, β = 1.0, Pt = -1.0e7, η_vp = 1.0e20)
     return ModCamClay(M, N, r, β, Pt, η_vp)
 end
 
@@ -32,23 +32,22 @@ function compute_F(p::ModCamClay, τII, P)
 
     b = P < Pt + r ? one(β) : β
 
-    F  = 1/b *(P - Pt - r)^2  + (τII / M)^2 - r^2 
+    F = 1 / b * (P - Pt - r)^2 + (τII / M)^2 - r^2
 
     # Note that viscoplastic regularisation is taken into account in the residual function
     return F
 end
 
-function compute_Q(p::ModCamClay, τII, P) 
+function compute_Q(p::ModCamClay, τII, P)
 
     # These parameters are required to compute the constant in the plastic flow
     # potential. Note that this constant does not matter apart when plotting,
-    # as we only need derivates of Q in general 
+    # as we only need derivates of Q in general
     (; N, r, β, Pt) = p
 
     b = P < Pt + r ? one(β) : β
 
-    Q  = 1/b *(P - Pt - r)^2  + (τII / N)^2 - r^2 
+    Q = 1 / b * (P - Pt - r)^2 + (τII / N)^2 - r^2
 
     return Q
-end 
-
+end

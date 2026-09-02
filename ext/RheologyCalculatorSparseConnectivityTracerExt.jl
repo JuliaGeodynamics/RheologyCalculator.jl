@@ -9,7 +9,7 @@ using StaticArrays
 # value-dependent guards in the solver must fall back to their unguarded form.
 # The guard only ever avoided Inf/NaN in the *value*; the dependency pattern is
 # identical either way.
-@inline RheologyCalculator.safe_inv(v::AbstractTracer)     = inv(v)
+@inline RheologyCalculator.safe_inv(v::AbstractTracer) = inv(v)
 @inline RheologyCalculator.safe_inv_one(v::AbstractTracer) = inv(v)
 
 # Union the sparsity patterns of every numeric leaf of a nested structure

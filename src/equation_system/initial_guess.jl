@@ -202,7 +202,7 @@ Reduce tensor components to their scalar second invariant, dispatching on the ty
 - A scalar, tuple of scalars, or `NamedTuple` of scalars depending on the input type.
 """
 @inline tensor2invariant(A::Tuple{}) = A
-@inline tensor2invariant(A::NTuple{N, Real}) where N = second_invariant(A...)
+@inline tensor2invariant(A::NTuple{N, Real}) where {N} = second_invariant(A...)
 @inline tensor2invariant(A::NTuple{N1, NTuple{N2, Real}}) where {N1, N2} = maptuple(tensor2invariant, A)
 @inline tensor2invariant(a::Number) = a
 
@@ -210,8 +210,8 @@ function tensor2invariant(x::NamedTuple)
     k = keys(x)
     v = values(x)
     invariants = ntuple(Val(length(k))) do i
-        @inline 
+        @inline
         tensor2invariant(v[i])
     end
-    (; zip(k, invariants)...)
+    return (; zip(k, invariants)...)
 end

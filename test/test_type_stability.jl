@@ -6,11 +6,11 @@ import RheologyCalculator: compute_pressure_elastic, compute_residual, compute_s
 # inference on any of them turns a static residual evaluation into a dynamic
 # one without changing a single number.
 function type_stability_fixtures()
-    viscous    = LinearViscosity(5.0e19)
-    viscous2   = LinearViscosity(1.0e20)
-    elastic    = Elasticity(1.0e10, 1.0e12)
+    viscous = LinearViscosity(5.0e19)
+    viscous2 = LinearViscosity(1.0e20)
+    elastic = Elasticity(1.0e10, 1.0e12)
     elasticinc = IncompressibleElasticity(1.0e10)
-    bulkvisc   = BulkViscosity(1.0e18)
+    bulkvisc = BulkViscosity(1.0e18)
 
     return (
         (
@@ -54,7 +54,7 @@ end
 @testset "Type stability" begin
     for (name, c, vars, args, others) in type_stability_fixtures()
         @testset "$name" begin
-            x     = initial_guess_x(c, vars, args, others)
+            x = initial_guess_x(c, vars, args, others)
             xnorm = normalisation_x(c, 1.0e6, 1.0e-15)
 
             eqs = @inferred generate_equations(c)

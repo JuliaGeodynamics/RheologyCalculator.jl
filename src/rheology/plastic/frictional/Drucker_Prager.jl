@@ -17,10 +17,10 @@ struct DruckerPrager{T} <: AbstractPlasticity
     cosϕ::T
     cosψ::T
 
-    function DruckerPrager(C::T, ϕ::T, ψ::T) where T
+    function DruckerPrager(C::T, ϕ::T, ψ::T) where {T}
         sinϕ, cosϕ = sincosd(ϕ)
         sinψ, cosψ = sincosd(ψ)
-        new{T}(C, ϕ, ψ, sinϕ, sinψ, cosϕ, cosψ)
+        return new{T}(C, ϕ, ψ, sinϕ, sinψ, cosϕ, cosψ)
     end
 end
 DruckerPrager(args::Vararg{Any, 3}) = DruckerPrager(promote(args...)...)
@@ -56,7 +56,7 @@ end
 # special plastic helper functions
 function compute_F(r::DruckerPrager, τ, P)
     F = (τ - P * r.sinϕ - r.C * r.cosϕ)
-    return F*(F>-1e-8)
+    return F * (F > -1.0e-8)
 end
 compute_Q(r::DruckerPrager, τ, P) = τ - P * r.sinψ
 
@@ -71,4 +71,4 @@ end
 @inline compute_plastic_stress(r::DruckerPrager; τ_pl = 0, kwargs...) = τ_pl
 @inline compute_stress(r::DruckerPrager; τ_pl = 0, kwargs...) = τ_pl
 
-@inline compute_viscosity(r::DruckerPrager; kwargs...)   = Inf
+@inline compute_viscosity(r::DruckerPrager; kwargs...) = Inf

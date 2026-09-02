@@ -20,4 +20,4 @@ end
 @inline compute_stress(r::Elasticity; ε = 0, τ0 = 0, dt = 0, kwargs...) = 2 * r.G * dt * ε
 @inline compute_pressure(r::Elasticity; θ = 0, P0 = 0, dt = 0, kwargs...) = P0 - r.K * dt * θ
 
-@inline compute_viscosity(r::Elasticity; dt = 0, kwargs...)   = r.G * dt
+@inline compute_viscosity(r::Elasticity; dt = 0, kwargs...) = r.G * dt

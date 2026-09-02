@@ -27,7 +27,7 @@ at floating-point precision for three consecutive iterations. This prevents a
 residual floor that cannot be represented by the selected numeric type from
 consuming the full `itermax` budget.
 """
-function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0=nothing, atol::Float64 = 1.0e-12, rtol::Float64 = 1.0e-12, itermax = 1.0e4, verbose::Bool = false)
+function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0 = nothing, atol::Float64 = 1.0e-12, rtol::Float64 = 1.0e-12, itermax = 1.0e4, verbose::Bool = false)
     # Pre-correct ONLY the direct elastic leafs of the outer composite
     # (simple Maxwell backstress).  Tensor arithmetic is used here so that
     # second_invariant(ε + τ0/(2G·dt)) is evaluated correctly even for
@@ -36,19 +36,19 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0=noth
     # compute_residual via subtract_elastic_correction, so they must NOT be
     # included here to avoid double-counting.
     ε_corr = _direct_leaf_elastic_correction(c, vars0.ε, others)
-    εII    = second_invariant_value(vars0.ε .+ ε_corr)
-    vars   = merge(vars0, (; ε = εII))
+    εII = second_invariant_value(vars0.ε .+ ε_corr)
+    vars = merge(vars0, (; ε = εII))
 
     # vars = merge((; ε = εII), vars0)
     xnorm = correct_xnorm(x, xnorm0)
-    r     = compute_residual(c, x, vars, others)   # initial residual
+    r = compute_residual(c, x, vars, others)   # initial residual
     it = 0
     er = Inf
     er0 = mynorm(r, xnorm)
 
     nonneg = branch_strain_rate_mask(c)
 
-    α = 1e0
+    α = 1.0e0
     stagnant_iters = 0
     while er > atol && er > rtol * er0
         it += 1
@@ -241,6 +241,6 @@ normalization factor is zero.
     end
 end
 
-@inline backsolve(J::SVector{1}, r::SVector{1})   = SA[-r[1] * inv(J[1])]
-@inline backsolve(J::SMatrix{1,1}, r::SVector{1}) = SA[-r[1] * inv(J[1])]
+@inline backsolve(J::SVector{1}, r::SVector{1}) = SA[-r[1] * inv(J[1])]
+@inline backsolve(J::SMatrix{1, 1}, r::SVector{1}) = SA[-r[1] * inv(J[1])]
 @inline backsolve(J, r) = J \ -r

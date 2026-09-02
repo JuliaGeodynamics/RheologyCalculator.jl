@@ -1,5 +1,5 @@
 # This implements the mode1/mode2 plasticity model proposed in:
-# Popov, A. A., Berlie, N., and Kaus, B. J. P.: A dilatant visco-elasto-viscoplasticity model with globally continuous tensile cap: 
+# Popov, A. A., Berlie, N., and Kaus, B. J. P.: A dilatant visco-elasto-viscoplasticity model with globally continuous tensile cap:
 #   stable two-field mixed formulation, EGUsphere [preprint], https://doi.org/10.5194/egusphere-2025-2469, 2025.
 
 # DruckerPragerCap ------------------------------------------------------
@@ -29,46 +29,46 @@ struct DruckerPragerCap{T} <: AbstractCapPlasticity
     sinΨ::T     # Dilation angle
     cosΨ::T     # Dilation angle
 
-    k ::T
+    k::T
     kq::T
-    c ::T 
-    a ::T
-    b ::T
-    py::T 
-    Ry::T 
-    pd::T 
-    τd::T 
-    pq::T 
+    c::T
+    a::T
+    b::T
+    py::T
+    Ry::T
+    pd::T
+    τd::T
+    pq::T
 end
 
-function DruckerPragerCap(; C=10e6, ϕ=30.0, ψ=0.0, η_vp=1e20, Pt=-1e5) 
+function DruckerPragerCap(; C = 10.0e6, ϕ = 30.0, ψ = 0.0, η_vp = 1.0e20, Pt = -1.0e5)
     sinϕ = sind(ϕ) # Friction angle
     cosϕ = cosd(ϕ) # Friction angle
     sinΨ = sind(ψ) # Dilation angle
     cosΨ = cosd(ψ) # Dilation angle
-    k  = sinϕ
+    k = sinϕ
     kq = sinΨ
-    c  = C*cosϕ
-    a  = sqrt(1.0 + k^2)
-    b  = sqrt(1.0 + kq^2)
-    py = (Pt + c/a)/(1-k/a)
+    c = C * cosϕ
+    a = sqrt(1.0 + k^2)
+    b = sqrt(1.0 + kq^2)
+    py = (Pt + c / a) / (1 - k / a)
     Ry = py - Pt
-    pd = py - Ry*k/a
-    τd = k*pd + c
-    pq = pd + kq*τd
+    pd = py - Ry * k / a
+    τd = k * pd + c
+    pq = pd + kq * τd
     return DruckerPragerCap(C, ϕ, ψ, η_vp, Pt, sinϕ, cosϕ, sinΨ, cosΨ, k, kq, c, a, b, py, Ry, pd, τd, pq)
 end
 
 #DruckerPragerCap(args...) = DruckerPragerCap(promote(args...)...)
 
 # special plastic helper functions
-function ismode2_yield(v::DruckerPragerCap{_T}, τII::_T1, P::_T2)  where {_T,_T1,_T2}
+function ismode2_yield(v::DruckerPragerCap{_T}, τII::_T1, P::_T2) where {_T, _T1, _T2}
     py, τd, pd = v.py, v.τd, v.pd
-    return τII*(py - pd) >= τd*(py - P)
+    return τII * (py - pd) >= τd * (py - P)
 end
-function ismode2_flowpotential(v::DruckerPragerCap{_T}, τII::_T1, P::_T2)  where {_T,_T1,_T2}
+function ismode2_flowpotential(v::DruckerPragerCap{_T}, τII::_T1, P::_T2) where {_T, _T1, _T2}
     pq, τd, pd = v.pq, v.τd, v.pd
-    return τII*(pq - pd) >= τd*(pq - P)
+    return τII * (pq - pd) >= τd * (pq - P)
 end
 
 function compute_F(r::DruckerPragerCap, τII, P)
@@ -76,37 +76,36 @@ function compute_F(r::DruckerPragerCap, τII, P)
 
     if ismode2_yield(r, τII, P)
         # Mode 2
-        F = τII - k * (P)  - c # with fluid pressure (set to zero by default)
+        F = τII - k * (P) - c # with fluid pressure (set to zero by default)
     else
         # Mode 1
-        Rf   = sqrt(τII^2 + (P - py)^2)
-        
-        F    = a*(Rf - Ry)  
+        Rf = sqrt(τII^2 + (P - py)^2)
+
+        F = a * (Rf - Ry)
     end
 
     # Note that viscoplastic regularisation is taken into account in the residual function
-    return F #*(F>-1e-8) 
+    return F #*(F>-1e-8)
 end
 
-function compute_Q(r::DruckerPragerCap, τ, P) 
+function compute_Q(r::DruckerPragerCap, τ, P)
 
     # These parameters are required to compute the constant in the plastic flow
     # potential. Note that this constant does not matter apart when plotting,
-    # as we only need derivates of Q in general 
-    Rf      = r.pq - r.Pt
-    sd      = r.c + r.k*r.pd
-    normvRf = sqrt((r.pd - r.pq)^2 + sd^2)/Rf
-    pdf     = (r.pd - r.pq)/normvRf + r.pq
-    sdf     = sd/normvRf
+    # as we only need derivates of Q in general
+    Rf = r.pq - r.Pt
+    sd = r.c + r.k * r.pd
+    normvRf = sqrt((r.pd - r.pq)^2 + sd^2) / Rf
+    pdf = (r.pd - r.pq) / normvRf + r.pq
+    sdf = sd / normvRf
 
-    if ismode2_flowpotential(r, τ, P) 
-        cons =  sdf - r.kq*pdf 
-        Q    =  τ - r.kq * (P )  - cons
-    else 
-        cons =  Rf 
-        Rq   =  sqrt(τ^2 + (P - r.pq)^2)
-        Q    =  r.b*(Rq - cons)  
+    if ismode2_flowpotential(r, τ, P)
+        cons = sdf - r.kq * pdf
+        Q = τ - r.kq * (P) - cons
+    else
+        cons = Rf
+        Rq = sqrt(τ^2 + (P - r.pq)^2)
+        Q = r.b * (Rq - cons)
     end
     return Q
-end 
-
+end

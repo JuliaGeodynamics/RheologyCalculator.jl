@@ -1,5 +1,5 @@
 # This implements the mode1/mode2 plasticity model proposed in:
-# Popov, A. A., Berlie, N., and Kaus, B. J. P.: A dilatant visco-elasto-viscoplasticity model with globally continuous tensile cap: 
+# Popov, A. A., Berlie, N., and Kaus, B. J. P.: A dilatant visco-elasto-viscoplasticity model with globally continuous tensile cap:
 #   stable two-field mixed formulation, EGUsphere [preprint], https://doi.org/10.5194/egusphere-2025-2469, 2025.
 
 # Golchin ------------------------------------------------------
@@ -23,17 +23,17 @@ struct Golchin{T} <: AbstractCapPlasticity
     N::T        # "dilatancy"
     γ::T        # shape factor (0: ellipse)
     α::T        # shape factor (0: ellipse)
-    β::T        # asymmetry for compaction cap 
+    β::T        # asymmetry for compaction cap
     Pt::T       # Tensile pressure
     Pc::T       # Compaction pressure
     η_vp::T     # regularisation viscosity
 end
 
-@inline Af(p, pc, pt, γ) = (pc - pt)/(2*π) *(2*atan(γ*(pc+pt-2p)/(2*pc))+π)
-@inline Bf(p, pc, pt, M, C, α) = M*C*exp(α*(p - C)/(pc - pt))
-@inline Cf(pc, pt, γ) = (pc - pt)/π * atan(γ/2) + (pc + pt)/2  
+@inline Af(p, pc, pt, γ) = (pc - pt) / (2 * π) * (2 * atan(γ * (pc + pt - 2p) / (2 * pc)) + π)
+@inline Bf(p, pc, pt, M, C, α) = M * C * exp(α * (p - C) / (pc - pt))
+@inline Cf(pc, pt, γ) = (pc - pt) / π * atan(γ / 2) + (pc + pt) / 2
 
-function Golchin(; M=0.9, N=0.6, γ=0.5, α=0.5, β=0.0, Pt=-1e7, Pc=3e8, η_vp=0.0) 
+function Golchin(; M = 0.9, N = 0.6, γ = 0.5, α = 0.5, β = 0.0, Pt = -1.0e7, Pc = 3.0e8, η_vp = 0.0)
     return Golchin(M, N, γ, α, β, Pt, Pc, η_vp)
 end
 
@@ -42,27 +42,26 @@ end
 function compute_F(r::Golchin, τII, P)
     (; M, N, γ, α, β, Pt, Pc) = r
 
-    C = Cf(Pc, Pt, γ)           
+    C = Cf(Pc, Pt, γ)
     B = Bf(P, Pc, Pt, M, C, α)
-    A = Af(P, Pc, Pt, γ)    
-    F  = B^2 * (P - C + A) * (P - C - A) + A^2*(τII - β*P)^2
+    A = Af(P, Pc, Pt, γ)
+    F = B^2 * (P - C + A) * (P - C - A) + A^2 * (τII - β * P)^2
 
     # Note that viscoplastic regularisation is taken into account in the residual function
-    return F #*(F>-1e-8) 
+    return F #*(F>-1e-8)
 end
 
-function compute_Q(r::Golchin, τII, P) 
+function compute_Q(r::Golchin, τII, P)
 
     # These parameters are required to compute the constant in the plastic flow
     # potential. Note that this constant does not matter apart when plotting,
-    # as we only need derivates of Q in general 
+    # as we only need derivates of Q in general
     (; M, N, γ, α, β, Pt, Pc) = r
 
-    C = Cf(Pc, Pt, γ)         
+    C = Cf(Pc, Pt, γ)
     B = Bf(P, Pc, Pt, N, C, α)
-    A = Af(P, Pc, Pt, γ)      
-    Q  = B^2 * (P - C + A) * (P - C - A) + A^2*(τII - β*P)^2
-    
-    return Q
-end 
+    A = Af(P, Pc, Pt, γ)
+    Q = B^2 * (P - C + A) * (P - C - A) + A^2 * (τII - β * P)^2
 
+    return Q
+end

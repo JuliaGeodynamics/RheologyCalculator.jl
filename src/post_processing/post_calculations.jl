@@ -261,20 +261,26 @@ so that `τ0[el_idx_start + k]` is the k-th elastic backstress owned by this bra
 @generated function _branch_elastic_info(leafs::NTuple{N, AbstractRheology}, subs::NTuple{Ns, Any}, τ0, args, el_idx_start) where {N, Ns}
     elastic_leaf_pos, sub_elastic_pos = _elastic_source_positions(leafs, subs)
 
-    stmts   = Any[:(info = ())]
+    stmts = Any[:(info = ())]
     el_count = 0   # running count of elastic elements consumed → τ0 index
 
     # --- Direct elastic leafs of the ParallelModel (η_star = 1) ---
     # Each direct spring's backstress enters the weighted sum undiluted.
     for pos in elastic_leaf_pos
         el_count += 1
-        push!(stmts, quote
-            τ0_II = second_invariant_value(τ0[el_idx_start + $el_count])
-            # η = G*dt for this elastic leaf; η_eff_M / η_el unused (direct = true).
-            info = (info..., (η_star = 1.0, τ0_II = τ0_II, direct = true,
-                              η = compute_viscosity(leafs[$pos], args),
-                              η_eff_M = 0.0, η_el = 1.0))
-        end)
+        push!(
+            stmts, quote
+                τ0_II = second_invariant_value(τ0[el_idx_start + $el_count])
+                # η = G*dt for this elastic leaf; η_eff_M / η_el unused (direct = true).
+                info = (
+                    info..., (
+                        η_star = 1.0, τ0_II = τ0_II, direct = true,
+                        η = compute_viscosity(leafs[$pos], args),
+                        η_eff_M = 0.0, η_el = 1.0,
+                    ),
+                )
+            end
+        )
     end
 
     # --- Maxwell SeriesModel sub-branches (η_star = η_eff_M / η_el) ---
@@ -284,14 +290,20 @@ so that `τ0[el_idx_start + k]` is the k-th elastic backstress owned by this bra
     for j in 1:Ns
         for _ in sub_elastic_pos[j]
             el_count += 1
-            push!(stmts, quote
-                τ0_II   = second_invariant_value(τ0[el_idx_start + $el_count])
-                η_eff_M = _η_eff_maxwell(subs[$j].leafs, args)   # 1/(1/η_v + 1/(G*dt))
-                η_el    = _η_eff_elastic(subs[$j].leafs, args)   # G * dt
-                # η = 0.0 unused for sub-branch recovery (direct = false).
-                info = (info..., (η_star = η_eff_M / η_el, τ0_II = τ0_II, direct = false,
-                                  η = 0.0, η_eff_M = η_eff_M, η_el = η_el))
-            end)
+            push!(
+                stmts, quote
+                    τ0_II = second_invariant_value(τ0[el_idx_start + $el_count])
+                    η_eff_M = _η_eff_maxwell(subs[$j].leafs, args)   # 1/(1/η_v + 1/(G*dt))
+                    η_el = _η_eff_elastic(subs[$j].leafs, args)   # G * dt
+                    # η = 0.0 unused for sub-branch recovery (direct = false).
+                    info = (
+                        info..., (
+                            η_star = η_eff_M / η_el, τ0_II = τ0_II, direct = false,
+                            η = 0.0, η_eff_M = η_eff_M, η_el = η_el,
+                        ),
+                    )
+                end
+            )
         end
     end
 

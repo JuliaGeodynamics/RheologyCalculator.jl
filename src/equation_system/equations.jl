@@ -225,9 +225,9 @@ end
 # Left-to-right, so each local equation takes the next number from iself_ref.
 @inline add_local_equations(iparent, ilocal_childs, iself_ref, fns_own_local::F1, fns_own_global::F2, leafs, ::Val{N}, el_number) where {N, F1, F2} =
     maptuple(fns_own_local) do fn_local
-        iself_ref[] += 1
-        add_local_equation(iparent, ilocal_childs, iself_ref[], fn_local, fns_own_global, leafs, 0, Val(false), el_number)
-    end
+    iself_ref[] += 1
+    add_local_equation(iparent, ilocal_childs, iself_ref[], fn_local, fns_own_global, leafs, 0, Val(false), el_number)
+end
 
 add_local_equations(::Any, ::Any, ::Any, ::F, ::F, ::Any, ::Any, ::Any) where {F} = ()
 

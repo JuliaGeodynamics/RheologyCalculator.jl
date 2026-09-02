@@ -50,7 +50,7 @@ effective_strain_rate_correction(c::SeriesModel, ε::NTuple, τ0::NTuple, others
 
 # At least one elastic element exists: delegate to the (leafs, branches) decomposition.
 function effective_strain_rate_correction(::Val{true}, c::SeriesModel, ε::NTuple, τ0::NTuple, others)
-    effective_strain_rate_correction(c.leafs, c.branches, ε, τ0, others)
+    return effective_strain_rate_correction(c.leafs, c.branches, ε, τ0, others)
 end
 
 # No elastic element anywhere in the composite: return a scalar zero of ε's element
@@ -58,7 +58,7 @@ end
 # ε is one entry per tensor component and τ0 one entry per elastic element, so their
 # lengths are independent: a purely viscous composite has τ0 = () alongside a
 # 3-component ε. Nothing here reads τ0, so it carries no annotation beyond `Tuple`.
-@inline effective_strain_rate_correction(::Val{false}, ::SeriesModel, ::NTuple{N,T}, ::Tuple, ::Any) where {N,T} = zero(T)
+@inline effective_strain_rate_correction(::Val{false}, ::SeriesModel, ::NTuple{N, T}, ::Tuple, ::Any) where {N, T} = zero(T)
 
 # Scalar / non-NTuple ε overload used when ε is already a scalar invariant
 # (e.g. called recursively from inside the branch correction path).
@@ -69,9 +69,9 @@ end
 #   2. Elastic elements inside ParallelModel branches (KV / generalized Maxwell).
 # The τ0 tuple is ordered: leafs first (indexed 1 … n_el_leafs), then branches
 # (indexed n_el_leafs+1 … end), matching global_eltype_numbering.
-@inline function effective_strain_rate_correction(leafs::NTuple{N,Any}, branches::NTuple{Nb,Any}, ε, τ0::NTuple{Nτ}, others) where {N,Nb,Nτ}
+@inline function effective_strain_rate_correction(leafs::NTuple{N, Any}, branches::NTuple{Nb, Any}, ε, τ0::NTuple{Nτ}, others) where {N, Nb, Nτ}
     n_el_leafs = count_elastic(leafs)
-    cor_leafs  = if iszero(n_el_leafs)
+    cor_leafs = if iszero(n_el_leafs)
         ε .* 0
     else
         effective_strain_rate_correction(leafs, (), ε, τ0, others)
@@ -86,8 +86,8 @@ end
 # non-elastic leafs leave i unchanged and contribute nothing (the if-guard
 # prevents any τ0 access for them).  Because i is updated by a @nexprs macro
 # (resolved at compile time to N literal steps), the loop has no overhead.
-@generated function effective_strain_rate_correction(leafs::NTuple{N,Any}, ::Tuple{}, ε, τ0::NTuple{Nτ}, others) where {N,Nτ}
-    quote
+@generated function effective_strain_rate_correction(leafs::NTuple{N, Any}, ::Tuple{}, ε, τ0::NTuple{Nτ}, others) where {N, Nτ}
+    return quote
         @inline
         i = 0
         ε_elastic_cor = ε .* 0
@@ -122,7 +122,7 @@ end
 # can use a literal τ0 index (`τ0[i]`) without heap allocation.
 @inline update_correction_index(c::AbstractRheology, I) = update_correction_index(iselastic(c), I)
 @inline update_correction_index(::Val{false}, I) = I       # non-elastic: skip
-@inline update_correction_index(::Val{true},  I) = I + 1  # elastic: advance τ0 cursor
+@inline update_correction_index(::Val{true}, I) = I + 1  # elastic: advance τ0 cursor
 
 # Public wrapper: returns a Val so callers can dispatch on the result without
 # paying for a runtime branch (the Val is always resolved at compile time when
@@ -134,8 +134,8 @@ Return `Val(true)` when `r` is an elastic rheology or a composite containing an
 elastic rheology, otherwise `Val(false)`.
 """
 @inline iselastic(r::AbstractCompositeModel) = Val(_iselastic(r))
-@inline iselastic(::AbstractElasticity)      = Val(true)
-@inline iselastic(::AbstractRheology)        = Val(false)
+@inline iselastic(::AbstractElasticity) = Val(true)
+@inline iselastic(::AbstractRheology) = Val(false)
 
 # Recursive Bool-valued predicate used by the Val-returning wrappers above.
 # Checks leafs first, then branches (short-circuits on first true).
@@ -149,7 +149,7 @@ elastic rheology, otherwise `Val(false)`.
 
 @inline _iselastic(::Tuple{}) = false
 @inline _iselastic(::AbstractElasticity) = true
-@inline _iselastic(::AbstractRheology)   = false
+@inline _iselastic(::AbstractRheology) = false
 
 # -----------------------------------------------------------------------
 # Generalized Maxwell / Kelvin-Voigt strain-rate correction for branches
@@ -188,10 +188,10 @@ Return, at compile time, the number of `AbstractElasticity` elements in the
 leaf tuple `r`. Used to compute τ0 index offsets before processing the
 `ParallelModel` branches of a `SeriesModel`.
 """
-@generated function count_elastic(r::NTuple{N,AbstractRheology}) where N
+@generated function count_elastic(r::NTuple{N, AbstractRheology}) where {N}
     # Count by inspecting the concrete element types at specialisation time.
     n = count(T -> T <: AbstractElasticity, r.parameters)
-    :($n)
+    return :($n)
 end
 count_elastic(::Tuple{}) = 0
 
@@ -214,8 +214,8 @@ end
 # type contains any `AbstractElasticity` element anywhere in its subtree.
 _type_has_elastic(::Type{<:AbstractElasticity}) = true
 _type_has_elastic(::Type{<:AbstractRheology}) = false
-function _type_has_elastic(::Type{<:Union{SeriesModel{L,B},ParallelModel{L,B}}}) where {L,B}
-    any(_type_has_elastic, L.parameters) || any(_type_has_elastic, B.parameters)
+function _type_has_elastic(::Type{<:Union{SeriesModel{L, B}, ParallelModel{L, B}}}) where {L, B}
+    return any(_type_has_elastic, L.parameters) || any(_type_has_elastic, B.parameters)
 end
 
 """
@@ -232,16 +232,16 @@ elastic element, rather than silently under-counting or omitting its
 backstress contribution (that element's `iselastic` still returns `true`, so
 the correction would otherwise be silently incomplete instead of zero/absent).
 """
-function _assert_kv_nesting_supported(::Type{ParallelModel{L,B}}) where {L,B}
+function _assert_kv_nesting_supported(::Type{ParallelModel{L, B}}) where {L, B}
     for S in B.parameters
         sub_branches = S.parameters[2]  # SeriesModel sub-branch's own `branches` field type
         for nested in sub_branches.parameters
             _type_has_elastic(nested) && error(
                 "Generalized Maxwell / Kelvin-Voigt correction: an elastic element is nested " *
-                "inside a ParallelModel more than one level deep inside a branch ($nested). " *
-                "This is not supported by the current _η_KV / _weighted_backstress formulas, " *
-                "which are only derived for a branch whose SeriesModel sub-branches contain " *
-                "plain rheology leafs (see docs/derivations/tensor_reduction.typ)."
+                    "inside a ParallelModel more than one level deep inside a branch ($nested). " *
+                    "This is not supported by the current _η_KV / _weighted_backstress formulas, " *
+                    "which are only derived for a branch whose SeriesModel sub-branches contain " *
+                    "plain rheology leafs (see docs/derivations/tensor_reduction.typ)."
             )
         end
     end
@@ -283,8 +283,8 @@ The τ0 index for each branch is pre-computed at specialisation time (via
 allocation-free, branch-free runtime code.
 """
 @generated function _kv_corrections(
-    branches::NTuple{Nb,Any}, ε, τ0, others, offset
-) where Nb
+        branches::NTuple{Nb, Any}, ε, τ0, others, offset
+    ) where {Nb}
     offsets = _branch_tau0_offsets(branches)
 
     # Emit one _kv_branch_correction call per branch, each with its τ0 start
@@ -321,7 +321,7 @@ is this branch's first backstress entry).
     iselastic(branch) == Val(false) && return ε .* 0
     # Reduce ε to its scalar second invariant for viscosity queries.
     # All viscosity functions operate on the invariant, not the full tensor.
-    εII  = second_invariant_value(ε)
+    εII = second_invariant_value(ε)
     args = merge((; ε = εII), others)
     # η_KV: arithmetic sum of effective viscosities of all sub-elements
     # (viscous leafs + Maxwell sub-branches).  This is the denominator of (*).
@@ -407,13 +407,13 @@ sub-branch leaf tuple (= `G * dt`).  The elastic element is identified at
 Returns `0.0` if no elastic element is found (should not happen for a Maxwell
 branch, but is safe for non-elastic tuples).
 """
-@generated function _η_eff_elastic(leafs::T, args) where T
+@generated function _η_eff_elastic(leafs::T, args) where {T}
     # Resolve the elastic element's position at specialisation time by scanning
     # the concrete leaf types. The emitted code is a single compute_viscosity
     # call with a literal index — no runtime search.
     idx = findfirst(Ti -> Ti <: AbstractElasticity, collect(T.parameters))
     idx === nothing && return :(0.0)  # safe fallback; should not occur for a Maxwell branch
-    :(compute_viscosity(leafs[$idx], args))
+    return :(compute_viscosity(leafs[$idx], args))
 end
 
 # Compile-time positions of the elastic sources inside a `ParallelModel` branch:
@@ -536,7 +536,7 @@ function _implicit_elastic_correction(c::SeriesModel, eqs, x::SVector{N, T}, oth
     # τ0 may be absent when compute_residual is called directly without elastic
     # history (e.g. test code or initialisation).  No correction in that case.
     hasfield(typeof(others), :τ0) || return zero(T)
-    τ0         = others.τ0
+    τ0 = others.τ0
     n_el_leafs = count_elastic(c.leafs)
     # Direct leaf (Maxwell) corrections are pre-applied in solve() with full tensor
     # arithmetic.  Only the x-dependent branch corrections belong here.
@@ -550,13 +550,17 @@ end
     elastic_positions, _ = _elastic_source_positions(leafs, Tuple{})
     stmts = Any[:(cor = 0.0)]
     for (count, pos) in enumerate(elastic_positions)
-        push!(stmts, quote
-            η    = compute_viscosity(leafs[$pos], others)
-            cor += second_invariant_value(τ0[$count]) / (2 * η)
-        end)
+        push!(
+            stmts, quote
+                η = compute_viscosity(leafs[$pos], others)
+                cor += second_invariant_value(τ0[$count]) / (2 * η)
+            end
+        )
     end
     push!(stmts, :(cor))
-    return quote @inline; $(stmts...) end
+    return quote
+        @inline; $(stmts...)
+    end
 end
 
 # Return the position within `positions` (in order) of the i-th entry whose
@@ -595,8 +599,8 @@ end
 # are baked in as literals, and the final `.parent` comparisons run once per
 # branch at call time via `_nth_true_position` above.
 @generated function _kv_implicit_corrections_scalar(
-    branches::NTuple{Nb, Any}, eqs::NTuple{N, Any}, x, τ0, others, offset
-) where {Nb, N}
+        branches::NTuple{Nb, Any}, eqs::NTuple{N, Any}, x, τ0, others, offset
+    ) where {Nb, N}
     stress_positions = Tuple(k for k in 1:N if eqs.parameters[k].parameters[3] === typeof(compute_stress))
     mask_expr = Expr(:tuple, (:(eqs[$k].parent == outer_self) for k in stress_positions)...)
 
@@ -604,15 +608,19 @@ end
 
     stmts = Any[:(cor = 0.0), :(outer_self = eqs[1].self), :(mask = $mask_expr)]
     for i in 1:Nb
-        push!(stmts, quote
-            bpos = _nth_true_position(mask, $stress_positions, $i)
-            cor += _kv_implicit_branch_correction_scalar(
-                branches[$i], x[bpos], τ0, others, offset + $(offsets[i])
-            )
-        end)
+        push!(
+            stmts, quote
+                bpos = _nth_true_position(mask, $stress_positions, $i)
+                cor += _kv_implicit_branch_correction_scalar(
+                    branches[$i], x[bpos], τ0, others, offset + $(offsets[i])
+                )
+            end
+        )
     end
     push!(stmts, :(cor))
-    return quote @inline; $(stmts...) end
+    return quote
+        @inline; $(stmts...)
+    end
 end
 
 _kv_implicit_corrections_scalar(::Tuple{}, ::NTuple{N, Any}, ::Any, ::Any, ::Any, ::Any) where {N} = 0.0
@@ -624,7 +632,6 @@ _kv_implicit_corrections_scalar(::Tuple{}, ::NTuple{N, Any}, ::Any, ::Any, ::Any
     iselastic(branch) == Val(false) && return zero(ε_branch)
     args = merge((; ε = ε_branch), others)
     η_KV = _checked_η_KV(branch.leafs, branch.branches, args)
-    ws   = _weighted_backstress_scalar(branch.leafs, branch.branches, τ0, args, el_idx_start)
+    ws = _weighted_backstress_scalar(branch.leafs, branch.branches, τ0, args, el_idx_start)
     return ws / (2 * η_KV)
 end
-

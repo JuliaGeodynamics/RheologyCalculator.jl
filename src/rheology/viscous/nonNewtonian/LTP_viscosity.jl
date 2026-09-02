@@ -18,9 +18,9 @@ end
 LTPViscosity(args...) = LTPViscosity(promote(args...)...)
 @inline series_state_functions(::LTPViscosity) = (compute_strain_rate,)
 
-@inline compute_strain_rate(r::LTPViscosity; τ = 0e0, kwargs...) = max(r.ε0 * sinh(r.Q * (τ - r.σb) / r.σr), 0.0)
+@inline compute_strain_rate(r::LTPViscosity; τ = 0.0e0, kwargs...) = max(r.ε0 * sinh(r.Q * (τ - r.σb) / r.σr), 0.0)
 # @inline compute_strain_rate(r::LTPViscosity; τ = 0, kwargs...) = r.ε0 * sinh(r.Q * (τ - r.σb) / r.σr)
-@inline compute_stress(r::LTPViscosity; ε = 0e0, kwargs...) = r.σr / r.Q * asinh(ε / r.ε0) + r.σb
+@inline compute_stress(r::LTPViscosity; ε = 0.0e0, kwargs...) = r.σr / r.Q * asinh(ε / r.ε0) + r.σb
 
-@inline compute_viscosity(r::LTPViscosity; ε = 0e0, kwargs...)   = compute_stress(r; ε = ε, kwargs...)/(2*ε)
-@inline compute_viscosity_parallel(r::LTPViscosity; τ = 0e0, kwargs...) = τ / (2 * compute_strain_rate(r; τ = τ, kwargs...))
+@inline compute_viscosity(r::LTPViscosity; ε = 0.0e0, kwargs...) = compute_stress(r; ε = ε, kwargs...) / (2 * ε)
+@inline compute_viscosity_parallel(r::LTPViscosity; τ = 0.0e0, kwargs...) = τ / (2 * compute_strain_rate(r; τ = τ, kwargs...))

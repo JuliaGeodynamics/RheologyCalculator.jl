@@ -62,8 +62,10 @@ end
     # Stopping short of convergence is also an error, with a different message.
     # Unreachable tolerances force the iteration to run out at `itermax`.
     err2 = try
-        solve(c, initial_guess_x(c, (; ε = εII, θ = 0.0), (; τ = 0.0), (;)), vars, (;);
-            xnorm0 = xnorm, atol = 0.0, rtol = 0.0, itermax = 5)
+        solve(
+            c, initial_guess_x(c, (; ε = εII, θ = 0.0), (; τ = 0.0), (;)), vars, (;);
+            xnorm0 = xnorm, atol = 0.0, rtol = 0.0, itermax = 5
+        )
     catch e
         e
     end

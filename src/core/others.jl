@@ -35,5 +35,5 @@ _isvolumetric(c::AbstractCompositeModel) = _isvolumetric(c.leafs, c.branches)
 # can override those functions in the SparseConnectivityTracer extension. The guards only
 # ever protected the value against Inf/NaN. The dependency pattern is the
 # same with or without them. Float64 behaviour is unchanged.
-@inline safe_inv(v)      = iszero(v) ? zero(v) : inv(v)
-@inline safe_inv_one(v)  = iszero(v) ? one(v)  : inv(v)
+@inline safe_inv(v) = iszero(v) ? zero(v) : inv(v)
+@inline safe_inv_one(v) = iszero(v) ? one(v) : inv(v)

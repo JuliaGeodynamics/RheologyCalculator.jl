@@ -29,11 +29,11 @@ struct Hyperbolic{T} <: AbstractCapPlasticity
     # computational parameters (precomputed, to speed up later calculations)
     sinϕ::T     # Friction angle
     cosϕ::T     # Friction angle
-    sinΨ::T     # Dilation angle 
+    sinΨ::T     # Dilation angle
     cosΨ::T     # Dilation angle
 end
 
-function Hyperbolic(; C=10e6, ϕ=30.0, ψ=0.0, η_vp=1e20, Pt=-1e5) 
+function Hyperbolic(; C = 10.0e6, ϕ = 30.0, ψ = 0.0, η_vp = 1.0e20, Pt = -1.0e5)
     sinϕ = sind(ϕ) # Friction angle
     cosϕ = cosd(ϕ) # Friction angle
     sinΨ = sind(ψ) # Dilation angle
@@ -46,21 +46,20 @@ end
 function compute_F(r::Hyperbolic, τII, P)
     cosϕ, sinϕ, C, Pt = r.cosϕ, r.sinϕ, r.C, r.Pt
 
-    F  = sqrt(τII^2 + (C * cosϕ + Pt*sinϕ)^2) - (P * sinϕ + C * cosϕ)
+    F = sqrt(τII^2 + (C * cosϕ + Pt * sinϕ)^2) - (P * sinϕ + C * cosϕ)
 
     # Note that viscoplastic regularisation is taken into account in the residual function
-    return F #*(F>-1e-8) 
+    return F #*(F>-1e-8)
 end
 
-function compute_Q(r::Hyperbolic, τII, P) 
+function compute_Q(r::Hyperbolic, τII, P)
 
     # These parameters are required to compute the constant in the plastic flow
     # potential. Note that this constant does not matter apart when plotting,
-    # as we only need derivates of Q in general 
+    # as we only need derivates of Q in general
     cosΨ, sinΨ, C, Pt = r.cosΨ, r.sinΨ, r.C, r.Pt
 
-    Q  =  sqrt(τII^2 + (C * cosΨ + Pt*sinΨ)^2) - (P * sinΨ + C * cosΨ)
+    Q = sqrt(τII^2 + (C * cosΨ + Pt * sinΨ)^2) - (P * sinΨ + C * cosΨ)
 
     return Q
-end 
-
+end
