@@ -16,5 +16,3 @@ end
 @inline compute_stress(r::IncompressibleElasticity; ε = 0, τ0 = 0, dt = 0, kwargs...) = 2 * r.G * dt * ε
 
 @inline compute_viscosity(r::IncompressibleElasticity; dt = 0, kwargs...)          = r.G * dt
-@inline compute_viscosity_series(r::IncompressibleElasticity; dt = 0, kwargs...)   = r.G * dt
-@inline compute_viscosity_parallel(r::IncompressibleElasticity; dt = 0, kwargs...) = r.G * dt

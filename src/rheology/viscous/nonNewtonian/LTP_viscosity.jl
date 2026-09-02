@@ -23,5 +23,4 @@ LTPViscosity(args...) = LTPViscosity(promote(args...)...)
 @inline compute_stress(r::LTPViscosity; ε = 0e0, kwargs...) = r.σr / r.Q * asinh(ε / r.ε0) + r.σb
 
 @inline compute_viscosity(r::LTPViscosity; ε = 0e0, kwargs...)   = compute_stress(r; ε = ε, kwargs...)/(2*ε)
-@inline compute_viscosity_series(r::LTPViscosity; ε = 0e0, kwargs...)   = compute_stress(r; ε = ε, kwargs...)/(2*ε)
 @inline compute_viscosity_parallel(r::LTPViscosity; τ = 0e0, kwargs...) = τ / (2 * compute_strain_rate(r; τ = τ, kwargs...))

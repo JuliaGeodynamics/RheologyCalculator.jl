@@ -21,5 +21,3 @@ end
 @inline compute_pressure(r::Elasticity; θ = 0, P0 = 0, dt = 0, kwargs...) = P0 - r.K * dt * θ
 
 @inline compute_viscosity(r::Elasticity; dt = 0, kwargs...)   = r.G * dt
-@inline compute_viscosity_series(r::Elasticity; dt = 0, kwargs...)   = r.G * dt
-@inline compute_viscosity_parallel(r::Elasticity; dt = 0, kwargs...) = r.G * dt

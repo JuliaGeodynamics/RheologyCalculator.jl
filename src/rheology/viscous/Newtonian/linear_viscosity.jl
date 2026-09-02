@@ -15,5 +15,3 @@ end
 @inline compute_strain_rate(r::LinearViscosity; τ = 0, kwargs...) = τ / (2 * r.η)
 @inline compute_stress(r::LinearViscosity; ε = 0, kwargs...) = ε * 2 * r.η
 @inline compute_viscosity(r::LinearViscosity; kwargs...) = r.η
-@inline compute_viscosity_series(r::LinearViscosity; kwargs...) = r.η
-@inline compute_viscosity_parallel(r::LinearViscosity; kwargs...) = r.η
