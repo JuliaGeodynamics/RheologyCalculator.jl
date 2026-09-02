@@ -58,7 +58,9 @@ a suite that allocates is not.
 - **Done.** Phase 2. Every item deleted; `src/` is down from 4265 to 4011
   lines. §1.4 is settled with it — both functions that would have thrown are
   gone.
-- **Pending.** Phases 3–8.
+- **Done.** Phase 3, including a docs build that had been failing since the
+  `NonConvergenceError` docstring was added.
+- **Pending.** Phases 4–8.
 - **Done.** `CompositeModel` removed (export, struct, and Documenter entry) — see §9.
 - **Decided.** The tensor helpers become public API — see §4.4.
 
@@ -501,7 +503,26 @@ but every subsequent `r` in the function means the radius, not the element. Rena
 the argument to `p` (or the field access to `p.r`) while §5.1 is touching these
 files anyway.
 
-**Risk:** none (comments, docs, and a local rename).
+**Risk:** none (comments, docs, and a local rename). **Done.**
+
+### 3.6 Findings from carrying out this phase
+
+- `docs/derivations/tensor_reduction.typ` is the restored derivation: it was
+  removed in d7613d3 and recovered from 07a9513. `GenMaxwell.typ` and
+  `eff_strain.jl` went in the same commit and are still only in history; no
+  comment cites them.
+- §3.4 was not what broke the documentation build. A duplicated `@docs` entry
+  builds fine; what failed the vitepress render was `NonConvergenceError`
+  having a docstring in the module and no entry in any `@docs` block. Verified
+  by toggling each change independently. The build has been failing since that
+  docstring was introduced, which is the concrete cost of the `warnonly`
+  setting §8.2 addresses.
+- §3.3 needed no comment at all. The two four-argument tuple reductions it
+  describes have no caller at that arity anywhere in the repository, so they
+  are deleted rather than re-documented, and the harmonic-versus-arithmetic
+  question does not arise. `_η_KV` (arithmetic, parallel) and
+  `_η_eff_maxwell` (harmonic, series) are the live paths and are each correct
+  for their composition.
 
 ---
 
