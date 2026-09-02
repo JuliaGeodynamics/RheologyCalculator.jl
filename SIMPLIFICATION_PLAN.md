@@ -62,7 +62,8 @@ a suite that allocates is not.
   `NonConvergenceError` docstring was added.
 - **Done.** Phase 4. `src/` is down to 3915 lines and the tensor helpers are
   public API.
-- **Pending.** Phases 5–8.
+- **Done.** Phase 5. `src/` is at 3830 lines; `@generated` is down from 63 to 55.
+- **Pending.** Phases 6–8.
 - **Done.** `CompositeModel` removed (export, struct, and Documenter entry) — see §9.
 - **Decided.** The tensor helpers become public API — see §4.4.
 
@@ -784,7 +785,15 @@ Generate both from a `for` loop over the two names.
 
 **Risk:** moderate. All of these are on inference-critical paths. Convert one at
 a time; run the per-function `@inferred`/`@allocated` checks after each.
-**Reduction:** ~120 lines, and 6–8 fewer `@generated` functions.
+**Reduction:** 62 lines net and 8 fewer `@generated`. **Done.**
+
+§5.2 turned out to cover five identical `@generated` mappers, not four:
+`series_state_functions` over a tuple has the same body as the four
+`local_`/`global_` filters. All five now call one `_flatmap_state_functions`,
+which also retires the five `@inbounds` §7.3 had scheduled here.
+
+§5.7 needed no work — those two functions had no caller and were deleted in
+phase 3 (§3.3).
 
 ---
 
