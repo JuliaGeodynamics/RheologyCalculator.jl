@@ -33,6 +33,17 @@ struct SeriesModel{L, B} <: AbstractCompositeModel # not 100% about the subtypin
 end
 
 
+# Apply `f` to each element of a tuple and splice the results together. The
+# unrolled form keeps the element types inferable, which the residual assembly
+# depends on: `f` is a compile-time constant at every call site below.
+@generated function _flatmap_state_functions(f::F, funs::NTuple{N, Any}) where {F, N}
+    return quote
+        @inline
+        t = Base.@ntuple $N i -> f(funs[i])
+        Base.IteratorsMD.flatten(t)
+    end
+end
+
 for fun in (:compute_strain_rate, :compute_volumetric_strain_rate)
     @eval @inline _local_series_state_functions(::typeof($fun)) = ()
     @eval @inline _global_series_state_functions(fn::typeof($fun)) = (fn,)
@@ -40,23 +51,11 @@ end
 
 @inline _local_series_state_functions(fn::F) where {F <: Function} = (fn,)
 
-@generated function local_series_state_functions(funs::NTuple{N, Any}) where {N}
-    return quote
-        @inline
-        f = Base.@ntuple $N i -> _local_series_state_functions(@inbounds(funs[i]))
-        Base.IteratorsMD.flatten(f)
-    end
-end
+@inline local_series_state_functions(funs::NTuple{N, Any}) where {N} = _flatmap_state_functions(_local_series_state_functions, funs)
 
 @inline _global_series_state_functions(::F) where {F <: Function} = ()
 
-@generated function global_series_state_functions(funs::NTuple{N, Any}) where {N}
-    return quote
-        @inline
-        f = Base.@ntuple $N i -> _global_series_state_functions(@inbounds(funs[i]))
-        Base.IteratorsMD.flatten(f)
-    end
-end
+@inline global_series_state_functions(funs::NTuple{N, Any}) where {N} = _flatmap_state_functions(_global_series_state_functions, funs)
 
 """
     ParallelModel(elements...)
@@ -80,29 +79,25 @@ struct ParallelModel{L, B} <: AbstractCompositeModel # not 100% about the subtyp
     end
 end
 
-@inline series_leafs(c::NTuple{N, AbstractRheology}) where {N} = c
-@inline series_leafs(c::AbstractRheology) = (c,)
-@inline series_leafs(::ParallelModel) = ()
-@inline series_leafs(::Tuple{}) = ()
-@inline series_leafs(c::NTuple{N, Any}) where {N} = series_leafs(first(c))..., series_leafs(Base.tail(c))...
+# Split a composite's constructor arguments into direct rheology elements
+# (`leafs`) and nested composites (`branches`). What counts as a branch is the
+# opposite composition: a SeriesModel branches on ParallelModel and vice versa.
+for (prefix, Branch) in ((:series, :ParallelModel), (:parallel, :SeriesModel))
+    leafs, branches = Symbol(prefix, :_leafs), Symbol(prefix, :_branches)
+    @eval begin
+        @inline $leafs(c::NTuple{N, AbstractRheology}) where {N} = c
+        @inline $leafs(c::AbstractRheology) = (c,)
+        @inline $leafs(::$Branch) = ()
+        @inline $leafs(::Tuple{}) = ()
+        @inline $leafs(c::NTuple{N, Any}) where {N} = $leafs(first(c))..., $leafs(Base.tail(c))...
 
-@inline parallel_leafs(c::NTuple{N, AbstractRheology}) where {N} = c
-@inline parallel_leafs(c::AbstractRheology) = (c,)
-@inline parallel_leafs(::SeriesModel) = ()
-@inline parallel_leafs(::Tuple{}) = ()
-@inline parallel_leafs(c::NTuple{N, Any}) where {N} = parallel_leafs(first(c))..., parallel_leafs(Base.tail(c))...
-
-@inline series_branches(::NTuple{N, AbstractRheology}) where {N} = ()
-@inline series_branches(::AbstractRheology) = ()
-@inline series_branches(c::ParallelModel) = (c,)
-@inline series_branches(::Tuple{}) = ()
-@inline series_branches(c::NTuple{N, Any}) where {N} = series_branches(first(c))..., series_branches(Base.tail(c))...
-
-@inline parallel_branches(::NTuple{N, AbstractRheology}) where {N} = ()
-@inline parallel_branches(::AbstractRheology) = ()
-@inline parallel_branches(c::SeriesModel) = (c,)
-@inline parallel_branches(::Tuple{}) = ()
-@inline parallel_branches(c::NTuple{N, Any}) where {N} = parallel_branches(first(c))..., parallel_branches(Base.tail(c))...
+        @inline $branches(::NTuple{N, AbstractRheology}) where {N} = ()
+        @inline $branches(::AbstractRheology) = ()
+        @inline $branches(c::$Branch) = (c,)
+        @inline $branches(::Tuple{}) = ()
+        @inline $branches(c::NTuple{N, Any}) where {N} = $branches(first(c))..., $branches(Base.tail(c))...
+    end
+end
 
 Base.size(c::Union{SeriesModel, ParallelModel}) = length(c.leafs), length(c.branches)
 
@@ -112,32 +107,14 @@ for fun in (:compute_stress, :compute_pressure)
 end
 @inline _local_parallel_state_functions(fn::F) where {F <: Function} = (fn,)
 
-@generated function local_parallel_state_functions(funs::NTuple{N, Any}) where {N}
-    return quote
-        @inline
-        f = Base.@ntuple $N i -> _local_parallel_state_functions(@inbounds(funs[i]))
-        Base.IteratorsMD.flatten(f)
-    end
-end
+@inline local_parallel_state_functions(funs::NTuple{N, Any}) where {N} = _flatmap_state_functions(_local_parallel_state_functions, funs)
 
 @inline _global_parallel_state_functions(::F) where {F <: Function} = ()
 
-@generated function global_parallel_state_functions(funs::NTuple{N, Any}) where {N}
-    return quote
-        @inline
-        f = Base.@ntuple $N i -> _global_parallel_state_functions(@inbounds(funs[i]))
-        Base.IteratorsMD.flatten(f)
-    end
-end
+@inline global_parallel_state_functions(funs::NTuple{N, Any}) where {N} = _flatmap_state_functions(_global_parallel_state_functions, funs)
 
 # @inline series_state_functions(c::NTuple{N, ParallelModel}) where {N} = series_state_functions(first(c))..., series_state_functions(Base.tail(c))...
-@generated function series_state_functions(funs::NTuple{N, Any}) where {N}
-    return quote
-        @inline
-        f = Base.@ntuple $N i -> series_state_functions(@inbounds(funs[i]))
-        Base.IteratorsMD.flatten(f)
-    end
-end
+@inline series_state_functions(funs::NTuple{N, Any}) where {N} = _flatmap_state_functions(series_state_functions, funs)
 @inline series_state_functions(::Tuple{}) = (compute_strain_rate,)
 
 # @inline series_state_functions(c::ParallelModel)                      = flatten_repeated_functions(parallel_state_functions(c.leafs))
