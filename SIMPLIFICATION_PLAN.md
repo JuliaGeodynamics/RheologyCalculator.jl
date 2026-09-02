@@ -63,7 +63,9 @@ a suite that allocates is not.
 - **Done.** Phase 4. `src/` is down to 3915 lines and the tensor helpers are
   public API.
 - **Done.** Phase 5. `src/` is at 3830 lines; `@generated` is down from 63 to 55.
-- **Pending.** Phases 6–8.
+- **Done.** Phase 6, in full rather than partially: `@generated` is down from 63
+  to 16 and `src/` to 3687 lines.
+- **Pending.** Phases 7–8.
 - **Done.** `CompositeModel` removed (export, struct, and Documenter entry) — see §9.
 - **Decided.** The tensor helpers become public API — see §4.4.
 
@@ -899,8 +901,26 @@ number of sites converted, so a partial phase 6 is still a win.
 
 **Risk:** moderate-to-high, fully mitigated by the phase-0 fixtures and the
 per-function acceptance criteria. This phase is the reason phase 0 exists.
-**Reduction:** ~150 lines, and a step change in how much Julia arcana a
-contributor needs to read the equation system.
+**Reduction:** 143 lines; 63 `@generated` down to 16. **Done.**
+
+### 6.1 Findings from carrying out this phase
+
+- The stated reason for preferring hand-written recursion over
+  `ntuple(f, Val(N))` does not hold on Julia 1.12: measured on a 16-element
+  heterogeneous tuple, `ntuple(f, Val(16))` is allocation-free and JET-clean.
+  The helpers in `core/tuple_utils.jl` are still the better fit — they avoid
+  index arithmetic and give the two-tuple lockstep walk that many sites need —
+  but not for the reason given above.
+- Two conversions were reverted on measurement, and both `@generated` bodies
+  now carry a comment saying what they satisfy:
+  `flatten_repeated_functions` (the membership test needs the emitted prefix as
+  a literal; the recursive form allocates 96 bytes with five JET failures) and
+  `add_children` (clean in isolation, allocates once composed into
+  `compute_residual`).
+- The 16 that remain are 9 type-introspecting functions — exactly the count
+  predicted — plus `generate_offsets_parallel` (a compile-time cumsum), the two
+  above, the two `SVector` walks in `solver.jl` this phase was told to leave,
+  and `generate_equations`, which threads a counter across a fold.
 
 ---
 
