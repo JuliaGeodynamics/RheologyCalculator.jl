@@ -173,20 +173,13 @@ component value is zero. Otherwise the combined estimate.
 # Sum `weight(counterpart(fn)(component))` over the components. Unrolled so each
 # component's history extraction and state-function call specialize on its own
 # concrete type.
-@generated function _accumulate_initial_value(weight::W, fn, rheology::NTuple{N, AbstractRheology}, el_number, vars, args, others) where {W, N}
-    return quote
-        @inline
-        sum_vals = 0.0
-        Base.@nexprs $N i -> begin
-            keys_hist = history_kwargs(rheology[i])
-            args_local = extract_local_kwargs(others, keys_hist, el_number[i])
-            args_combined = merge(args, args_local, vars)
-            fn_c = counterpart(fn)
-            args_invariant = tensor2invariant(args_combined)
-            sum_vals += weight(fn_c(rheology[i], args_invariant))
-        end
-        return sum_vals
+@inline function _accumulate_initial_value(weight::W, fn, rheology::NTuple{N, AbstractRheology}, el_number, vars, args, others) where {W, N}
+    fn_c = counterpart(fn)
+    vals = maptuple(rheology, el_number) do r, n
+        args_local = extract_local_kwargs(others, history_kwargs(r), n)
+        weight(fn_c(r, tensor2invariant(merge(args, args_local, vars))))
     end
+    return sum(vals)
 end
 
 """

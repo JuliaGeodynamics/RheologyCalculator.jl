@@ -183,12 +183,8 @@ function branch_strain_rate_mask(c::AbstractCompositeModel)
     return SA[branch_strain_rate_mask(eqs)...]
 end
 
-@generated function branch_strain_rate_mask(eqs::NTuple{N, CompositeEquation}) where {N}
-    return quote
-        @inline
-        Base.@ntuple $N i -> _is_branch_strain_rate(eqs[i].fn)
-    end
-end
+@inline branch_strain_rate_mask(eqs::NTuple{N, CompositeEquation}) where {N} =
+    maptuple(eq -> _is_branch_strain_rate(eq.fn), eqs)
 
 # The unknown of a `compute_stress` equation is a parallel branch's strain rate.
 @inline _is_branch_strain_rate(::F) where {F} = false

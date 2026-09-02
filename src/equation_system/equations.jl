@@ -88,25 +88,21 @@ function generate_equations(c::AbstractCompositeModel, fns_own_global::F, ind_in
     return (global_eqs, local_eqs..., parallel_eqs...) |> superflatten
 end
 
-@generated function generate_equations_unroller(branches::NTuple{N, Any}, fn::F, el_num, global_eqs, iself_ref) where {N, F}
-    return quote
-        @inline
-        Base.@ntuple $N i -> begin
-            b = branches[i]
-            num = el_num[2][i]
-            isvol = isvolumetric(b)
-            eqs = generate_equations(b, fn, 0, Val(false), isvol, num; iparent = global_eqs.self, iself = iself_ref[])
-            # generate_equations creates its own *local* Ref for `b`'s subtree, so
-            # the running counter must be threaded back here explicitly, otherwise
-            # every sibling branch starts numbering its own equations from the same
-            # base and their `.self` values collide: equation position is
-            # assumed to equal `.self` throughout the residual assembly.
-            # A branch can legitimately contribute zero equations for
-            # a given global function (e.g. a non-volumetric branch during the
-            # volumetric pass), in which case the counter is left untouched.
-            isempty(eqs) || (iself_ref[] = eqs[end].self)
-            eqs
-        end
+# maptuple walks the branches left to right, which is what lets `iself_ref`
+# thread the running equation counter from one sibling to the next.
+@inline function generate_equations_unroller(branches::NTuple{N, Any}, fn::F, el_num, global_eqs, iself_ref) where {N, F}
+    return maptuple(branches, el_num[2]) do b, num
+        eqs = generate_equations(b, fn, 0, Val(false), isvolumetric(b), num; iparent = global_eqs.self, iself = iself_ref[])
+        # generate_equations creates its own *local* Ref for `b`'s subtree, so
+        # the running counter must be threaded back here explicitly, otherwise
+        # every sibling branch starts numbering its own equations from the same
+        # base and their `.self` values collide: equation position is assumed to
+        # equal `.self` throughout the residual assembly. A branch can
+        # legitimately contribute zero equations for a given global function
+        # (e.g. a non-volumetric branch during the volumetric pass), in which
+        # case the counter is left untouched.
+        isempty(eqs) || (iself_ref[] = eqs[end].self)
+        eqs
     end
 end
 
@@ -232,15 +228,12 @@ function add_global_equations(iparent, ilocal_childs, iparallel_childs, iself_re
     return CompositeEquation(iparent, children, iself_ref[], fns_own_global, leafs, ind_input, Val(B), el_number)
 end
 
-@generated function add_local_equations(iparent, ilocal_childs, iself_ref, fns_own_local::F1, fns_own_global::F2, leafs, ::Val{N}, el_number) where {N, F1, F2}
-    return quote
-        Base.@ntuple $N i -> begin
-            @inline
-            iself_ref[] += 1
-            add_local_equation(iparent, ilocal_childs, iself_ref[], fns_own_local[i], fns_own_global, leafs, 0, Val(false), el_number)
-        end
+# Left-to-right, so each local equation takes the next number from iself_ref.
+@inline add_local_equations(iparent, ilocal_childs, iself_ref, fns_own_local::F1, fns_own_global::F2, leafs, ::Val{N}, el_number) where {N, F1, F2} =
+    maptuple(fns_own_local) do fn_local
+        iself_ref[] += 1
+        add_local_equation(iparent, ilocal_childs, iself_ref[], fn_local, fns_own_global, leafs, 0, Val(false), el_number)
     end
-end
 
 add_local_equations(::Any, ::Any, ::Any, ::F, ::F, ::Any, ::Any, ::Any) where {F} = ()
 
