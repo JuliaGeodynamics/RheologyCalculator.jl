@@ -24,7 +24,7 @@ Computers & Structures.
 - `η_vp::T`: The Duvaut-Lions regeularisation viscosity for the plasticity model.
 - `Pt::T`: The tensile strength (should be < 0).
 """
-struct Hyperbolic{T} <: AbstractPlasticity
+struct Hyperbolic{T} <: AbstractCapPlasticity
     C::T
     ϕ::T        # in degrees for now
     ψ::T        # in degrees for now
@@ -47,26 +47,6 @@ function Hyperbolic(; C=10e6, ϕ=30.0, ψ=0.0, η_vp=1e20, Pt=-1e5)
 end
 
 #Hyperbolic(args...) = Hyperbolic(promote(args...)...)
-@inline _isvolumetric(::Hyperbolic) = true
-
-@inline series_state_functions(::Hyperbolic) = (compute_strain_rate, compute_lambda, compute_volumetric_strain_rate)
-@inline parallel_state_functions(::Hyperbolic) = compute_stress, compute_pressure, compute_lambda, compute_plastic_strain_rate, compute_volumetric_plastic_strain_rate
-
-@inline function compute_strain_rate(r::Hyperbolic; τ = 0, λ = 0, P = 0, kwargs...)
-    ε_pl = compute_plastic_strain_rate(r::Hyperbolic; τ_pl = τ, λ = λ, P_pl = P, kwargs...)
-    F = compute_F(r, τ, P)
-    return ε_pl/2* (F > -1e-8)
-end
-@inline function compute_volumetric_strain_rate(r::Hyperbolic; τ = 0, λ = 0, P = 0, kwargs...)
-    θ_pl = compute_volumetric_plastic_strain_rate(r::Hyperbolic; τ_pl = τ, λ = λ, P_pl = P, θ = 0, kwargs...)
-    F    = compute_F(r, τ, P)
-    return θ_pl* (F > -1e-8) # perhaps this derivative needs to be hardcoded
-end
-
-@inline function compute_lambda(r::Hyperbolic; τ = 0, λ = 0, P = 0, kwargs...)
-    F = compute_F(r, τ, P)
-    return -F* (F > -1e-8)  + λ*r.η_vp + λ*1        # last term is for regularisation below yield
-end
 
 function compute_F(r::Hyperbolic, τII, P)
     cosϕ, sinϕ, C, Pt = r.cosϕ, r.sinϕ, r.C, r.Pt
@@ -89,13 +69,3 @@ function compute_Q(r::Hyperbolic, τII, P)
     return Q
 end 
 
-@inline compute_stress(r::Hyperbolic; τ_pl = 0, kwargs...) = τ_pl
-@inline compute_pressure(r::Hyperbolic; P_pl = 0, kwargs...) = P_pl
-
-@inline function compute_plastic_strain_rate(r::Hyperbolic; τ_pl = 0, λ = 0, P_pl = 0, ε = 0, kwargs...)
-    return λ*ForwardDiff.derivative(x -> compute_Q(r, x, P_pl), τ_pl) - 0*ε # perhaps this derivative needs to be hardcoded 
-end
-
-@inline function compute_volumetric_plastic_strain_rate(r::Hyperbolic; τ_pl = 0, λ = 0, P_pl = 0, θ = 0, kwargs...)
-    return -λ * ForwardDiff.derivative(x -> compute_Q(r, τ_pl, x), P_pl) - 0*θ # perhaps this derivative needs to be hardcoded
-end

@@ -18,7 +18,7 @@ import ForwardDiff: ForwardDiff
 import Base.IteratorsMD.flatten
 
 include("core/rheology_types.jl")
-export AbstractViscosity, AbstractPlasticity, AbstractElasticity
+export AbstractViscosity, AbstractPlasticity, AbstractCapPlasticity, AbstractElasticity
 
 include("core/state_functions.jl")
 

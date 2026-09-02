@@ -15,6 +15,17 @@ Supertype for plastic yield or flow-rule elements.
 abstract type AbstractPlasticity <: AbstractRheology end # in case we need spacilization at some point
 
 """
+    AbstractCapPlasticity <: AbstractPlasticity
+
+Supertype for plastic elements whose yield surface closes in pressure and whose
+flow rule is differentiated from a potential. A subtype supplies its struct,
+`compute_F(r, τII, P)`, and `compute_Q(r, τII, P)`; the state functions, the
+Duvaut-Lions regularization, and the flow rule are inherited from
+`src/rheology/plastic/cap_plasticity.jl`.
+"""
+abstract type AbstractCapPlasticity <: AbstractPlasticity end
+
+"""
     AbstractElasticity <: AbstractRheology
 
 Supertype for elastic elements. Elastic rheologies may consume history fields

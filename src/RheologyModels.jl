@@ -40,6 +40,7 @@ include("rheology/elastic/incompressible_elasticity.jl")
 # open cone yield surface, with cap/smoothed-corner variants) vs critical-state
 # family (M/N + tensile/compaction pressure parametrization; closed elliptical
 # yield surface, e.g. Cam-Clay and its extensions).
+include("rheology/plastic/cap_plasticity.jl")
 include("rheology/plastic/frictional/Drucker_Prager.jl")
 include("rheology/plastic/frictional/Drucker_Prager_cap.jl")
 include("rheology/plastic/frictional/hyperbolic.jl")

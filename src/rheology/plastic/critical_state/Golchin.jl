@@ -23,7 +23,7 @@ Represents a extended Cam-Clay model, see Golchin et al. (2021)
 - ` Pc::T`  : Compaction pressure (3e8)
 - ` η_vp::T`: regularisation viscosity (0)
 """
-struct Golchin{T} <: AbstractPlasticity
+struct Golchin{T} <: AbstractCapPlasticity
     M::T        # "friction"
     N::T        # "dilatancy"
     γ::T        # shape factor (0: ellipse)
@@ -43,26 +43,6 @@ function Golchin(; M=0.9, N=0.6, γ=0.5, α=0.5, β=0.0, Pt=-1e7, Pc=3e8, η_vp=
 end
 
 #Golchin(args...) = Golchin(promote(args...)...)
-@inline _isvolumetric(::Golchin) = true
-
-@inline series_state_functions(::Golchin) = (compute_strain_rate, compute_lambda, compute_volumetric_strain_rate)
-@inline parallel_state_functions(::Golchin) = compute_stress, compute_pressure, compute_lambda, compute_plastic_strain_rate, compute_volumetric_plastic_strain_rate
-
-@inline function compute_strain_rate(r::Golchin; τ = 0, λ = 0, P = 0, kwargs...)
-    ε_pl = compute_plastic_strain_rate(r::Golchin; τ_pl = τ, λ = λ, P_pl = P, kwargs...)
-    F = compute_F(r, τ, P)
-    return ε_pl/2* (F > -1e-8)
-end
-@inline function compute_volumetric_strain_rate(r::Golchin; τ = 0, λ = 0, P = 0, kwargs...)
-    θ_pl = compute_volumetric_plastic_strain_rate(r::Golchin; τ_pl = τ, λ = λ, P_pl = P, θ = 0, kwargs...)
-    F    = compute_F(r, τ, P)
-    return θ_pl* (F > -1e-8) # perhaps this derivative needs to be hardcoded
-end
-
-@inline function compute_lambda(r::Golchin; τ = 0, λ = 0, P = 0, kwargs...)
-    F = compute_F(r, τ, P)
-    return -F* (F > -1e-8)  + λ*r.η_vp + λ*1        # last term is for regularisation below yield
-end
 
 function compute_F(r::Golchin, τII, P)
     (; M, N, γ, α, β, Pt, Pc) = r
@@ -91,13 +71,3 @@ function compute_Q(r::Golchin, τII, P)
     return Q
 end 
 
-@inline compute_stress(r::Golchin; τ_pl = 0, kwargs...) = τ_pl
-@inline compute_pressure(r::Golchin; P_pl = 0, kwargs...) = P_pl
-
-@inline function compute_plastic_strain_rate(r::Golchin; τ_pl = 0, λ = 0, P_pl = 0, ε = 0, kwargs...)
-    return λ*ForwardDiff.derivative(x -> compute_Q(r, x, P_pl), τ_pl) - 0*ε # perhaps this derivative needs to be hardcoded 
-end
-
-@inline function compute_volumetric_plastic_strain_rate(r::Golchin; τ_pl = 0, λ = 0, P_pl = 0, θ = 0, kwargs...)
-    return -λ * ForwardDiff.derivative(x -> compute_Q(r, τ_pl, x), P_pl) - 0*θ # perhaps this derivative needs to be hardcoded
-end
