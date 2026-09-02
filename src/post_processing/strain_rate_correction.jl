@@ -376,7 +376,7 @@ is this branch's first backstress entry).
     args = merge((; ε = εII), others)
     # η_KV: arithmetic sum of effective viscosities of all sub-elements
     # (viscous leafs + Maxwell sub-branches).  This is the denominator of (*).
-    η_KV = _η_KV(branch.leafs, branch.branches, args)
+    η_KV = _checked_η_KV(branch.leafs, branch.branches, args)
     # ws = Σ_i η_star_i * τ0_i — the weighted backstress numerator of (*).
     # Same shape as ε (tensor), because τ0 entries are also stored as tensors.
     ws = _weighted_backstress(branch.leafs, branch.branches, ε, τ0, args, el_idx_start)
@@ -417,6 +417,34 @@ end
         Base.@nexprs $N i -> η += compute_viscosity_series(leafs[i], args)
         η
     end
+end
+
+@noinline function _throw_nonpositive_η_KV(η_KV)
+    throw(
+        ArgumentError(
+            "effective Kelvin-Voigt viscosity of this parallel branch is $η_KV; every " *
+                "element in a branch carrying elastic history must define compute_viscosity, " *
+                "and `others` must supply a nonzero `dt`"
+        )
+    )
+end
+
+"""
+    _checked_η_KV(leafs, subs, args)
+
+`_η_KV`, guarded against an aggregate that cannot describe a real branch.
+
+Every caller reaches this only after establishing that the branch carries
+elastic history, so a zero, negative, or `NaN` aggregate is a defect — a leaf
+with no `compute_viscosity` method, or an `others` that omits `dt` — and would
+otherwise produce a silent `Inf` or `NaN` correction. `Inf` itself is a
+legitimate value: a rigid leaf (a plastic element below yield) in parallel with a
+spring makes the whole branch rigid, and its correction is correctly zero.
+"""
+@inline function _checked_η_KV(leafs, subs, args)
+    η_KV = _η_KV(leafs, subs, args)
+    η_KV > 0 || _throw_nonpositive_η_KV(η_KV)
+    return η_KV
 end
 
 """
@@ -649,7 +677,7 @@ _kv_implicit_corrections_scalar(::Tuple{}, ::NTuple{N, Any}, ::Any, ::Any, ::Any
 @inline function _kv_implicit_branch_correction_scalar(branch::ParallelModel, ε_branch, τ0, others, el_idx_start)
     iselastic(branch) == Val(false) && return zero(ε_branch)
     args = merge((; ε = ε_branch), others)
-    η_KV = _η_KV(branch.leafs, branch.branches, args)
+    η_KV = _checked_η_KV(branch.leafs, branch.branches, args)
     ws   = _weighted_backstress_scalar(branch.leafs, branch.branches, τ0, args, el_idx_start)
     return ws / (2 * η_KV)
 end

@@ -338,6 +338,10 @@ Return `others` with history fields indexed to element `n`. Fields whose names
 appear in `keys_hist` are treated as element-local tuples; tuple-valued fields
 not listed in `keys_hist` use their first entry.
 
+A history field must carry one entry per element that claims it; an element
+index beyond the field's length is a malformed `others` and raises a
+`BoundsError`.
+
 # Example
 ```julia
 others = (; dt = 1e10, τ0 = (1.1, 3.0), d = (4, 2))
@@ -353,11 +357,11 @@ end
 @generated function extract_local_kwargs(keys_args::NTuple{N, Symbol}, vals_args::NTuple{N, Any}, keys_hist::NTuple{M, Symbol}, n::Int) where {N, M}
     return quote
         @inline
-        Base.@ntuple $N i -> @inbounds _extract_local_kwargs(vals_args[i], keys_args[i], keys_hist, n)
+        Base.@ntuple $N i -> _extract_local_kwargs(vals_args[i], keys_args[i], keys_hist, n)
     end
 end
 
-Base.@propagate_inbounds @inline _extract_local_kwargs(vals_args::Tuple, name, keys_hist, n) = ismember(name, keys_hist) ? vals_args[n] : vals_args[1]
+@inline _extract_local_kwargs(vals_args::Tuple, name, keys_hist, n) = ismember(name, keys_hist) ? vals_args[n] : vals_args[1]
 
 @inline _extract_local_kwargs(vals_args, ::Any, ::Any, ::Any) = vals_args
 

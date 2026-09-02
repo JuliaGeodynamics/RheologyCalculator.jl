@@ -37,5 +37,8 @@ end
 Return a normalization vector compatible with `x`. If `xnorm === nothing`, a
 static vector of ones is used.
 """
-@inline correct_xnorm(::SVector{N,T}, xnorm) where {N, T} = (T; xnorm)
+@inline correct_xnorm(::SVector{N}, xnorm::SVector{N}) where N = xnorm
+@inline function correct_xnorm(::SVector{N}, xnorm::SVector{M}) where {N, M}
+    throw(DimensionMismatch("xnorm0 has $M entries but the solver vector has $N"))
+end
 @inline correct_xnorm(::SVector{N,T}, ::Nothing) where {N, T} = @SVector ones(T, N)

@@ -17,8 +17,17 @@ fns_state = (
 # ABSTRACT RHEOLOGY (FALLBACK METHODS)
 # ================================================================================================
 for fn in fns_state
+    # The composition-specific viscosities are defined below instead; they must
+    # delegate, not default to zero.
+    fn in (:compute_viscosity_series, :compute_viscosity_parallel) && continue
     @eval @inline $fn(r::AbstractRheology; kwargs...) = 0.0e0
 end
+
+# Effective viscosities are aggregated by the elastic-correction machinery.
+# Delegate the composition-specific forms to the element form by default so a
+# new rheology cannot silently contribute zero to a Kelvin-Voigt aggregate.
+@inline compute_viscosity_series(r::AbstractRheology; kwargs...) = compute_viscosity(r; kwargs...)
+@inline compute_viscosity_parallel(r::AbstractRheology; kwargs...) = compute_viscosity(r; kwargs...)
 
 # ================================================================================================
 # WRAPPER FUNCTIONS (for NamedTuple arguments)

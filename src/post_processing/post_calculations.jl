@@ -233,7 +233,7 @@ first backstress entry).
 
     # η_KV: arithmetic sum of effective viscosities of all sub-elements.
     # (See _η_KV in src/strain_rate_correction.jl for the definition.)
-    η_KV = _η_KV(branch.leafs, branch.branches, args)
+    η_KV = _checked_η_KV(branch.leafs, branch.branches, args)
 
     # Gather per-elastic-source information (η_star, τ0_II, recovery formula
     # parameters) produced at compile time by _branch_elastic_info.
