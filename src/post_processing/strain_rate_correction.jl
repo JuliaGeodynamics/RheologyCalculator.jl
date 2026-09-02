@@ -144,13 +144,8 @@ elastic rheology, otherwise `Val(false)`.
 # Scan a tuple of leafs or of nested composites (a `branches` field) and return
 # true as soon as any entry is or contains an elastic element. @nexprs unrolls
 # at compile time; the early return skips the rest.
-@generated function _iselastic(r::NTuple{N, Union{AbstractRheology, AbstractCompositeModel}}) where {N}
-    quote
-        @inline
-        Base.@nexprs $N i -> _iselastic(r[i]) && return true
-        return false
-    end
-end
+@inline _iselastic(r::NTuple{N, Union{AbstractRheology, AbstractCompositeModel}}) where {N} =
+    _iselastic(first(r)) || _iselastic(Base.tail(r))
 
 @inline _iselastic(::Tuple{}) = false
 @inline _iselastic(::AbstractElasticity) = true
@@ -348,29 +343,13 @@ Compute the Kelvin-Voigt effective viscosity of a parallel block:
 where `η_eff_M = 1 / (1/η_v + 1/(G*dt))` is the harmonic-mean effective
 viscosity of each Maxwell `SeriesModel` sub-branch.
 """
-@generated function _η_KV(leafs::NTuple{N,AbstractRheology}, subs::NTuple{Ns,Any}, args) where {N,Ns}
-    quote
-        @inline
-        η = 0.0
-        # Arithmetic sum over direct leafs of the ParallelModel.
-        # For a linear viscous leaf this is just η_leaf; for an elastic leaf
-        # (G*dt) it also contributes to the KV stiffness.
-        Base.@nexprs $N  i -> η += compute_viscosity_series(leafs[i], args)
-        # Each Maxwell SeriesModel sub-branch contributes its harmonic-mean
-        # effective viscosity η_eff_M = (η_v * G*dt)/(η_v + G*dt).
-        Base.@nexprs $Ns j -> η += _η_eff_maxwell(subs[j].leafs, args)
-        η
-    end
-end
-
-# Specialisation for a pure KV block with no Maxwell sub-branches.
-@generated function _η_KV(leafs::NTuple{N,AbstractRheology}, ::Tuple{}, args) where N
-    quote
-        @inline
-        η = 0.0
-        Base.@nexprs $N i -> η += compute_viscosity_series(leafs[i], args)
-        η
-    end
+@inline function _η_KV(leafs::NTuple{N, AbstractRheology}, subs::Tuple, args) where {N}
+    # Arithmetic sum over the direct leafs of the ParallelModel: a viscous leaf
+    # contributes η, an elastic one G*dt.
+    η = foldtuple(+, 0.0, l -> compute_viscosity_series(l, args), leafs)
+    # Each Maxwell SeriesModel sub-branch contributes its harmonic-mean
+    # effective viscosity η_eff_M = (η_v * G*dt)/(η_v + G*dt).
+    return foldtuple(+, η, sub -> _η_eff_maxwell(sub.leafs, args), subs)
 end
 
 @noinline function _throw_nonpositive_η_KV(η_KV)
@@ -412,16 +391,10 @@ the viscosities of its constituent leaf elements.
 For a two-element branch `(viscous, elastic)` this reduces to the standard
 Maxwell formula `η_v * G * dt / (η_v + G * dt)`.
 """
-@generated function _η_eff_maxwell(leafs::NTuple{N,AbstractRheology}, args) where N
-    quote
-        @inline
-        inv_η = 0.0
-        # Accumulate 1/η for each leaf; the harmonic mean (inverse of sum of
-        # inverses) is the correct effective viscosity for elements in series.
-        Base.@nexprs $N i -> inv_η += inv(compute_viscosity_series(leafs[i], args))
-        inv(inv_η)
-    end
-end
+# The harmonic mean -- the inverse of the sum of inverses -- is the effective
+# viscosity of elements in series.
+@inline _η_eff_maxwell(leafs::NTuple{N, AbstractRheology}, args) where {N} =
+    inv(foldtuple(+, 0.0, l -> inv(compute_viscosity_series(l, args)), leafs))
 
 """
     _η_eff_elastic(leafs, args)

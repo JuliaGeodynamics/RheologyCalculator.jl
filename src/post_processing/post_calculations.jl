@@ -16,30 +16,17 @@ compute_stress_elastic(c::AbstractCompositeModel, xnew, others) = compute_stress
 
 @inline isglobal(::CompositeEquation{B}) where {B} = Val(B)
 
-@generated function compute_stress_elastic(eqs::NTuple{N, CompositeEquation}, xnew, others) where {N}
-    return quote
-        @inline
-        args_all = generate_args_template(eqs, xnew, others)
-        τ_elastic = Base.@ntuple $N i_eq -> begin
-            args = args_all[i_eq]
-            eq = eqs[i_eq]
-            (; self, rheology, fn, el_number) = eq
-            @inline _compute_stress_elastic(rheology, self, fn, el_number, xnew, others, args, isglobal(eq))
-        end |> superflatten
-        return superflatten(τ_elastic)
+@inline function compute_stress_elastic(eqs::NTuple{N, CompositeEquation}, xnew, others) where {N}
+    args_all = generate_args_template(eqs, xnew, others)
+    τ_elastic = maptuple(eqs, args_all) do eq, args
+        (; self, rheology, fn, el_number) = eq
+        _compute_stress_elastic(rheology, self, fn, el_number, xnew, others, args, isglobal(eq))
     end
+    return superflatten(τ_elastic)
 end
 
-@generated function _compute_stress_elastic(rheology::NTuple{N, Any}, self, fn::F, el_number, xnew, others, args, eqglobal) where {N, F}
-    return quote
-        @inline
-        Base.@ntuple $N i_rheo -> begin
-            r = rheology[i_rheo]
-            number = el_number[i_rheo]
-            _compute_stress_elastic1(r, self, fn, number, xnew, others, args, eqglobal)
-        end |> superflatten
-    end
-end
+@inline _compute_stress_elastic(rheology::NTuple{N, Any}, self, fn::F, el_number, xnew, others, args, eqglobal) where {N, F} =
+    superflatten(maptuple((r, number) -> _compute_stress_elastic1(r, self, fn, number, xnew, others, args, eqglobal), rheology, el_number))
 
 @inline _compute_stress_elastic1(::T, ::Vararg{Any, N}) where {T, N} = ()
 function _compute_stress_elastic1(r::AbstractElasticity, self, fn::F, number, xnew, others, args, eqglobal) where {F}
@@ -325,32 +312,18 @@ in `c` or equation tuple `eqs`.
 This is the volumetric counterpart of `compute_stress_elastic` and is intended
 for updating pressure history after a successful solve.
 """
-@generated function compute_pressure_elastic(eqs::NTuple{N, CompositeEquation}, xnew, others) where {N}
-    return quote
-        @inline
-        args_all = generate_args_template(eqs, xnew, others)
-        τ_elastic = Base.@ntuple $N i_eq -> begin
-            args = args_all[i_eq]
-            eq = eqs[i_eq]
-            (; self, rheology, fn, el_number) = eq
-
-            @inline _compute_pressure_elastic(rheology, self, fn, el_number, xnew, others, args)
-        end |> superflatten
-        return superflatten(τ_elastic)
+@inline function compute_pressure_elastic(eqs::NTuple{N, CompositeEquation}, xnew, others) where {N}
+    args_all = generate_args_template(eqs, xnew, others)
+    P_elastic = maptuple(eqs, args_all) do eq, args
+        (; self, rheology, fn, el_number) = eq
+        _compute_pressure_elastic(rheology, self, fn, el_number, xnew, others, args)
     end
+    return superflatten(P_elastic)
 end
 compute_pressure_elastic(c::AbstractCompositeModel, xnew, others) = compute_pressure_elastic(generate_equations(c), xnew, others)
 
-@generated function _compute_pressure_elastic(rheology::NTuple{N, Any}, self, fn::F, el_number, xnew, others, args) where {N, F}
-    return quote
-        @inline
-        Base.@ntuple $N i_rheo -> begin
-            r = rheology[i_rheo]
-            number = el_number[i_rheo]
-            _compute_pressure_elastic1(r, self, fn, number, xnew, others, args)
-        end |> superflatten
-    end
-end
+@inline _compute_pressure_elastic(rheology::NTuple{N, Any}, self, fn::F, el_number, xnew, others, args) where {N, F} =
+    superflatten(maptuple((r, number) -> _compute_pressure_elastic1(r, self, fn, number, xnew, others, args), rheology, el_number))
 
 @inline _compute_pressure_elastic1(::T, ::Vararg{Any, N}) where {T, N} = ()
 function _compute_pressure_elastic1(r::AbstractElasticity, self, fn::F, number, xnew, others, args) where {F}
