@@ -65,7 +65,7 @@ a suite that allocates is not.
 - **Done.** Phase 5. `src/` is at 3830 lines; `@generated` is down from 63 to 55.
 - **Done.** Phase 6, in full rather than partially: `@generated` is down from 63
   to 16 and `src/` to 3687 lines.
-- **Pending.** Phases 7–8.
+- **Done.** Phases 7 and 8. Every phase in this plan is complete.
 - **Done.** `CompositeModel` removed (export, struct, and Documenter entry) — see §9.
 - **Decided.** The tensor helpers become public API — see §4.4.
 
@@ -972,9 +972,19 @@ an unexplained constant, and `1 *` is inert. Name it or explain it.
   [equations.jl:356](src/equation_system/equations.jl#L356) is already gone —
   see §1.5.
 
-**Risk:** low — this code has no numerical role. It is also currently untested;
-add a smoke test that `repr(c)` runs without error for each phase-0 fixture,
-which is cheap and would have caught the `.elements` bug in §1.4.
+**Risk:** low — this code has no numerical role. **Done.**
+
+`print_rheology_matrix(::Tuple)` turned out to be unreachable — the composite
+methods flatten with `superflatten` and render elements one at a time, so no
+element is ever a tuple — so §7.1 is one deletion plus a merge of the two
+methods that remain. Verified by making it throw and running both the display
+topologies and the full suite.
+
+The 40×40 buffer was not merely arbitrary: a 45-element series raised
+`BoundsError: attempt to access 40×40 Matrix{String} at index [1, 41]`. Sizing
+from the element count fixes it, and `test/test_display.jl` covers it.
+
+Rendered output is unchanged for fifteen topologies.
 
 ---
 
@@ -1015,7 +1025,20 @@ is a `freshen-runic` workflow available), commit the reformat as a standalone
 commit, and add it to `.git-blame-ignore-revs`.
 
 **Do this last**, after all the structural phases, so the reformat commit does not
-collide with in-flight refactors.
+collide with in-flight refactors. **Done**, with the reformat in its own commit,
+recorded in `.git-blame-ignore-revs`, and a runic job added to CI.
+
+§8.1 and §8.2 also **done**. Two findings worth keeping:
+
+- The `VERSION ≤ v"1.12.3"` gate on the Aqua testset was not hiding a version
+  incompatibility. `Aqua.test_ambiguities` was being passed the
+  `RheologyModels` submodule, which it rejects outright ("Non-package
+  (non-toplevel) module is not supported"). Passing only the package fixes it,
+  and every check — ambiguities, piracy, stale deps included — passes ungated.
+- With §3.1's dangling references and §3.4's duplicate already fixed, the strict
+  documentation build is clean, so `warnonly` is removed outright rather than
+  narrowed. `checkdocs = :exports` stays: 39 documented internals are
+  deliberately absent from the manual.
 
 ---
 
