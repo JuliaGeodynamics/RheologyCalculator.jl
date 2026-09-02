@@ -141,9 +141,10 @@ elastic rheology, otherwise `Val(false)`.
 # Checks leafs first, then branches (short-circuits on first true).
 @inline _iselastic(r::AbstractCompositeModel) = _iselastic(r.leafs) || _iselastic(r.branches)
 
-# Scan a leaf tuple: return true as soon as any element is elastic.
-# @nexprs unrolls the loop at compile time; early return avoids checking the rest.
-@generated function _iselastic(r::NTuple{N,AbstractRheology}) where N
+# Scan a tuple of leafs or of nested composites (a `branches` field) and return
+# true as soon as any entry is or contains an elastic element. @nexprs unrolls
+# at compile time; the early return skips the rest.
+@generated function _iselastic(r::NTuple{N, Union{AbstractRheology, AbstractCompositeModel}}) where {N}
     quote
         @inline
         Base.@nexprs $N i -> _iselastic(r[i]) && return true
@@ -151,25 +152,7 @@ elastic rheology, otherwise `Val(false)`.
     end
 end
 
-"""
-    _iselastic(r::NTuple{N, AbstractCompositeModel})
-
-Recurse into a tuple of composite models (e.g. the `branches` field of a
-`SeriesModel`) and return `true` if any of them contains an elastic element.
-This extends the leaf-only `NTuple{N, AbstractRheology}` method so that
-`iselastic` works correctly on nested composites.
-"""
-@generated function _iselastic(r::NTuple{N,AbstractCompositeModel}) where N
-    quote
-        @inline
-        Base.@nexprs $N i -> _iselastic(r[i]) && return true
-        return false
-    end
-end
-
-# Tiebreaker: an empty tuple is never elastic.  Needed because Tuple{} matches
-# both NTuple{N, AbstractRheology} and NTuple{N, AbstractCompositeModel} at N=0.
-@inline _iselastic(::Tuple{})            = false
+@inline _iselastic(::Tuple{}) = false
 @inline _iselastic(::AbstractElasticity) = true
 @inline _iselastic(::AbstractRheology)   = false
 
@@ -227,13 +210,9 @@ Return, at the *type level*, the total number of elastic elements inside a
 Called only from `_kv_corrections` at specialisation time; never called at
 runtime.
 """
-function _n_elastic_in_parallel(::Type{ParallelModel{L,B}}) where {L,B}
-    # Elastic direct leafs of this parallel block.
-    n_leafs = count(T -> T <: AbstractElasticity, L.parameters)
-    # For each SeriesModel sub-branch, parameters[1] is its leaf-tuple type.
-    n_subs = isempty(B.parameters) ? 0 :
-             sum(count(T -> T <: AbstractElasticity, S.parameters[1].parameters) for S in B.parameters)
-    return n_leafs + n_subs
+function _n_elastic_in_parallel(::Type{ParallelModel{L, B}}) where {L, B}
+    direct, per_sub = _elastic_source_positions(L, B)
+    return length(direct) + sum(length, per_sub; init = 0)
 end
 
 # Recursively check, at the type level, whether a nested rheology/composite
@@ -275,6 +254,26 @@ function _assert_kv_nesting_supported(::Type{ParallelModel{L,B}}) where {L,B}
 end
 
 """
+    _branch_tau0_offsets(branches::Type)
+
+Per-branch starting offsets into the `τ0` tuple, resolved at specialisation time.
+
+`τ0` is ordered to match `global_eltype_numbering`: the outer `SeriesModel`'s own
+elastic leafs first, then its branches left to right, each branch owning
+`_n_elastic_in_parallel` consecutive entries. So branch `i` reads its k-th
+backstress from `τ0[offset + offsets[i] + k]`, where `offset` is what the series
+leafs consumed.
+
+Also checks that no branch nests an elastic element deeper than the correction
+formulas are derived for.
+"""
+function _branch_tau0_offsets(branches::Type)
+    foreach(_assert_kv_nesting_supported, branches.parameters)
+    counts = [_n_elastic_in_parallel(T) for T in branches.parameters]
+    return cumsum([0; counts[1:(end - 1)]])
+end
+
+"""
     _kv_corrections(branches, ε, τ0, others, offset)
 
 Accumulate the generalized Maxwell / KV effective strain-rate corrections from
@@ -291,14 +290,7 @@ allocation-free, branch-free runtime code.
 @generated function _kv_corrections(
     branches::NTuple{Nb,Any}, ε, τ0, others, offset
 ) where Nb
-    # --- compile-time: compute per-branch elastic counts and cumulative offsets ---
-    foreach(_assert_kv_nesting_supported, branches.parameters)
-    # How many τ0 entries does each branch own? Determined by type inspection of
-    # the branch's leaf tuple (via _n_elastic_in_parallel).
-    counts  = [_n_elastic_in_parallel(branches.parameters[i]) for i in 1:Nb]
-    # offsets[i] = total elastic elements in branches 1 … i-1, so that
-    # τ0[offset + offsets[i] + k] is the k-th entry of branch i.
-    offsets = cumsum([0; counts[1:(end-1)]])
+    offsets = _branch_tau0_offsets(branches)
 
     # Emit one _kv_branch_correction call per branch, each with its τ0 start
     # index baked in as a literal integer — no runtime bookkeeping needed.
@@ -451,11 +443,29 @@ branch, but is safe for non-elastic tuples).
     :(compute_viscosity(leafs[$idx], args))
 end
 
+# Compile-time positions of the elastic sources inside a `ParallelModel` branch:
+# the elastic direct leafs, and per sub-branch the elastic leafs within it.
+# `leafs` and `subs` are the *types* seen by a @generated function.
+#
+# The order is the τ0 order for the branch: direct leafs first, then sub-branches
+# left to right, so the k-th source found here owns τ0[el_idx_start + k].
+function _elastic_source_positions(leafs::Type, subs::Type)
+    direct = findall(Ti -> Ti <: AbstractElasticity, collect(leafs.parameters))
+    per_sub = [
+        findall(Ti -> Ti <: AbstractElasticity, collect(subs.parameters[j].parameters[1].parameters))
+            for j in 1:length(subs.parameters)
+    ]
+    return direct, per_sub
+end
+
 """
     _weighted_backstress(leafs, subs, ε, τ0, args, el_idx_start)
+    _weighted_backstress_scalar(leafs, subs, τ0, args, el_idx_start)
 
 Compute the weighted backstress numerator `Σ_i η_star_i * τ0_i` for a
-`ParallelModel` branch.
+`ParallelModel` branch, as a tensor and as a scalar respectively. The scalar
+form reduces each `τ0` entry to its second invariant; the weighting is the
+same.
 
 Two classes of elastic sources contribute:
 - **Direct elastic leafs** of the `ParallelModel`: `η_star = 1`.  These
@@ -471,42 +481,45 @@ All τ0 index literals and η_star computations are resolved at *compile time*
 `el_idx_start` carries the τ0 offset inherited from the outer `SeriesModel`
 leaf count.
 """
-@generated function _weighted_backstress(
-    leafs::NTuple{N,AbstractRheology}, subs::NTuple{Ns,Any}, ε, τ0, args, el_idx_start
-) where {N,Ns}
-    # --- compile-time: locate elastic elements by type inspection ---
-    # Positions of elastic elements among the direct leafs of the ParallelModel.
-    elastic_leaf_pos = findall(Ti -> Ti <: AbstractElasticity, collect(leafs.parameters))
-    # For each sub-branch, positions of elastic leafs in *its* leaf tuple.
-    # subs.parameters[j].parameters[1] is the leaf-tuple type of sub-branch j.
-    sub_elastic_pos = [
-        findall(Ti -> Ti <: AbstractElasticity, collect(subs.parameters[j].parameters[1].parameters))
-        for j in 1:Ns
-    ]
+@inline _weighted_backstress(leafs, subs, ε, τ0, args, el_idx_start) =
+    _accumulate_weighted_backstress(identity, ε .* 0, leafs, subs, τ0, args, el_idx_start)
 
-    stmts    = Any[:(ws = ε .* 0)]  # tensor accumulator, same shape as ε
-    el_count = 0                     # compile-time cursor into the τ0 tuple
+# Scalar counterpart: the same weighting applied to the second invariant of each
+# backstress. Sharing one body is what keeps the pre-solve tensor correction and
+# the implicit residual correction computing the same quantity.
+@inline _weighted_backstress_scalar(leafs, subs, τ0, args, el_idx_start) =
+    _accumulate_weighted_backstress(second_invariant_value, 0.0, leafs, subs, τ0, args, el_idx_start)
 
-    # --- Direct elastic leafs of the ParallelModel: η_star = 1 ---
-    # The backstress enters the weighted sum undiluted (pure KV case).
-    # Each iteration bakes a literal τ0 index into the emitted code.
-    for _ in elastic_leaf_pos
+# Σ_i η_star_i * entry(τ0_i), accumulated from `seed`. Every τ0 index and every
+# η_star expression is resolved here at specialisation time, so the emitted code
+# is a flat sequence of multiply-adds with literal indices.
+@generated function _accumulate_weighted_backstress(
+        entry::E, seed, leafs::NTuple{N, AbstractRheology}, subs::NTuple{Ns, Any}, τ0, args, el_idx_start
+    ) where {E, N, Ns}
+    direct, per_sub = _elastic_source_positions(leafs, subs)
+
+    stmts = Any[:(ws = seed)]
+    el_count = 0
+
+    # Direct elastic leafs of the ParallelModel: η_star = 1, the pure
+    # Kelvin-Voigt case, where the backstress enters undiluted.
+    for _ in direct
         el_count += 1
-        push!(stmts, :(ws = ws .+ τ0[el_idx_start + $el_count]))
+        push!(stmts, :(ws = ws .+ entry(τ0[el_idx_start + $el_count])))
     end
 
-    # --- Maxwell SeriesModel sub-branches: η_star = η_eff_M / η_el ---
-    # Each Maxwell sub-branch attenuates its backstress by the ratio of its
-    # harmonic-mean effective viscosity to the elastic viscosity (G * dt).
+    # Maxwell SeriesModel sub-branches: η_star = η_eff_M / η_el = η_v / (η_v + G*dt),
+    # so a soft spring gives η_star → 1 and a stiff one η_star → 0.
     for j in 1:Ns
-        for _ in sub_elastic_pos[j]
+        for _ in per_sub[j]
             el_count += 1
-            push!(stmts, quote
-                η_eff_M = _η_eff_maxwell(subs[$j].leafs, args)   # 1/(1/η_v + 1/(G*dt))
-                η_el = _η_eff_elastic(subs[$j].leafs, args)   # G * dt
-                η_star = η_eff_M / η_el                         # η_v / (η_v + G*dt) ∈ (0,1)
-                ws = ws .+ η_star .* τ0[el_idx_start+$el_count]
-            end)
+            push!(
+                stmts, quote
+                    η_eff_M = _η_eff_maxwell(subs[$j].leafs, args)
+                    η_el = _η_eff_elastic(subs[$j].leafs, args)
+                    ws = ws .+ (η_eff_M / η_el) .* entry(τ0[el_idx_start + $el_count])
+                end
+            )
         end
     end
 
@@ -561,7 +574,7 @@ end
 # SeriesModel (simple Maxwell: each contributes τ0_II / (2G·dt)).
 # Elastic leaf positions and τ0 indices are resolved at specialisation time.
 @generated function _direct_leaf_correction_scalar(leafs::NTuple{N, Any}, τ0, others) where {N}
-    elastic_positions = findall(Ti -> Ti <: AbstractElasticity, collect(leafs.parameters))
+    elastic_positions, _ = _elastic_source_positions(leafs, Tuple{})
     stmts = Any[:(cor = 0.0)]
     for (count, pos) in enumerate(elastic_positions)
         push!(stmts, quote
@@ -611,12 +624,10 @@ end
 @generated function _kv_implicit_corrections_scalar(
     branches::NTuple{Nb, Any}, eqs::NTuple{N, Any}, x, τ0, others, offset
 ) where {Nb, N}
-    foreach(_assert_kv_nesting_supported, branches.parameters)
     stress_positions = Tuple(k for k in 1:N if eqs.parameters[k].parameters[3] === typeof(compute_stress))
     mask_expr = Expr(:tuple, (:(eqs[$k].parent == outer_self) for k in stress_positions)...)
 
-    counts  = [_n_elastic_in_parallel(branches.parameters[i]) for i in 1:Nb]
-    offsets = cumsum([0; counts[1:(end - 1)]])
+    offsets = _branch_tau0_offsets(branches)
 
     stmts = Any[:(cor = 0.0), :(outer_self = eqs[1].self), :(mask = $mask_expr)]
     for i in 1:Nb
@@ -644,37 +655,3 @@ _kv_implicit_corrections_scalar(::Tuple{}, ::NTuple{N, Any}, ::Any, ::Any, ::Any
     return ws / (2 * η_KV)
 end
 
-# Scalar version of _weighted_backstress: returns Σ_i η_star_i * τ0_II_i.
-# Structurally identical to _weighted_backstress but accumulates a scalar rather
-# than a tensor; τ0 indices and η_star expressions are compiled-in as literals.
-@generated function _weighted_backstress_scalar(
-    leafs::NTuple{N, AbstractRheology}, subs::NTuple{Ns, Any}, τ0, args, el_idx_start
-) where {N, Ns}
-    elastic_leaf_pos = findall(Ti -> Ti <: AbstractElasticity, collect(leafs.parameters))
-    sub_elastic_pos  = [
-        findall(Ti -> Ti <: AbstractElasticity, collect(subs.parameters[j].parameters[1].parameters))
-        for j in 1:Ns
-    ]
-
-    stmts    = Any[:(ws = 0.0)]
-    el_count = 0
-
-    for _ in elastic_leaf_pos
-        el_count += 1
-        push!(stmts, :(ws += second_invariant_value(τ0[el_idx_start + $el_count])))
-    end
-
-    for j in 1:Ns
-        for _ in sub_elastic_pos[j]
-            el_count += 1
-            push!(stmts, quote
-                η_eff_M = _η_eff_maxwell(subs[$j].leafs, args)
-                η_el    = _η_eff_elastic(subs[$j].leafs, args)
-                ws     += (η_eff_M / η_el) * second_invariant_value(τ0[el_idx_start + $el_count])
-            end)
-        end
-    end
-
-    push!(stmts, :(ws))
-    return quote @inline; $(stmts...) end
-end

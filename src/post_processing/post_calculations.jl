@@ -172,12 +172,7 @@ branches. Per-branch τ0 offsets are computed at specialisation time via
 `_n_elastic_in_parallel` and baked in as literal integers.
 """
 @generated function _kv_corrections_elastic_stress(branches::NTuple{Nb, Any}, τ_shared, others, offset) where {Nb}
-    # Compile-time: count elastic elements in each branch so we can compute
-    # the cumulative τ0 index offset for each one without any runtime bookkeeping.
-    foreach(_assert_kv_nesting_supported, branches.parameters)
-    counts  = [_n_elastic_in_parallel(branches.parameters[i]) for i in 1:Nb]
-    # offsets[i] = number of elastic elements consumed by branches 1 … i-1.
-    offsets = cumsum([0; counts[1:(end - 1)]])
+    offsets = _branch_tau0_offsets(branches)
 
     # Build a flat statement list: one _branch_elastic_stress call per branch,
     # each with a literal offset baked in at specialisation time.
@@ -277,18 +272,7 @@ runtime body is therefore a flat sequence of multiply-adds with no branches.
 so that `τ0[el_idx_start + k]` is the k-th elastic backstress owned by this branch.
 """
 @generated function _branch_elastic_info(leafs::NTuple{N, AbstractRheology}, subs::NTuple{Ns, Any}, τ0, args, el_idx_start) where {N, Ns}
-    # --- compile-time: locate elastic elements by type inspection ---
-    # Positions of AbstractElasticity elements among the direct leafs of the
-    # ParallelModel (these are the pure KV elastic springs).
-    elastic_leaf_pos = findall(Ti -> Ti <: AbstractElasticity, collect(leafs.parameters))
-
-    # For each Maxwell sub-branch, positions of its elastic leaf inside *its*
-    # own leaf tuple. subs.parameters[j].parameters[1] is the leaf-tuple type
-    # of sub-branch j.
-    sub_elastic_pos = [
-        findall(Ti -> Ti <: AbstractElasticity, collect(subs.parameters[j].parameters[1].parameters))
-            for j in 1:Ns
-    ]
+    elastic_leaf_pos, sub_elastic_pos = _elastic_source_positions(leafs, subs)
 
     stmts   = Any[:(info = ())]
     el_count = 0   # running count of elastic elements consumed → τ0 index
