@@ -55,7 +55,10 @@ a suite that allocates is not.
   (delegating viscosity fallbacks), Phase 1.2B (fail-fast on a nonpositive KV
   aggregate), Phase 1.3 (`correct_xnorm` shape validation), and Phase 1.5
   (history-tuple bounds), all with regression coverage.
-- **Pending.** Phase 1.4 and all structural deletion/refactor phases.
+- **Done.** Phase 2. Every item deleted; `src/` is down from 4265 to 4011
+  lines. §1.4 is settled with it — both functions that would have thrown are
+  gone.
+- **Pending.** Phases 3–8.
 - **Done.** `CompositeModel` removed (export, struct, and Documenter entry) — see §9.
 - **Decided.** The tensor helpers become public API — see §4.4.
 
@@ -80,8 +83,14 @@ a suite that allocates is not.
   offending call returns a value with the `@inbounds` in place and raises a
   `BoundsError` without it, under default bounds checking.
 - Verification after this batch: `Pkg.test()` passes (28 allocation tests, 35
-  type-stability tests, 18 simplification-plan regressions), and
+  type-stability tests, 17 simplification-plan regressions), and
   `test/runtests.jl --allocations-only` passes without `--check-bounds=yes`.
+- Phase 2 kept `global_series_functions` (called by `generate_equations`),
+  `cpad` (called by `print_rheology_matrix`), and `compute_Q(::DruckerPrager)`
+  (part of the plastic-model interface the examples use); the rest of §2.2–§2.7
+  is deleted. `Pkg.test()` still passes. The `docs/make.jl` vitepress stage
+  fails on this machine before and after the deletions, so it says nothing
+  about them; Documenter itself reports no dangling `@docs` reference.
 
 ---
 
@@ -408,7 +417,7 @@ this allocates" — convert it to a GitHub issue and reference the issue number,
 or delete it.
 
 **Risk:** minimal — everything here is provably unreachable.
-**Estimated reduction:** ~250 lines.
+**Reduction:** 254 lines. **Done.**
 
 ---
 
