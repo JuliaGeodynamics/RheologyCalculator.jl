@@ -1,111 +1,87 @@
 # Pretty printing for CompositeRheologies
-import Base.show
 
-# returns a matrix with strings in the right order
-function print_rheology_matrix(v::Tuple, el_num = nothing, digits = 1)
+# Upper bound on the rows and columns a rendered block can occupy: each rheology
+# element contributes at most one row and one column, and nesting only
+# redistributes them between the two. Sizing the buffer from this rather than
+# from a fixed constant means an oversized composite raises a BoundsError
+# instead of being silently trimmed.
+_n_rendered(::AbstractRheology) = 1
+_n_rendered(c::AbstractCompositeModel) = _n_rendered(c.leafs) + _n_rendered(c.branches)
+_n_rendered(t::Tuple) = sum(_n_rendered, t; init = 0)
 
-    n = 40
-    A = Matrix{String}(undef, n, n)
-
-    i, j, i_max = 1, 0, 1
-    for entry in eachindex(v)
-        out = print_rheology_matrix(v[entry], el_num[entry], digits)
-        si = size(out)
-        if prod(si) == 1
-            j = j + 1
-            A[i, j] = out[1]
-        elseif (length(si) == 1) && prod(si) != 1
-            j = j + 1
-            A[i:(i + si[1] - 1), j] = out
-            i_max = max(i_max, si[1])
-        else
-            A[i:(i + si[1] - 1), j:(j + si[2] - 1)] = out
-            j = j + si[2] - 1
-        end
-    end
-    for i in eachindex(A)
-        if !isassigned(A, i)
-            A[i] = ""
-        end
-    end
-    for i in eachindex(A)
-        if A[i] == ""
-            A[i] = print_rheology_matrix("", digits)[1]
-        end
-    end
-
-    A = A[1:i_max, 1:j]
-
-    return A
-end
-
-
-function print_rheology_matrix(v::ParallelModel, el_num0 = nothing, digits = 1)
-    n = 40
-    A = Matrix{String}(undef, n, n)
+# Elements of a composite in the order they are drawn, with their per-type
+# numbering. Two digits are needed as soon as any counter passes 9.
+function _rendered_elements(v::AbstractCompositeModel, el_num0, digits)
     elements = superflatten((v.leafs, v.branches))
     if isnothing(el_num0)
         el_num0 = global_eltype_numbering(v)
-        if maximum(superflatten(el_num0)) > 9
-            digits = 2
-        end
+        maximum(superflatten(el_num0)) > 9 && (digits = 2)
     end
-    el_num = (el_num0[1]..., el_num0[2]...)
-    i, j = 1, 1
-    i_vec = Int[]
+    return elements, (el_num0[1]..., el_num0[2]...), digits
+end
+
+"""
+    _place_blocks(v, el_num0, digits, grow_rows)
+
+Render each element of `v` into its own block of text and lay the blocks out in
+a matrix, one column per element for a series composite (`grow_rows = false`,
+elements drawn left to right) and one row-span per element for a parallel one
+(`grow_rows = true`, elements stacked). Unassigned cells become empty strings.
+
+Returns the trimmed matrix, the row each block starts on (parallel only, for
+bracketing), and the digit width the numbering settled on.
+"""
+function _place_blocks(v::AbstractCompositeModel, el_num0, digits, grow_rows::Bool)
+    elements, el_num, digits = _rendered_elements(v, el_num0, digits)
+    n = _n_rendered(v) + 1
+    A = Matrix{String}(undef, n, n)
+
+    i, j, height = 1, (grow_rows ? 1 : 0), 1
+    starts = Int[]
     for entry in eachindex(elements)
-        out = print_rheology_matrix(elements[entry], el_num[entry], digits)
-        si = size(out)
-        if prod(si) == 1
-            push!(i_vec, i)
-            A[i, j] = out[1]
-            i = i + 1
-        elseif (length(si) == 1) && prod(si) != 1
-            push!(i_vec, i)
-            A[i:(i + si[1] - 1), j] = out
-            i = i + si[1]
+        block = print_rheology_matrix(elements[entry], el_num[entry], digits)
+        rows = length(block)
+        if grow_rows
+            push!(starts, i)
+            A[i:(i + rows - 1), j] = block
+            i += rows
         else
-            push!(i_vec, i)
-            A[i:(i + si[1] - 1), j:(j + si[2] - 1)] = out
-            i, j = i + si[1], j + si[2] - 1
+            j += 1
+            A[i:(i + rows - 1), j] = block
+            height = max(height, rows)
         end
     end
 
-    # Fill every index (with empty strings)
-    for i in eachindex(A)
-        if !isassigned(A, i)
-            A[i] = ""
-        end
+    for k in eachindex(A)
+        isassigned(A, k) || (A[k] = "")
     end
 
-    # Extract the relevant part of A
-    A = A[1:i, 1:j]
+    return A[1:(grow_rows ? i : height), 1:j], starts, digits
+end
 
-    # Center the strings & put brackets around it
+function print_rheology_matrix(v::ParallelModel, el_num0 = nothing, digits = 1)
+    A, starts, _ = _place_blocks(v, el_num0, digits, true)
     B = create_string_vec(A)
 
-    #nel = maximum(textwidth.(remove_colors_string.(B)))
-    #nel = maximum(textwidth.(B))
-    nel = maximum(length_str_no_colors.(B))
-    for i in 1:length(B)
-        if any(in.(i_vec, i))
-            #str_local = remove_colors_string(B[i])
-            str_local = B[i]
-
-            str_local = cpad(str_local, nel, "-")
-            #str_local = B[i][1:5]*str_local*B[i][end-4:end]
-            B[i] = "|" * str_local * "|"
-
-        else
-            B[i] = cpad(B[i], nel, " ")
-            B[i] = "|" * B[i] * "|"
-        end
+    # Bracket each row. Rows a block starts on are filled with dashes, so the
+    # branch reads as connected; the rest are filled with spaces.
+    width = maximum(length_str_no_colors.(B))
+    for i in eachindex(B)
+        fill = i in starts ? "-" : " "
+        B[i] = "|" * cpad(B[i], width, fill) * "|"
     end
 
     return B
 end
 
-length_str_no_colors(str) = textwidth(remove_colors_string.(str)) + 1 * 6 + 2
+# Columns of dash- or space-fill that `print_rheology_matrix(::ParallelModel)`
+# lays around each row of a bracketed block. It sets the width of that fill and
+# nothing else.
+const ROW_FILL_WIDTH = 8
+
+# Visible width of `str`: `textwidth` counts ANSI colour escapes, which occupy no
+# columns, so they are stripped first.
+length_str_no_colors(str) = textwidth(remove_colors_string(str)) + ROW_FILL_WIDTH
 
 function remove_colors_string(str::String)
     str = replace(str, r"\e\[[0-9;]*m" => "")
@@ -125,52 +101,16 @@ function create_string_vec(A)
 end
 
 function print_rheology_matrix(v::SeriesModel, el_num0 = nothing, digits = 1)
-    n = 40
-    A = Matrix{String}(undef, n, n)
-    elements = superflatten((v.leafs, v.branches))
-    if isnothing(el_num0)
-        el_num0 = global_eltype_numbering(v)
-        if maximum(superflatten(el_num0)) > 9
-            digits = 2
-        end
-    end
-    el_num = (el_num0[1]..., el_num0[2]...)
-    i, j, i_max = 1, 0, 1
-    for entry in eachindex(elements)
-        out = print_rheology_matrix(elements[entry], el_num[entry], digits)
-        si = size(out)
-        if prod(si) == 1
-            j = j + 1
-            A[i, j] = out[1]
-        elseif (length(si) == 1) && prod(si) != 1
-            j = j + 1
-            A[i:(i + si[1] - 1), j] = out
-            i_max = max(i_max, si[1])
-        else
-            j = j + 1
-            A[i:(i + si[1] - 1), j:j] = out
-            i = i + si[1]
+    A, _, digits = _place_blocks(v, el_num0, digits, false)
 
-            i_max = max(i_max, si[1])
-        end
-    end
-    # Fill every index (with empty strings)
-    for i in eachindex(A)
-        if !isassigned(A, i)
-            A[i] = ""
-        end
+    # Blank cells become an element-sized run of spaces, so columns stay aligned
+    # where one branch is taller than its neighbours.
+    blank = print_rheology_matrix("", digits)[1]
+    for k in eachindex(A)
+        A[k] == "" && (A[k] = blank)
     end
 
-    for i in eachindex(A)
-        if A[i] == ""
-            A[i] = print_rheology_matrix("", digits)[1]
-        end
-    end
-
-    A = A[1:i_max, 1:j]             # Extract the relevant part of A
-    B = create_string_vec(A)        # Create strings
-
-    return B
+    return create_string_vec(A)
 end
 
 # Print the individual rheological elements in the REPL
@@ -191,92 +131,8 @@ function print_rheology_matrix(v::AbstractElasticity, n = nothing, digits = 1)
 end
 print_rheology_matrix(v::AbstractPlasticity, n = nothing, digits = 1) = ["\e[39m--▬▬▬__$(superscript(n, digits))--\e[39m"]
 
-function create_rheology_string(str, rheo_Parallel::ParallelModel)
-    rheology = rheo_Parallel.elements
-    str = str * "{"
-    for i in eachindex(rheology)
-        str = create_rheology_string(str, rheology[i])
-        if str[end] == 'o'
-            str = str[1:(end - 1)]
-        end
-        str = str * ";"
-    end
-    str = str[1:(end - 1)] * "}"      # removes the last ";"
-
-    return str
-end
-
-function create_rheology_string(str, rheology::Tuple)
-    for i in eachindex(rheology)
-        str = create_rheology_string(str, rheology[i])
-        str = str * "o"
-    end
-    return str
-end
-
-# Print the individual rheological elements in the REPL
-#create_rheology_string(str, rheo_Parallel::AbstractRheology) = str = str * "--⟦▪̲̅▫̲̅▫̲̅▫̲̅--"
-#create_rheology_string(str, rheo_Parallel::AbstractPlasticity) = str = str * "--▬▬▬__--"
-#create_rheology_string(str, rheo_Parallel::Elasticity) = str = str * "--/\\/\\/--"
-
-
-function create_parallel_str(str)
-    # Print them underneath each other:
-    l_start = findfirst("{", str)
-    l_end = findlast("}", str)
-
-    if !isnothing(l_start)
-
-        # step 1: all inner Parallel objects should be left untouched
-        l_st2 = findnext("{", str, l_start[1] + 1)
-        l_end2 = findprev("}", str, l_end[1] - 1)
-
-        if !isnothing(l_st2)
-            str_sub = str[(l_st2[1] + 1):(l_end2[1] - 1)]
-            str_sub = replace(str_sub, ";" => "X")
-
-            str = str[1:l_st2[1]] * str_sub * str[l_end2[1]:end]
-        end
-
-        str1 = split(str[(l_start[1] + 1):(l_end[1] - 3)], ";")
-        len = maximum(textwidth.(str1))
-        for i in eachindex(str1)
-            str1[i] = "|" * cpad(str1[i], len, "-") * "|\n"
-        end
-        str_out = join(str1)     # join the vectors back together
-        str_out = str_out[1:(end - 1)]
-        str_out = replace(str_out, "X" => ";")
-
-        str_out1 = str[1:(l_start[1] - 2)] * str_out * str[(l_end[1] + 2):end]
-
-        str2 = split(str_out1, "\n")
-        len = maximum(textwidth.(str2))
-        for i in eachindex(str2)
-            str2[i] = cpad(str2[i], len, " ") * "\n"
-        end
-        str_out = join(str2)
-
-    else
-        str_out = str
-    end
-
-    return str_out
-end
-
-
 # Center strings
 cpad(s, n::Integer, p = " ") = rpad(lpad(s, div(n + textwidth(s), 2), p), n, p)
-struct InverseCreepLaw{N} <: AbstractRheology
-    v::NTuple{N, AbstractRheology}
-
-    function InverseCreepLaw(v::Vararg{AbstractRheology, N}) where {N}
-        return new{N}(ntuple(i -> v[i], Val(N)))
-    end
-
-    function InverseCreepLaw(v::NTuple{N, AbstractRheology}) where {N}
-        return new{N}(v)
-    end
-end
 
 """
 Creates a superscript string for the given integer.
@@ -303,14 +159,7 @@ end
 
 
 # Print the individual rheological elements in the REPL
-function Base.show(io::IO, c::SeriesModel)
-    str = print_rheology_matrix(c)
-    println.(io, str)
-    return nothing
-end
-
-function Base.show(io::IO, c::ParallelModel)
-    str = print_rheology_matrix(c)
-    println.(io, str)
+function Base.show(io::IO, c::Union{SeriesModel, ParallelModel})
+    println.(io, print_rheology_matrix(c))
     return nothing
 end

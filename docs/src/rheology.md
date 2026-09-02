@@ -17,6 +17,7 @@ RheologyCalculator.AbstractRheology
 RheologyCalculator.AbstractViscosity
 RheologyCalculator.AbstractElasticity
 RheologyCalculator.AbstractPlasticity
+RheologyCalculator.AbstractCapPlasticity
 ```
 
 Each concrete element declares the state functions it contributes in series and

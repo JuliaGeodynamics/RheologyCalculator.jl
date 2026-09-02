@@ -15,6 +15,17 @@ Supertype for plastic yield or flow-rule elements.
 abstract type AbstractPlasticity <: AbstractRheology end # in case we need spacilization at some point
 
 """
+    AbstractCapPlasticity <: AbstractPlasticity
+
+Supertype for plastic elements whose yield surface closes in pressure and whose
+flow rule is differentiated from a potential. A subtype supplies its struct,
+`compute_F(r, τII, P)`, and `compute_Q(r, τII, P)`; the state functions, the
+Duvaut-Lions regularization, and the flow rule are inherited from
+`src/rheology/plastic/cap_plasticity.jl`.
+"""
+abstract type AbstractCapPlasticity <: AbstractPlasticity end
+
+"""
     AbstractElasticity <: AbstractRheology
 
 Supertype for elastic elements. Elastic rheologies may consume history fields
@@ -30,16 +41,6 @@ Supertype for viscous creep or viscosity elements.
 abstract type AbstractViscosity <: AbstractRheology end # in case we need spacilization at some point
 
 ## METHODS FOR SERIES MODELS
-"""
-    length_state_functions(r)
-
-Return the number of series state functions contributed by one rheology or by a
-tuple of rheologies.
-"""
-@inline length_state_functions(r::AbstractRheology) = length(series_state_functions(r))
-@inline length_state_functions(r::NTuple{N, AbstractRheology}) where {N} = length_state_functions(first(r))..., length_state_functions(Base.tail(r))...
-@inline length_state_functions(r::Tuple{}) = ()
-
 """
     series_state_functions(r)
     series_state_functions(r, num)
@@ -57,17 +58,7 @@ function series_state_functions(r::NTuple{N, AbstractRheology}, num::MVector{N, 
     return statefuns, statenum, stateelements
 end
 
-# does not allocate:
-# @inline series_state_functions(r::NTuple{N, AbstractRheology}) where {N} = series_state_functions(first(r))..., series_state_functions(Base.tail(r))...
-@generated function series_state_functions(r::NTuple{N, AbstractRheology}) where {N} 
-    return quote
-        @inline
-        f = Base.@ntuple $N i -> series_state_functions(r[i]) 
-        Base.IteratorsMD.flatten(f)
-    end
-end
-
-# @inline series_state_functions(::Tuple{}) = ()
+@inline series_state_functions(r::NTuple{N, AbstractRheology}) where {N} = flatmaptuple(series_state_functions, r)
 
 # Fallbacks
 @inline series_state_functions(::AbstractRheology) = error("Rheology not defined")
@@ -81,14 +72,7 @@ Return the state functions used when `r` participates in a `ParallelModel`.
 Concrete rheologies should specialize this method. The `num` method additionally
 returns equation and element numbering metadata used during equation generation.
 """
-# @inline parallel_state_functions(r::NTuple{N, AbstractRheology}) where {N} = parallel_state_functions(first(r))..., parallel_state_functions(Base.tail(r))...
-@generated function parallel_state_functions(r::NTuple{N, AbstractRheology}) where {N} 
-    return quote
-        @inline
-        f = Base.@ntuple $N i -> parallel_state_functions(r[i]) 
-        Base.IteratorsMD.flatten(f)
-    end
-end
+@inline parallel_state_functions(r::NTuple{N, AbstractRheology}) where {N} = flatmaptuple(parallel_state_functions, r)
 @inline parallel_state_functions(::Tuple{}) = ()
 
 function parallel_state_functions(r::NTuple{N, AbstractRheology}, num::MVector{N, Int}) where {N}
@@ -108,33 +92,14 @@ Return `funs` with duplicate function objects removed while preserving the first
 occurrence order. This keeps equation generation from emitting repeated global
 state equations.
 """
+# Must stay `@generated`: the membership test needs the prefix `funs[1:(i-1)]`
+# as a literal at specialisation time. Expressed as a recursion carrying the
+# entries seen so far, `f ∈ seen` is deferred to runtime over a tuple of
+# distinct function types, which stops inferring and allocates.
 @generated function flatten_repeated_functions(funs::NTuple{N, Any}) where {N}
     return quote
         @inline
         f = Base.@ntuple $N i -> i == 1 ? (funs[1],) : (funs[i] ∉ funs[1:(i - 1)] ? (funs[i],) : ())
         Base.IteratorsMD.flatten(f)
     end
-end
-
-"""
-    get_unique_state_functions(composite, model)
-
-Collect the unique state functions for a tuple of rheologies under `:series` or
-`:parallel` composition.
-"""
-function get_unique_state_functions(composite::NTuple{N, AbstractRheology}, model::Symbol) where {N}
-    funs = if model === :series
-        get_unique_state_functions(composite, series_state_functions)
-    elseif model === :parallel
-        get_unique_state_functions(composite, parallel_state_functions)
-    else
-        error("Model not defined. Accepted models are :series or :parallel")
-    end
-    return funs
-end
-
-function get_unique_state_functions(composite::NTuple{N, AbstractRheology}, state_fn) where {N}
-    funs = state_fn(composite)
-    # get unique state functions
-    return flatten_repeated_functions(funs)
 end

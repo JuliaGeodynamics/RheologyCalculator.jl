@@ -17,13 +17,15 @@ import ForwardDiff: ForwardDiff
 
 import Base.IteratorsMD.flatten
 
+include("core/tuple_utils.jl")
+
 include("core/rheology_types.jl")
-export AbstractViscosity, AbstractPlasticity, AbstractElasticity
+export AbstractViscosity, AbstractPlasticity, AbstractCapPlasticity, AbstractElasticity
 
 include("core/state_functions.jl")
 
 include("core/composite.jl")
-export CompositeModel, SeriesModel, ParallelModel
+export SeriesModel, ParallelModel
 
 include("core/kwargs.jl")
 

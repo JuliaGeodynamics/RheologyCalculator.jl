@@ -44,12 +44,8 @@ Compute the initial guess for the local solution vector `x` given a tuple `eqs` 
 # Returns
 - `x0::NTuple{N}`: tuple of scalar initial guesses, one per equation.
 """
-@generated function initial_guess_x(eqs::NTuple{N, CompositeEquation}, vars, args, others) where {N}
-    return quote
-        @inline
-        Base.@ntuple $N i -> estimate_initial_value(eqs[i], vars, args, others)
-    end
-end
+@inline initial_guess_x(eqs::NTuple{N, CompositeEquation}, vars, args, others) where {N} =
+    maptuple(eq -> estimate_initial_value(eq, vars, args, others), eqs)
 
 """
     x_keys = x_keys(c::AbstractCompositeModel)
@@ -80,15 +76,8 @@ same unknown.
 # Returns
 - Flattened `NTuple` of `Symbol`s (e.g. `(:τ, :P, :ε, ...)`), one per equation.
 """
-@generated function x_keys(eqs::NTuple{N, CompositeEquation}) where {N}
-    return quote
-        @inline
-        k = Base.@ntuple $N i -> begin
-            keys(differentiable_kwargs(eqs[i].fn))
-        end
-        superflatten(k)
-    end
-end
+@inline x_keys(eqs::NTuple{N, CompositeEquation}) where {N} =
+    superflatten(maptuple(eq -> keys(differentiable_kwargs(eq.fn)), eqs))
 
 """
     estimate_initial_value(eq::CompositeEquation, vars, args, others)
@@ -142,85 +131,55 @@ end
 
 """
     _estimate_initial_value_harm(fn, rheology, el_number, vars, args, others)
-
-Estimate an initial value for a **strain-rate-like** unknown as the harmonic mean of
-`counterpart(fn)` evaluated independently on each rheology component.
-
-For each component `i`, history-dependent kwargs (e.g. `τ0`, `P0`) are extracted from
-`others` using `el_number[i]` and merged with `args` and `vars`. The combined
-`NamedTuple` is converted to scalar invariants via `tensor2invariant` before calling
-the counterpart function.
-
-# Arguments
-- `fn`: the kernel state function whose counterpart is used for the estimate
-  (e.g. `compute_strain_rate` → `compute_stress` is its counterpart).
-- `rheology::NTuple{N, AbstractRheology}`: individual rheology components of the model.
-- `el_number`: tuple of integer indices, one per component, used to retrieve
-  element-local history variables from `others`.
-- `vars::NamedTuple`: kinematic input variables (e.g. `(; ε = εᵢⱼ, θ = θ)`).
-- `args::NamedTuple`: current differentiable unknowns (e.g. `(; τ = τ, P = P)`).
-- `others::NamedTuple`: non-differentiable auxiliary variables (e.g. `dt`, `τ0`, `P0`, `d`).
-
-# Returns
-- `Float64`: harmonic-mean estimate. Returns `1` when the rheology tuple is empty
-  or when all component values are zero.
-"""
-@generated function _estimate_initial_value_harm(fn, rheology::NTuple{N, AbstractRheology}, el_number, vars, args, others) where {N}
-    return quote
-        @inline
-        sum_vals = 0.0
-        Base.@nexprs $N i -> begin
-            keys_hist = history_kwargs(rheology[i])
-            args_local = extract_local_kwargs(others, keys_hist, el_number[i])
-            args_combined = merge(args, args_local, vars)
-            fn_c = counterpart(fn)
-            args_invariant = tensor2invariant(args_combined)
-            val = fn_c(rheology[i], args_invariant)
-            # harmonic mean
-            sum_vals += safe_inv(val)
-        end
-        return safe_inv_one(sum_vals)
-    end
-end
-
-"""
     _estimate_initial_value_arith(fn, rheology, el_number, vars, args, others)
 
-Estimate an initial value for a **stress-like** unknown as the arithmetic sum of
-`counterpart(fn)` evaluated independently on each rheology component.
+Estimate an initial value for one unknown by evaluating `counterpart(fn)`
+independently on each rheology component and combining the results:
 
-For each component `i`, history-dependent kwargs (e.g. `τ0`, `P0`) are extracted from
-`others` using `el_number[i]` and merged with `args` and `vars`. The combined
-`NamedTuple` is converted to scalar invariants via `tensor2invariant` before calling
-the counterpart function.
+| Entry point | Unknown | Combination |
+|---|---|---|
+| `_estimate_initial_value_harm`  | strain-rate-like | harmonic mean |
+| `_estimate_initial_value_arith` | stress-like      | arithmetic sum |
+
+Elements in series share a stress and add their strain rates, so a strain-rate
+unknown combines harmonically; elements in parallel share a strain rate and add
+their stresses, so a stress unknown combines arithmetically.
+
+For each component `i`, history-dependent kwargs (e.g. `τ0`, `P0`) are extracted
+from `others` using `el_number[i]` and merged with `args` and `vars`. The
+combined `NamedTuple` is reduced to scalar invariants by `tensor2invariant`
+before `counterpart(fn)` is called.
 
 # Arguments
-- `fn`: the kernel state function whose counterpart is used for the estimate
-  (e.g. `compute_stress` → `compute_strain_rate` is its counterpart).
-- `rheology::NTuple{N, AbstractRheology}`: individual rheology components of the model.
-- `el_number`: tuple of integer indices, one per component, used to retrieve
-  element-local history variables from `others`.
-- `vars::NamedTuple`: kinematic input variables (e.g. `(; ε = εᵢⱼ, θ = θ)`).
-- `args::NamedTuple`: current differentiable unknowns (e.g. `(; τ = τ, P = P)`).
-- `others::NamedTuple`: non-differentiable auxiliary variables (e.g. `dt`, `τ0`, `P0`, `d`).
+- `fn`: the kernel state function whose counterpart supplies the estimate
+  (e.g. `compute_strain_rate` → `compute_stress`).
+- `rheology::NTuple{N, AbstractRheology}`: the components of the model.
+- `el_number`: one integer index per component, selecting its element-local
+  history entries from `others`.
+- `vars::NamedTuple`: kinematic inputs (e.g. `(; ε = εᵢⱼ, θ = θ)`).
+- `args::NamedTuple`: the current differentiable unknowns (e.g. `(; τ, P)`).
+- `others::NamedTuple`: nondifferentiable auxiliaries (e.g. `dt`, `τ0`, `P0`, `d`).
 
 # Returns
-- `Float64`: arithmetic-sum estimate. Returns `1` when the rheology tuple is empty.
+`1` for an empty rheology tuple, and for the harmonic estimate also when every
+component value is zero. Otherwise the combined estimate.
 """
-@generated function _estimate_initial_value_arith(fn, rheology::NTuple{N, AbstractRheology}, el_number, vars, args, others) where {N}
-    return quote
-        @inline
-        sum_vals = 0.0
-        Base.@nexprs $N i -> begin
-            keys_hist = history_kwargs(rheology[i])
-            args_local = extract_local_kwargs(others, keys_hist, el_number[i])
-            args_combined = merge(args, args_local, vars)
-            fn_c = counterpart(fn)
-            args_invariant = tensor2invariant(args_combined)
-            sum_vals += fn_c(rheology[i], args_invariant)
-        end
-        return sum_vals
+@inline _estimate_initial_value_harm(fn, rheology::NTuple{N, AbstractRheology}, el_number, vars, args, others) where {N} =
+    safe_inv_one(_accumulate_initial_value(safe_inv, fn, rheology, el_number, vars, args, others))
+
+@inline _estimate_initial_value_arith(fn, rheology::NTuple{N, AbstractRheology}, el_number, vars, args, others) where {N} =
+    _accumulate_initial_value(identity, fn, rheology, el_number, vars, args, others)
+
+# Sum `weight(counterpart(fn)(component))` over the components. Unrolled so each
+# component's history extraction and state-function call specialize on its own
+# concrete type.
+@inline function _accumulate_initial_value(weight::W, fn, rheology::NTuple{N, AbstractRheology}, el_number, vars, args, others) where {W, N}
+    fn_c = counterpart(fn)
+    vals = maptuple(rheology, el_number) do r, n
+        args_local = extract_local_kwargs(others, history_kwargs(r), n)
+        weight(fn_c(r, tensor2invariant(merge(args, args_local, vars))))
     end
+    return sum(vals)
 end
 
 """
@@ -243,21 +202,16 @@ Reduce tensor components to their scalar second invariant, dispatching on the ty
 - A scalar, tuple of scalars, or `NamedTuple` of scalars depending on the input type.
 """
 @inline tensor2invariant(A::Tuple{}) = A
-@inline tensor2invariant(A::NTuple{N, Real}) where N = second_invariant(A...)
-@generated function tensor2invariant(A::NTuple{N1, NTuple{N2, Real}}) where {N1, N2} 
-    quote 
-        @inline
-        Base.@ntuple $N1 i -> tensor2invariant(A[i])
-    end
-end
+@inline tensor2invariant(A::NTuple{N, Real}) where {N} = second_invariant(A...)
+@inline tensor2invariant(A::NTuple{N1, NTuple{N2, Real}}) where {N1, N2} = maptuple(tensor2invariant, A)
 @inline tensor2invariant(a::Number) = a
 
 function tensor2invariant(x::NamedTuple)
     k = keys(x)
     v = values(x)
     invariants = ntuple(Val(length(k))) do i
-        @inline 
+        @inline
         tensor2invariant(v[i])
     end
-    (; zip(k, invariants)...)
+    return (; zip(k, invariants)...)
 end

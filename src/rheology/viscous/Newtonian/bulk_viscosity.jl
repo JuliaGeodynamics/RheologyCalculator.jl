@@ -1,6 +1,3 @@
-import ..RheologyCalculator: series_state_functions, parallel_state_functions, _isvolumetric
-import ..RheologyCalculator: compute_volumetric_strain_rate, compute_pressure
-
 """
     BulkViscosity{T} <: AbstractViscosity
 

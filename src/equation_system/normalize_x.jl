@@ -16,15 +16,11 @@ function normalisation_x(c::AbstractCompositeModel, char_τ = 1.0, char_ε = 1.0
     return SA[x0...]
 end
 
-@generated function normalisation_x(eqs::NTuple{N, CompositeEquation}, char_τ, char_ε) where {N}
-    return quote
-        @inline
-        f = Base.@ntuple $N i -> _normalize_x_value(eqs[i].fn, char_τ, char_ε)
-    end
-end
+@inline normalisation_x(eqs::NTuple{N, CompositeEquation}, char_τ, char_ε) where {N} =
+    maptuple(eq -> _normalize_x_value(eq.fn, char_τ, char_ε), eqs)
 
 for fn in (:compute_stress, :compute_pressure, :compute_lambda, :compute_lambda_parallel)
-    @eval _normalize_x_value(::typeof($fn), char_stress, char_strainrate) = char_stress 
+    @eval _normalize_x_value(::typeof($fn), char_stress, char_strainrate) = char_stress
 end
 
 for fn in (:compute_strain_rate, :compute_volumetric_strain_rate, :compute_plastic_strain_rate, :compute_volumetric_plastic_strain_rate)
@@ -37,5 +33,8 @@ end
 Return a normalization vector compatible with `x`. If `xnorm === nothing`, a
 static vector of ones is used.
 """
-@inline correct_xnorm(::SVector{N,T}, xnorm) where {N, T} = (T; xnorm)
-@inline correct_xnorm(::SVector{N,T}, ::Nothing) where {N, T} = @SVector ones(T, N)
+@inline correct_xnorm(::SVector{N}, xnorm::SVector{N}) where {N} = xnorm
+@inline function correct_xnorm(::SVector{N}, xnorm::SVector{M}) where {N, M}
+    throw(DimensionMismatch("xnorm0 has $M entries but the solver vector has $N"))
+end
+@inline correct_xnorm(::SVector{N, T}, ::Nothing) where {N, T} = @SVector ones(T, N)

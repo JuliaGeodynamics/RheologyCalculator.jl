@@ -3,9 +3,6 @@ using RheologyCalculator.RheologyModels
 # core-internal helpers used across the tests
 import RheologyCalculator: compute_stress_elastic, compute_pressure_elastic, compute_residual,
     mynorm, _direct_leaf_elastic_correction, second_invariant_value
-# tensor helpers live in the RheologyModels submodule and are not exported
-import RheologyCalculator.RheologyModels: second_invariant_2D, tensor_strain_rate_2D,
-    vars_2D, zero_stress_tensor_2D, stress_tensor_from_invariant_2D, elastic_stress_history_2D
 
 function runtests()
     files = readdir(@__DIR__)
