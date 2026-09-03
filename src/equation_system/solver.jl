@@ -4,9 +4,9 @@
 Solution of a local rheological system: the solved values `x` paired with the
 symbol naming the unknown each entry stands for (`x_keys` of the model).
 
-An `RCSolution` is an `AbstractVector`, so positional indexing, iteration and
-broadcasting behave exactly as on the underlying `SVector`. Entries can also be
-retrieved by name, `sol[:τ]`, provided that name labels a single entry.
+An `RCSolution` is an `AbstractVector`, so it supports positional indexing and
+iteration. Entries can also be retrieved by name, `sol[:τ]`, provided that
+name labels a single entry.
 """
 struct RCSolution{N, T} <: AbstractVector{T}
     x::SVector{N, T}
