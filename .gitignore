@@ -29,4 +29,6 @@ JuliaLocalPreferences.toml
 
 *pdf
 
+.DS_Store
+
 .vscode/settings.json

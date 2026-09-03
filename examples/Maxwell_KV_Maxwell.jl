@@ -1,12 +1,11 @@
 using RheologyCalculator
-import RheologyCalculator: compute_stress_elastic, compute_pressure_elastic
+using RheologyCalculator.RheologyModels, StaticArrays
+using RheologyCalculator.RheologyModels: second_invariant_2D, vars_2D, zero_stress_tensor_2D, elastic_stress_history_2D
 using Statistics: mean
 
 using GLMakie
 GLMakie.activate!(; visible = false)
 
-include("../rheologies/RheologyDefinitions.jl")
-include("tensor_helpers.jl")
 
 # Analytical solution for the Mixed Kelvin-Voigt and Maxwell body
 #
@@ -112,7 +111,7 @@ let
         scatter!(ax2, log10.(1 ./ dt), log10.(ϵ), color = :black, label = "mean rel. error")
         axislegend(ax2, position = :rt, labelsize = 18)
 
-        GLMakie.save("docs/assets/Maxwell_KV_Maxwell.png", fig)
+        GLMakie.save(joinpath(@__DIR__, "..", "docs", "assets", "Maxwell_KV_Maxwell.png"), fig)
         display(fig)
     end
     with_theme(figure, theme_latexfonts())

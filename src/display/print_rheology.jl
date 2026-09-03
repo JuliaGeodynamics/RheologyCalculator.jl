@@ -52,7 +52,7 @@ function print_rheology_matrix(v::ParallelModel, el_num0 = nothing, digits = 1)
     end
     el_num = (el_num0[1]..., el_num0[2]...)
     i, j = 1, 1
-    i_vec = Int64[]
+    i_vec = Int[]
     for entry in eachindex(elements)
         out = print_rheology_matrix(elements[entry], el_num[entry], digits)
         si = size(out)

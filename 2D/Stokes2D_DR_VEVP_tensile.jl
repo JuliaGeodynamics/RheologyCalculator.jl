@@ -11,7 +11,8 @@ import Statistics: mean
 # second_invariant(ε) = √(0.5 * (ε[1]^2 + ε[2]^2) + ε[3]^2)
 second_invariant(ε) = √(0.5 * (ε[1]^2 + ε[2]^2  + (-ε[1]-ε[2])^2) + ε[3]^2)
 
-include("../rheologies/RheologyDefinitions.jl")
+using RheologyCalculator.RheologyModels
+import RheologyCalculator.RheologyModels: DruckerPragerCap
 
 # Macros
 @views    av(A) = 0.25*(A[1:end-1,1:end-1].+A[2:end,1:end-1].+A[1:end-1,2:end].+A[2:end,2:end])

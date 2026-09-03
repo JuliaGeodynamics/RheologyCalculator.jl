@@ -57,3 +57,10 @@ end
 
 # harmonic_average_stress(r, args) = harmonic_average(r, compute_stress, args)
 # harmonic_average_strain_rate(r, args) = harmonic_average(r, compute_strain_rate, args)
+
+# Sparsity-detection tracers (which carry no primal value)
+# can override those functions in the SparseConnectivityTracer extension. The guards only
+# ever protected the value against Inf/NaN. The dependency pattern is the
+# same with or without them. Float64 behaviour is unchanged.
+@inline safe_inv(v)      = iszero(v) ? zero(v) : inv(v)
+@inline safe_inv_one(v)  = iszero(v) ? one(v)  : inv(v)

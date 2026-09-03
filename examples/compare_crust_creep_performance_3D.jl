@@ -4,7 +4,7 @@ using Statistics
 
 GLMakie.activate!(; visible = false)
 
-module Crust3DRheologyCalculatorExample
+module Crust3DRheologyModelsExample
 include("Elastic_Diffusion_Dislocation_Crust_3D.jl")
 end
 
@@ -12,7 +12,7 @@ module Crust3DNewtonExample
 include("Elastic_Diffusion_Dislocation_Crust_Newton_3D.jl")
 end
 
-const RC = Crust3DRheologyCalculatorExample
+const RC = Crust3DRheologyModelsExample
 const NR = Crust3DNewtonExample
 
 function run_rheologycalculator(setup; ntime, dt)
@@ -91,7 +91,7 @@ function main(; ntime = 501, dt = 250 * RC.SecYear, samples = 20, warmups = 3)
     println()
 
     rc = measure(
-        "RheologyCalculator.jl",
+        "RheologyCalculator.RheologyModels.jl",
         () -> run_rheologycalculator(rc_setup; ntime = ntime, dt = dt);
         samples = samples,
         warmups = warmups,

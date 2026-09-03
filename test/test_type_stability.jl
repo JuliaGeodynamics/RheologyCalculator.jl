@@ -28,10 +28,16 @@ end
     @inferred compute_pressure_elastic(c, x, others)
     @inferred solve(c, x, vars, others; xnorm0 = xnorm, itermax = 1, verbose = false)
 
-    JET.@test_opt generate_equations(c)
-    JET.@test_opt initial_guess_x(c, vars, (; τ = 1.0e2, P = 1.0e6), others)
-    JET.@test_opt normalisation_x(c, 1.0e6, 1.0e-15)
-    JET.@test_opt compute_residual(c, x, vars, others)
-    JET.@test_opt compute_stress_elastic(c, x, others)
-    JET.@test_opt compute_pressure_elastic(c, x, others)
+    # JET's optimization analysis is sensitive to compiler-internal inference
+    # changes and is unreliable on pre-release Julia, so only run it on released
+    # versions. `target_modules` scopes the report to our own code, ignoring
+    # dynamic dispatch inside Base's type-printing / StaticArrays paths.
+    if isempty(VERSION.prerelease)
+        JET.@test_opt target_modules = (RheologyCalculator,) generate_equations(c)
+        JET.@test_opt target_modules = (RheologyCalculator,) initial_guess_x(c, vars, (; τ = 1.0e2, P = 1.0e6), others)
+        JET.@test_opt target_modules = (RheologyCalculator,) normalisation_x(c, 1.0e6, 1.0e-15)
+        JET.@test_opt target_modules = (RheologyCalculator,) compute_residual(c, x, vars, others)
+        JET.@test_opt target_modules = (RheologyCalculator,) compute_stress_elastic(c, x, others)
+        JET.@test_opt target_modules = (RheologyCalculator,) compute_pressure_elastic(c, x, others)
+    end
 end

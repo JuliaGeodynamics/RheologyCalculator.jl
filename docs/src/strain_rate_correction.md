@@ -194,13 +194,13 @@ At ``t=0`` the spring carries no backstress so only the viscous elements ``\eta_
 steady-state load and ``\tau`` approaches the higher value ``\tau_\infty``.
 
 The full runnable example with convergence plot is in `examples/Maxwell_KV_Maxwell.jl`.
-The essential time-stepping structure below follows the same 2D tensor conventions used
-throughout the other examples (load `rheologies/RheologyDefinitions.jl` and
-`examples/tensor_helpers.jl` before running):
+The essential time-stepping structure below uses the bundled material catalogue and its
+2D tensor helpers:
 
 ```julia
 using RheologyCalculator
 import RheologyCalculator: compute_stress_elastic, compute_pressure_elastic
+using RheologyCalculator.RheologyModels
 
 η1 = LinearViscosity(1e22)
 η2 = LinearViscosity(1e21)
@@ -210,16 +210,16 @@ el = IncompressibleElasticity(1e10)
 c = SeriesModel(η1, ParallelModel(η2, SeriesModel(η3, el)))
 
 εII    = 1.0e-14
-vars   = vars_2D(εII)
+vars   = RheologyModels.vars_2D(εII)
 args   = (; τ = 2.0e7, P = 0.0)
-others = (; dt = 1.0e9, τ0 = (zero_stress_tensor_2D(),), P0 = (0.0,))
+others = (; dt = 1.0e9, τ0 = (RheologyModels.zero_stress_tensor_2D(),), P0 = (0.0,))
 
 x = initial_guess_x(c, vars, args, others)
 
 τ_char = 2η1.η * (η2.η + η3.η) / (η1.η + η2.η + η3.η) * εII
 xnorm  = normalisation_x(c, τ_char, εII)
 
-τ_e = (zero_stress_tensor_2D(),)
+τ_e = (RheologyModels.zero_stress_tensor_2D(),)
 P_e = (0.0,)
 t   = 0.0
 for _ in 1:1_000
@@ -227,7 +227,7 @@ for _ in 1:1_000
     x      = solve(c, x, vars, others; xnorm0 = xnorm)
     # pass the full solution — the elastic element is nested inside SeriesModel(η₃, G)
     # so compute_stress_elastic must look at x[3], not x[1]
-    τ_e    = elastic_stress_history_2D(c, x, vars.ε, τ_e, others)
+    τ_e    = RheologyModels.elastic_stress_history_2D(c, x, vars.ε, τ_e, others)
     t     += 1.0e9
 end
 ```
@@ -312,7 +312,7 @@ sequence of multiply-adds with no runtime dispatch or branching.
 
 ```julia
 using RheologyCalculator
-include("rheologies/RheologyDefinitions.jl")
+using RheologyCalculator.RheologyModels
 
 η1 = LinearViscosity(1e22)   # outer series dashpot
 η2 = LinearViscosity(1e21)   # parallel dashpot (KV branch)

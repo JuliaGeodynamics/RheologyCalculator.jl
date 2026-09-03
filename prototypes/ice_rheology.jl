@@ -1,5 +1,4 @@
 using Plots, Printf
-include("RheologyDefinitions.jl")
 
 function ice_rheology()
     verbose = true

@@ -1,6 +1,6 @@
 using LinearAlgebra, Statistics, StaticArrays
 
-include("../rheologies/Hyperbolic.jl")
+import RheologyCalculator.RheologyModels: Hyperbolic
 
 # @testset "Hyperbolic   " begin
     function stress_time(c, vars, x, xnorm, others; ntime = 200, dt = 1.0e8)
@@ -17,7 +17,7 @@ include("../rheologies/Hyperbolic.jl")
         for i in 2:ntime
             others = (; dt = dt, τ0 = τ_e, P0 = P_e)       # other non-differentiable variables needed to evaluate the state functions
             
-            x = RheologyCalculator.solve(c, x, vars, others, verbose = false, xnorm0=xnorm)
+            x = solve(c, x, vars, others, verbose = false, xnorm0=xnorm)
             t += others.dt
             
             τ_e = elastic_stress_history_2D(c, x[1], vars.ε, τ_e, others)

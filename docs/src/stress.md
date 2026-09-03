@@ -2,12 +2,12 @@
 
 The post-processing helpers [`compute_stress_elastic`](@ref RheologyCalculator.compute_stress_elastic)
 and [`compute_pressure_elastic`](@ref RheologyCalculator.compute_pressure_elastic)
-are not exported, so import them alongside the element definitions:
+are re-exported by the `RheologyCalculator.RheologyModels` submodule, along
+with the material elements. Load the package and submodule:
 
 ```julia
 using RheologyCalculator
-import RheologyCalculator: compute_stress_elastic, compute_pressure_elastic
-include("rheologies/RheologyDefinitions.jl")
+using RheologyCalculator.RheologyModels
 ```
 
 We start by defining the material properties 
@@ -39,7 +39,7 @@ vars = (; ε = 1.0e-15, θ = 1.0e-20)  # input variables (constant)
 ```
 and the initial guess of the variables we want to solve for:
 ```julia
-args = (; τ = 1.0e3, P = 1.0e6) 
+args = (; τ = 1.0e3, P = 1.0e6)
 ```
 The auxiliary variables are collected in `others`. These values are passed to
 state functions but are not differentiated by the Newton solve:

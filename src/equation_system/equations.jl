@@ -9,15 +9,15 @@ indices, state function `fn`, rheology tuple, input-variable index, and
 type-local element numbering for history lookup.
 """
 struct CompositeEquation{IsGlobal, T, F, R, RT}
-    parent::Int64       # i-th element of x to be substracted
+    parent::Int       # i-th element of x to be substracted
     child::T            # i-th element of x to be added
-    self::Int64         # equation number
+    self::Int         # equation number
     fn::F               # state function
     rheology::R
-    ind_input::Int64
+    ind_input::Int
     el_number::RT
 
-    function CompositeEquation(parent::Int64, child::T, self::Int64, fn::F, rheology::R, ind_input, ::Val{B}, el_number::RT) where {T, F, R, B, RT}
+    function CompositeEquation(parent::Int, child::T, self::Int, fn::F, rheology::R, ind_input, ::Val{B}, el_number::RT) where {T, F, R, B, RT}
         @assert B isa Bool
         return new{B, T, F, R, RT}(parent, child, self, fn, rheology, ind_input, el_number)
 
@@ -51,11 +51,11 @@ solver vector `x`.
     end
 end
 
-function generate_equations(c::AbstractCompositeModel, fns_own_global::F, ind_input, ::Val{B}, ::Val, el_num; iparent::Int64 = 0, iself::Int64 = 0) where {F, B}
+function generate_equations(c::AbstractCompositeModel, fns_own_global::F, ind_input, ::Val{B}, ::Val, el_num; iparent::Int = 0, iself::Int = 0) where {F, B}
 
     @inline foo(::NTuple{N, Any}) where {N} = Val(N)
 
-    iself_ref = Ref{Int64}(iself)
+    iself_ref = Ref{Int}(iself)
     (; branches, leafs) = c
     local_el = el_num[1]
 
@@ -66,8 +66,10 @@ function generate_equations(c::AbstractCompositeModel, fns_own_global::F, ind_in
     nlocal = length(fns_own_local)
     Nlocal = foo(fns_own_local)
 
+    fn = counterpart(fns_own_global)
+
     ilocal_childs = generate_ilocal_childs(iself, nown, fns_own_local)
-    offsets_parallel = generate_offsets_parallel(branches)
+    offsets_parallel = generate_offsets_parallel(branches, fn, el_num[2])
     iparallel_childs = generate_iparallel_childs(iself, nlocal, nown, offsets_parallel, branches)
 
     # ichildren = (ilocal_childs..., iparallel_childs...)
@@ -80,7 +82,6 @@ function generate_equations(c::AbstractCompositeModel, fns_own_global::F, ind_in
     # need to correct the children of the global equations in absence of local equations (i.e. remove them)
     global_eqs = correct_children(global_eqs0, local_eqs)
 
-    fn = counterpart(fns_own_global)
     parallel_eqs = generate_equations_unroller(branches, fn, el_num, global_eqs, iself_ref)
 
     # return  global_eqs, parallel_eqs
@@ -125,13 +126,30 @@ end
     end
 end
 
-@generated function generate_offsets_parallel(::NTuple{N, Any}) where {N}
+"""
+    generate_offsets_parallel(branches, fn, el_num)
+
+Cumulative equation count contributed by each of `branches` before it, i.e.
+`offsets[i]` is the number of equations occupied by `branches[1:i-1]`'s entire
+subtree. A branch that itself has nested branches contributes more than one
+equation, so this cannot be assumed to equal `i - 1`.
+"""
+@generated function generate_offsets_parallel(branches::NTuple{N, Any}, fn, el_num) where {N}
+    offsets = map(1:N) do i
+        i == 1 && return :(0)
+        terms = [:(counts[$j]) for j in 1:(i - 1)]
+        return foldl((a, b) -> :($a + $b), terms)
+    end
+
     return quote
         @inline
-        n = Base.@ntuple $N i -> i
-        (0, n...)
+        counts = Base.@ntuple $N i -> branch_equation_count(branches[i], fn, el_num[i])
+        return $(Expr(:tuple, offsets...))
     end
 end
+
+@inline branch_equation_count(branch, fn, el_num_i) =
+    length(generate_equations(branch, fn, 0, Val(false), isvolumetric(branch), el_num_i; iparent = 0, iself = 0))
 
 
 correct_children(eqs::CompositeEquation, ::NTuple{N, CompositeEquation}) where {N} = eqs
@@ -327,12 +345,12 @@ extract_local_kwargs(others, (:τ0,), 2) # τ0 = 3.0, d = 4
 extract_local_kwargs(others, (:d,), 2)  # τ0 = 1.1, d = 2
 ```
 """
-function extract_local_kwargs(others::NamedTuple, keys_hist::NTuple{M, Symbol}, n::Int64) where {M}
+function extract_local_kwargs(others::NamedTuple, keys_hist::NTuple{M, Symbol}, n::Int) where {M}
     vals_new = extract_local_kwargs(keys(others), values(others), keys_hist, n)
     return NamedTuple{keys(others)}(vals_new)
 end
 
-@generated function extract_local_kwargs(keys_args::NTuple{N, Symbol}, vals_args::NTuple{N, Union{_T, Tuple}}, keys_hist::NTuple{M, Symbol}, n::Int64) where {N, M, _T}
+@generated function extract_local_kwargs(keys_args::NTuple{N, Symbol}, vals_args::NTuple{N, Any}, keys_hist::NTuple{M, Symbol}, n::Int) where {N, M}
     return quote
         @inline
         Base.@ntuple $N i -> @inbounds _extract_local_kwargs(vals_args[i], keys_args[i], keys_hist, n)
@@ -476,16 +494,19 @@ end
 # Subtract the implicit elastic correction from the first (global) residual entry.
 # The correction is a scalar function of x (through the branch strain rates), so
 # ForwardDiff differentiates through it automatically.
-@inline function subtract_elastic_correction(c::SeriesModel, eqs, residual::NTuple{N}, x::SVector{N}, others) where {N}
+# `residual` is annotated by length only: differentiating with respect to a
+# quantity that enters a single equation makes it heterogeneous (one Dual entry
+# among Float64s), which NTuple{N} would reject.
+@inline function subtract_elastic_correction(c::SeriesModel, eqs, residual::Tuple{Vararg{Any, N}}, x::SVector{N}, others) where {N}
     iselastic(c) == Val(false) && return residual
     cor = _implicit_elastic_correction(c, eqs, x, others)
     return _subtract_first(residual, cor)
 end
 
 # Return a new NTuple with the first entry decreased by `cor`.
-@inline _subtract_first(r::NTuple{N}, cor) where {N} = (r[1] - cor, Base.tail(r)...)
+@inline _subtract_first(r::Tuple{Vararg{Any, N}}, cor) where {N} = (r[1] - cor, Base.tail(r)...)
 
-function compute_residual(c, x::SVector{N, T}, vars, others, ::Int64, ::Int64) where {N, T}
+function compute_residual(c, x::SVector{N, T}, vars, others, ::Int, ::Int) where {N, T}
 
     eqs = generate_equations(c)
     args_all = first(generate_args_template(eqs, x, others))

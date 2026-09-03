@@ -53,8 +53,12 @@ function effective_strain_rate_correction(::Val{true}, c::SeriesModel, ε::NTupl
     effective_strain_rate_correction(c.leafs, c.branches, ε, τ0, others)
 end
 
-# No elastic element anywhere in the composite: return a zero of the same shape as ε.
-@inline effective_strain_rate_correction(::Val{false}, ::SeriesModel, ::NTuple{N,T}, ::NTuple{N}, ::Any) where {N,T} = zero(T)
+# No elastic element anywhere in the composite: return a scalar zero of ε's element
+# type, which broadcasts against ε at the call site.
+# ε is one entry per tensor component and τ0 one entry per elastic element, so their
+# lengths are independent: a purely viscous composite has τ0 = () alongside a
+# 3-component ε. Nothing here reads τ0, so it carries no annotation beyond `Tuple`.
+@inline effective_strain_rate_correction(::Val{false}, ::SeriesModel, ::NTuple{N,T}, ::Tuple, ::Any) where {N,T} = zero(T)
 
 # Scalar / non-NTuple ε overload used when ε is already a scalar invariant
 # (e.g. called recursively from inside the branch correction path).
@@ -608,7 +612,7 @@ end
 # unlike matching on rheology type alone, which can be fooled by a *different*
 # branch's nested equation sharing the same leaf type.
 #
-# `.parent`/`.self` are runtime Int64 fields (not part of `CompositeEquation`'s
+# `.parent`/`.self` are runtime `Int` fields (not part of `CompositeEquation`'s
 # type), so this match can't be resolved at `@generated` specialisation time;
 # only the `fn === compute_stress` pre-filter can (CompositeEquation{IsGlobal,
 # T, F, R, RT}: F is parameter index 3). The pre-filtered candidate positions

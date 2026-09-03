@@ -1,10 +1,10 @@
 using RheologyCalculator
-import RheologyCalculator: compute_strain_rate
+using RheologyCalculator.RheologyModels
+using RheologyCalculator.RheologyModels: second_invariant_2D, vars_2D, zero_stress_tensor_2D, elastic_stress_history_2D
+using RheologyCalculator.RheologyModels: compute_strain_rate
 
 using GLMakie
 
-include("../rheologies/RheologyDefinitions.jl")
-include("tensor_helpers.jl")
 
 const SecYear = 365.25 * 24 * 3600
 
@@ -172,7 +172,7 @@ function main()
 
     history = simulate_crustal_creep(setup.c, diffusion, dislocation, vars, x, xnorm, env)
     fig = plot_crustal_creep_rates_1D(history, diffusion, dislocation, elastic, env)
-    # save("history.png", fig)
+    # save(joinpath(@__DIR__, "..", "history.png"), fig)
 
     println("Elastic + diffusion + dislocation creep, crust-like conditions")
     println("T = $(env.T) K, P = $(env.P / 1e6) MPa, d = $(env.d * 1e3) mm, εII = $(second_invariant_2D(vars.ε)) s^-1")

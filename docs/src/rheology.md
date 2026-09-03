@@ -1,7 +1,16 @@
 # Rheologies
 
 Concrete rheology elements are regular Julia types that subtype one of the
-abstract rheology supertypes:
+abstract rheology supertypes. The package's bundled implementations live in
+`RheologyCalculator.RheologyModels`; import that module before constructing
+one of its exported elements:
+
+```julia
+using RheologyCalculator
+using RheologyCalculator.RheologyModels
+```
+
+The abstract types themselves are defined by the core module:
 
 ```@docs
 RheologyCalculator.AbstractRheology
@@ -30,17 +39,17 @@ For example, a deviatoric Newtonian viscosity contributes strain rate in series
 and stress in parallel:
 
 ```julia
-struct LinearViscosity{T} <: AbstractViscosity
+struct MyLinearViscosity{T} <: RheologyCalculator.AbstractViscosity
     η::T
 end
 
-RheologyCalculator.series_state_functions(::LinearViscosity) =
+RheologyCalculator.series_state_functions(::MyLinearViscosity) =
     (RheologyCalculator.compute_strain_rate,)
-RheologyCalculator.parallel_state_functions(::LinearViscosity) =
+RheologyCalculator.parallel_state_functions(::MyLinearViscosity) =
     (RheologyCalculator.compute_stress,)
 
-RheologyCalculator.compute_strain_rate(r::LinearViscosity; τ = 0, kwargs...) = τ / (2 * r.η)
-RheologyCalculator.compute_stress(r::LinearViscosity; ε = 0, kwargs...) = 2 * r.η * ε
+RheologyCalculator.compute_strain_rate(r::MyLinearViscosity; τ = 0, kwargs...) = τ / (2 * r.η)
+RheologyCalculator.compute_stress(r::MyLinearViscosity; ε = 0, kwargs...) = 2 * r.η * ε
 ```
 
 The solver passes local arguments as keywords. Unknowns come from the solver

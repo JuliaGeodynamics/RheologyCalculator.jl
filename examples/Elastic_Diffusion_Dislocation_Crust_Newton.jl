@@ -1,7 +1,8 @@
 using GLMakie
 using Printf
 
-include("../rheologies/RheologyDefinitions.jl")
+using RheologyCalculator
+using RheologyCalculator.RheologyModels
 
 const SecYear = 365.25 * 24 * 3600
 
@@ -211,7 +212,7 @@ function main()
 
     history = simulate_crustal_creep_newton(diffusion, dislocation, elastic, vars, env)
     fig = plot_crustal_creep_rates_1D(history, diffusion, dislocation, elastic, env)
-    # save("history_newton.png", fig)
+    # save(joinpath(@__DIR__, "..", "history_newton.png"), fig)
 
     println("Elastic + diffusion + dislocation creep, crust-like conditions")
     println("Stress is solved with a scalar Newton-Raphson method.")

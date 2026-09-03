@@ -6,8 +6,8 @@ plastic elements.
 
 The package core provides the composite containers (`SeriesModel`,
 `ParallelModel`), equation generation, solver utilities, and the state-function
-interface that concrete rheologies extend. Example rheology definitions live in
-the repository's `rheologies/` directory and can be used as templates for
+interface that concrete rheologies extend. Bundled material models are available
+through the `RheologyModels` submodule and can be used as templates for
 application-specific material laws.
 """
 module RheologyCalculator
@@ -28,11 +28,11 @@ export CompositeModel, SeriesModel, ParallelModel
 include("core/kwargs.jl")
 
 include("equation_system/equations.jl")
-export generate_equations
+export generate_equations, compute_residual
 
 include("core/others.jl")
 
-include("postprocessing/post_calculations.jl")
+include("post_processing/post_calculations.jl")
 
 include("equation_system/initial_guess.jl")
 export initial_guess_x, x_keys
@@ -41,11 +41,19 @@ include("equation_system/normalize_x.jl")
 export normalisation_x
 
 include("equation_system/solver.jl")
-export solve, RCSolution
+export solve, RCSolution, NonConvergenceError
 
-include("postprocessing/strain_rate_correction.jl")
+include("post_processing/strain_rate_correction.jl")
 export effective_strain_rate_correction
+
+include("equation_system/tangent.jl")
+export tangent, stress_index
 
 include("display/print_rheology.jl")
 
-end # module Rheology
+# Concrete material catalogue (elements + advanced models) as a submodule.
+# Accessed via `RheologyCalculator.RheologyModels` or
+# `using RheologyCalculator.RheologyModels`.
+include("RheologyModels.jl")
+
+end # module RheologyCalculator

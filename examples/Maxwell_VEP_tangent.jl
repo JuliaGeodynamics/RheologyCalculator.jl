@@ -1,9 +1,8 @@
-using RheologyCalculator, StaticArrays, ForwardDiff, Chairmarks
-import RheologyCalculator: compute_stress_elastic, compute_pressure_elastic
+using RheologyCalculator
+using RheologyCalculator.RheologyModels, StaticArrays, ForwardDiff, Chairmarks
+using RheologyCalculator.RheologyModels: second_invariant_2D, tensor_strain_rate_2D, zero_stress_tensor_2D, elastic_stress_history_2D
 import ForwardDiff: ForwardDiff
 
-include("../rheologies/RheologyDefinitions.jl")
-include("tensor_helpers.jl")
 
 
 @inline function compute_stress_tensor(ε::SVector{3, T}, c) where T

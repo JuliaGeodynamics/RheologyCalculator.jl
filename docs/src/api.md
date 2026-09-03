@@ -1,5 +1,24 @@
 # API
 
+## Bundled Material Catalogue
+
+Concrete material elements are defined in `RheologyCalculator.RheologyModels`.
+Load them with `using RheologyCalculator.RheologyModels`.
+
+```@docs
+RheologyCalculator.RheologyModels
+RheologyCalculator.RheologyModels.LinearViscosity
+RheologyCalculator.RheologyModels.PowerLawViscosity
+RheologyCalculator.RheologyModels.LTPViscosity
+RheologyCalculator.RheologyModels.Elasticity
+RheologyCalculator.RheologyModels.IncompressibleElasticity
+RheologyCalculator.RheologyModels.BulkElasticity
+RheologyCalculator.RheologyModels.BulkViscosity
+RheologyCalculator.RheologyModels.DruckerPrager
+RheologyCalculator.RheologyModels.DiffusionCreep
+RheologyCalculator.RheologyModels.DislocationCreep
+```
+
 ## Composite Models
 
 ```@docs
@@ -16,7 +35,11 @@ x_keys
 initial_guess_x
 normalisation_x
 RCSolution
+NonConvergenceError
 solve
+tangent
+stress_index
+compute_residual
 effective_strain_rate_correction
 RheologyCalculator.second_invariant
 ```
@@ -65,7 +88,6 @@ generated residual system.
 
 ```@docs
 RheologyCalculator.CompositeEquation
-RheologyCalculator.compute_residual
 RheologyCalculator.evaluate_state_function
 RheologyCalculator.superflatten
 RheologyCalculator.isvolumetric

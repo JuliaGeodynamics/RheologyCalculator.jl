@@ -1,4 +1,3 @@
-using StaticArrays
 
 const εxx_pure_shear = (1.0, -1.0, 0.0)
 const εxx_pure_shear_3D = (1.0, -1.0, 0.0, 0.0, 0.0, 0.0)

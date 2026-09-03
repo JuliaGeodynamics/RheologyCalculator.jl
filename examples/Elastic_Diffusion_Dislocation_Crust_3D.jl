@@ -1,10 +1,10 @@
 using RheologyCalculator
-import RheologyCalculator: compute_strain_rate
+using RheologyCalculator.RheologyModels
+using RheologyCalculator.RheologyModels: compute_strain_rate
 
 using GLMakie
 using Printf
 
-include("../rheologies/RheologyDefinitions.jl")
 
 const SecYear = 365.25 * 24 * 3600
 

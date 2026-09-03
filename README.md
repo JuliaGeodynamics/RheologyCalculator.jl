@@ -1,8 +1,8 @@
 # RheologyCalculator.jl
 
-[![CI](https://github.com/albert-de-montserrat/RheologyCalculator.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/albert-de-montserrat/RheologyCalculator.jl/actions/workflows/ci.yml)
-[![Docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://albert-de-montserrat.github.io/RheologyCalculator.jl/dev/)
-[![codecov](https://codecov.io/gh/albert-de-montserrat/RheologyCalculator.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/albert-de-montserrat/RheologyCalculator.jl)
+[![CI](https://github.com/juliageodynamics/RheologyCalculator.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/juliageodynamics/RheologyCalculator.jl/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://juliageodynamics.github.io/RheologyCalculator.jl/dev/)
+[![codecov](https://codecov.io/gh/juliageodynamics/RheologyCalculator.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/juliageodynamics/RheologyCalculator.jl)
 [![version](https://juliahub.com/docs/General/RheologyCalculator/stable/version.svg)](https://juliahub.com/ui/Packages/General/RheologyCalculator)
 
 `RheologyCalculator.jl` builds and solves local rheological models from small
@@ -10,46 +10,43 @@ viscous, elastic, and plastic building blocks. Elements can be composed in
 series, in parallel, or in nested hybrid networks, then converted into a
 nonlinear residual system solved with Newton iterations.
 
-The package core is independent of any particular material catalogue. The
-example rheologies in [`rheologies/`](./rheologies) define common viscous,
-elastic, plastic, and pressure-dependent laws by extending the state-function
-interface.
+## Package layout
+
+`RheologyCalculator.jl` is a package with the material catalogue nested
+inside it as a submodule, `RheologyCalculator.RheologyModels`:
+
+| | What it is |
+| --- | --- |
+| **`RheologyCalculator`** | The **core engine**: composition containers (`SeriesModel`, `ParallelModel`), equation generation, the Newton solver, and the state-function interface. Independent of any material catalogue. |
+| **`RheologyCalculator.RheologyModels`** | Concrete constitutive elements (`LinearViscosity`, `Elasticity`, `DruckerPrager`, creep laws, …) plus advanced material models, defined in [`src/RheologyModels.jl`](./src/RheologyModels.jl) and [`src/rheology/`](./src/rheology). **Start here if you just want to build and solve models.** |
+
+`RheologyModels` only exports the material catalogue. To get both the solver engine and the concrete elements, `using`
+both:
+
+```julia
+using RheologyCalculator
+using RheologyCalculator.RheologyModels
+```
+
+Use bare `using RheologyCalculator` on its own only when you want the solver
+engine without the bundled elements (for example, to supply your own material
+laws).
 
 ## Installation
-
-`RheologyCalculator.jl` is registered in the Julia General registry:
 
 ```julia
 using Pkg
 Pkg.add("RheologyCalculator")
 ```
 
-## Rheological element definitions
-
-The package exports the composition and solver machinery (`SeriesModel`,
-`ParallelModel`, `solve`, `initial_guess_x`, …) but **not** the concrete
-constitutive elements used throughout the examples (`LinearViscosity`,
-`Elasticity`, `DruckerPrager`, and the rest). Those are defined in
-[`rheologies/RheologyDefinitions.jl`](./rheologies/RheologyDefinitions.jl),
-which extends the package's state-function interface, and must be loaded
-explicitly:
-
-```julia
-using RheologyCalculator
-include("rheologies/RheologyDefinitions.jl")
-```
-
-The `include` path is relative to the current working directory, so the examples
-below assume a clone of this repository. When the package is installed with
-`Pkg.add`, `include` the file by an absolute path, or copy it (with any
-companion files from `rheologies/` that it needs) into your own project.
-
 ## Quick Start
 
+To build and solve models, `using` both the engine and the `RheologyModels`
+submodule:
+
 ```julia
 using RheologyCalculator
-
-include("rheologies/RheologyDefinitions.jl")
+using RheologyCalculator.RheologyModels
 
 viscous = LinearViscosity(1e22)
 elastic = IncompressibleElasticity(1e10)
@@ -100,7 +97,17 @@ comparison against the analytical solution, and
 [`docs/src/strain_rate_correction.md`](./docs/src/strain_rate_correction.md) for
 the elastic correction derivation.
 
-## Plasticity Models
+## Material models
+
+`RheologyModels` bundles a catalogue of advanced material models. To
+keep the namespace small they are **not exported** — access them via the module
+prefix or an explicit import:
+
+```julia
+using RheologyCalculator
+using RheologyCalculator.RheologyModels
+import RheologyCalculator.RheologyModels: DruckerPragerCap, Hyperbolic, ModCamClay, Golchin, RateStateFriction
+```
 
 ### VEP + Cap (Popov et al., 2025)
 

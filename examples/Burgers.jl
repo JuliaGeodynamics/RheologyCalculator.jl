@@ -1,8 +1,7 @@
-using ForwardDiff, RheologyCalculator
-import RheologyCalculator: compute_stress_elastic, compute_pressure_elastic
+using ForwardDiff, RheologyCalculator.RheologyModels
+using RheologyCalculator
+using RheologyCalculator.RheologyModels: second_invariant_2D, vars_2D, zero_stress_tensor_2D, stress_tensor_from_invariant_2D, elastic_stress_history_2D
 
-include("../rheologies/RheologyDefinitions.jl")
-include("tensor_helpers.jl")
 
 using GLMakie
 
@@ -124,7 +123,7 @@ let
             scatter!(ax2, log10.(1 ./ dt), log10.(ϵ), color=:black, label="numerics")
             axislegend(labelsize=18)
 
-            save("docs/assets/Burgers_model.png", fig)
+            save(joinpath(@__DIR__, "..", "docs", "assets", "Burgers_model.png"), fig)
             display(fig)
         end
         @show ϵ

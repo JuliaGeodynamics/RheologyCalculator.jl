@@ -1,9 +1,8 @@
-using RheologyCalculator, ForwardDiff
+using RheologyCalculator
+using RheologyCalculator.RheologyModels, ForwardDiff
+using RheologyCalculator.RheologyModels: zero_stress_tensor_2D, elastic_stress_history_2D
 using StaticArrays
-import RheologyCalculator: compute_stress_elastic, compute_pressure_elastic
 
-include("../rheologies/RheologyDefinitions.jl")
-include("tensor_helpers.jl")
 
 function compute_stress_tensor(ε)
     viscous = LinearViscosity(1e22)

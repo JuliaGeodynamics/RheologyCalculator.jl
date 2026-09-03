@@ -3,6 +3,13 @@
 In `RheologyCalculator.jl` we can build composite rheologies with arbitrary
 configurations in series, parallel, or hybrid nested networks.
 
+All concrete elements in this page are provided by the material catalogue:
+
+```julia
+using RheologyCalculator
+using RheologyCalculator.RheologyModels
+```
+
 The two main constructors are [`SeriesModel`](@ref) and [`ParallelModel`](@ref).
 Both store direct rheology elements as `leafs` and nested composites as
 `branches`; this is the structure used internally by [`generate_equations`](@ref).

@@ -1,12 +1,11 @@
 using RheologyCalculator
-import RheologyCalculator: compute_stress_elastic, compute_pressure_elastic
+using RheologyCalculator.RheologyModels
+using RheologyCalculator.RheologyModels: second_invariant_2D, tensor_strain_rate_2D, zero_stress_tensor_2D, elastic_stress_history_2D
 using StaticArrays
 using GLMakie
 using LaTeXStrings
 using Printf
 
-include("../rheologies/RheologyDefinitions.jl")
-include("tensor_helpers.jl")
 
 function stress_time(c, vars, x, xnorm, others; ntime = 200, dt = 1.0e8, verbose = false)
     τ1 = zeros(ntime)
@@ -117,7 +116,7 @@ let
         legend = Legend(fig[1, 2], ax, backgroundcolor = (:black, 0.0), framecolor = darkmode ? (:white, 0.25) : (:black, 0.25), labelcolor = darkmode ? :white : :black)
         colgap!(fig.layout, 35)
         display(fig)
-        save("VEVP.png", fig)
+        save(joinpath(@__DIR__, "..", "VEVP.png"), fig)
     end
 
     figure(darkmode = darkmode)

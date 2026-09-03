@@ -1,13 +1,11 @@
 # tests the elastic effective strainrate approach by computing the full tensor (in 2D, assuming that xx = -zz)
 # and comparing it to invariant formulation
-using RheologyCalculator, StaticArrays
-import RheologyCalculator: compute_stress_elastic, compute_pressure_elastic
+using RheologyCalculator
+using RheologyCalculator.RheologyModels, StaticArrays
 
 using GLMakie
-import Statistics: mean
+using Statistics: mean
 using LinearAlgebra
-
-include("../rheologies/RheologyDefinitions.jl")
 
 # Define rheology
 #=

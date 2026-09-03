@@ -3,13 +3,12 @@
 #   stable two-field mixed formulation, EGUsphere [preprint], https://doi.org/10.5194/egusphere-2025-2469, 2025.
 using Test, LinearAlgebra
 using RheologyCalculator
-import RheologyCalculator: compute_stress_elastic, compute_pressure_elastic
+using RheologyCalculator.RheologyModels
+using RheologyCalculator.RheologyModels: second_invariant_2D, vars_2D, zero_stress_tensor_2D, elastic_stress_history_2D
 using GLMakie
 using StaticArrays
 
-include("../rheologies/RheologyDefinitions.jl")
-include("../rheologies/DruckerPragerCap.jl")
-include("tensor_helpers.jl")
+using RheologyCalculator.RheologyModels: DruckerPragerCap, compute_F, compute_Q
 
 function stress_time(c, vars, x, xnorm, others; ntime = 200, dt = 1.0e8)
     # Extract elastic stresses/pressure from solution vector
@@ -29,7 +28,7 @@ function stress_time(c, vars, x, xnorm, others; ntime = 200, dt = 1.0e8)
     for i in 2:ntime
         others = (; dt = dt, τ0 = τ_e, P0 = P_e)       # other non-differentiable variables needed to evaluate the state functions
         
-        x = RheologyCalculator.solve(c, x, vars, others, verbose = true, xnorm0=xnorm)
+        x = solve(c, x, vars, others, verbose = true, xnorm0=xnorm)
         
         t += others.dt
         
@@ -126,7 +125,7 @@ function figure()
     GLMakie.scatter!(ax4, P2/1e6, τ2/1e6, color = :red, label=L"2")
     GLMakie.scatter!(ax4, P3/1e6, τ3/1e6, color = :blue, label=L"3")
 
-    GLMakie.save("./docs/assets/VEPCap.png", fig)
+    GLMakie.save(joinpath(@__DIR__, "..", "docs", "assets", "VEPCap.png"), fig)
 
     display(fig)
 end

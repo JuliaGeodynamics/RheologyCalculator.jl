@@ -1,11 +1,10 @@
 using RheologyCalculator
-import RheologyCalculator: compute_stress_elastic, compute_pressure_elastic
+using RheologyCalculator.RheologyModels
+using RheologyCalculator.RheologyModels: second_invariant_2D, tensor_strain_rate_2D, zero_stress_tensor_2D, elastic_stress_history_2D
 
 using GLMakie
 using LaTeXStrings
 
-include("../rheologies/RheologyDefinitions.jl")
-include("tensor_helpers.jl")
 
 function stress_time(c, vars, x, xnorm, others; ntime = 200, dt = 1.0e8, verbose = false)
     τ1 = zeros(ntime)
@@ -123,7 +122,7 @@ let
         )
         colgap!(fig.layout, 35)
         display(fig)
-        save("VEVP_disl.png", fig)
+        save(joinpath(@__DIR__, "..", "VEVP_disl.png"), fig)
         return fig
     end
 

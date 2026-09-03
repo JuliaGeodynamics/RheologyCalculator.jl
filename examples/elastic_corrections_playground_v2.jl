@@ -6,14 +6,13 @@
 # --⟦▪̲̅▫̲̅▫̲̅▫̲̅¹----/\/\/¹--|--⟦▪̲̅▫̲̅▫̲̅▫̲̅²--|
 #                     |--/\/\/²--| 
 
-using RheologyCalculator, StaticArrays
-import RheologyCalculator: compute_stress_elastic, compute_pressure_elastic
+using RheologyCalculator
+using RheologyCalculator.RheologyModels, StaticArrays
 
 using GLMakie
-import Statistics: mean
+using Statistics: mean
 using LinearAlgebra
 
-include("../rheologies/RheologyDefinitions.jl")
 
 # Define rheology - combined Kelvin & Maxwell
 c, x, τ0, ε, args, others = let
@@ -77,7 +76,7 @@ function stress_time_full_tensor(c, x, τ0, ε; ntime = 200, dt = 1.0e8)
         # xx
         others  = (; dt = dt, τ0 = τxx_e, P0 = P_e)              # other non-differentiable variables needed to evaluate the state functions
         vars    = (; ε = ε[1], θ = 0.0) 
-        x       = solve(c, x, vars, others, verbose = true, elastic_correction=false, atol=1e-15, rtol = 1e-11, itermax=100)
+        x       = solve(c, x, vars, others, verbose = true, atol=1e-15, rtol = 1e-11, itermax=100)
         τxx_e   = compute_stress_elastic(c, x, others)              # elastic stress components
         τxx[i]  = x[1]                                          # total stress    
         τxx1[i] = τxx_e[1]                                          # total stress    
@@ -86,7 +85,7 @@ function stress_time_full_tensor(c, x, τ0, ε; ntime = 200, dt = 1.0e8)
         # zz
         others  = (; dt = dt, τ0 = τzz_e, P0 = P_e)              # other non-differentiable variables needed to evaluate the state functions
         vars    = (; ε = ε[2], θ = 0.0) 
-        x       = solve(c, x, vars, others, verbose = true, elastic_correction=false, atol=1e-15, rtol = 1e-11, itermax=100)
+        x       = solve(c, x, vars, others, verbose = true, atol=1e-15, rtol = 1e-11, itermax=100)
         τzz_e   = compute_stress_elastic(c, x, others)              # elastic stress components
         τzz[i]  = x[1]                                          # total stress    
         τzz1[i] = τzz_e[1]                                          # total stress    
@@ -95,7 +94,7 @@ function stress_time_full_tensor(c, x, τ0, ε; ntime = 200, dt = 1.0e8)
         # xz
         others  = (; dt = dt, τ0 = τxz_e, P0 = P_e)              # other non-differentiable variables needed to evaluate the state functions
         vars    = (; ε = ε[3], θ = 0.0) 
-        x       = solve(c, x, vars, others, verbose = false, elastic_correction=false, atol=1e-15, rtol = 1e-11, itermax=100)
+        x       = solve(c, x, vars, others, verbose = false, atol=1e-15, rtol = 1e-11, itermax=100)
         τxz_e   = compute_stress_elastic(c, x, others)              # elastic stress components
         τxz[i]  = x[1]                                              # total stress    
         τxz1[i] = τxz_e[1]                                          # total stress    
@@ -144,9 +143,9 @@ function stress_time_invariant_manual(c, x0, τ0, ε; ntime = 200, dt = 1.0e8)
         εII     = second_invariant(ε...)
         nij     = [εeff_xx, εeff_zz, εeff_xz]./εeff_II           # normalized deviatoric direction tensor
 
-        others  = (; dt = dt, τ0 = 0.0, P0 = P_e)                # other non-differentiable variables needed to evaluate the state functions
+        others  = (; dt = dt, τ0 = (0.0, 0.0), P0 = P_e)         # zero elastic history: εeff is already corrected by hand above, so solve's correction must vanish (one zero per elastic element)
         vars    = (; ε = εeff_II, θ = 0.0) 
-        x       = solve(c, x0, vars, others, verbose = false, elastic_correction=false)
+        x       = solve(c, x0, vars, others, verbose = false)
         τII[i]  = x[1]                                      # total stress from invariant formulation
         
         
@@ -272,7 +271,7 @@ errorII= norm(τII_invariants[2:end] .- τII_tot[2:end])
 @info "Invariant  - FullTensor:" errorII/mean(τII_tot)
 =#
 
-fig, ax, li = scatter(t_v[2:end]/SecYear, τII_tot[2:end]/1e6, color=:blue, label="numerics, full tensor", linewidth=3)
+fig, ax, li = scatter(t_v[2:end]/SecYear, τII_tot[2:end]/1e6, color=:blue, label="numerics, full tensor")
 lines!(ax, t_v[2:end]/SecYear, τII_1_tot[2:end]/1e6, color=:magenta, label="analytics, elastic1", linewidth=3)
 lines!(ax, t_v[2:end]/SecYear, τII_2_tot[2:end]/1e6, color=:orange, label="analytics, elastic2", linewidth=3)
 

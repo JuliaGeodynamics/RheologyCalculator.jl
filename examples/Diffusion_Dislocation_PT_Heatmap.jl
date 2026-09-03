@@ -1,9 +1,9 @@
 using RheologyCalculator
+using RheologyCalculator.RheologyModels
 
 using GLMakie
 using LaTeXStrings
 
-include("../rheologies/RheologyDefinitions.jl")
 
 function creep_prefactors(diffusion, dislocation, T, P, f, d)
     Cdiff = diffusion.A * f^diffusion.r * d^(-diffusion.p) * exp(-(diffusion.E + P * diffusion.V) / (diffusion.R * T))
@@ -131,4 +131,4 @@ end
 d = 1.0e-3
 map = equal_mechanism_surface(diffusion, dislocation; d = d)
 fig = plot_equal_mechanism_surface(map; d = d)
-save("def_mechanism.png", fig)
+save(joinpath(@__DIR__, "..", "def_mechanism.png"), fig)

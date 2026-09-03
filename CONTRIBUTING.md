@@ -22,8 +22,8 @@ improvements, new rheologies, and code.
 3. Make your change. New rheologies are added by subtyping `AbstractViscosity`,
    `AbstractElasticity`, or `AbstractPlasticity`, specialising
    `series_state_functions` / `parallel_state_functions`, and implementing the
-   corresponding state functions (see `rheologies/RheologyDefinitions.jl` for
-   canonical examples and `CLAUDE.md` for the architecture).
+   corresponding state functions (see `src/RheologyModels.jl` and the bundled
+   files under `src/rheology/` for canonical examples).
 4. Add or update tests under `test/` and run the suite:
    ```julia
    using Pkg

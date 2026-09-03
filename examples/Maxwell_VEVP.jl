@@ -1,11 +1,10 @@
 using RheologyCalculator
-import RheologyCalculator: compute_stress_elastic, compute_pressure_elastic
+using RheologyCalculator.RheologyModels
+using RheologyCalculator.RheologyModels: second_invariant_2D, tensor_strain_rate_2D, zero_stress_tensor_2D, elastic_stress_history_2D
 using StaticArrays
 using GLMakie
 using LaTeXStrings
 
-include("../rheologies/RheologyDefinitions.jl")
-include("tensor_helpers.jl")
 
 #     t_v, τ = stress_time(c, vars, x, xnorm, others; ntime = 1_500, dt = 1e8)
 # @b solve($(c, x, vars, others)..., verbose = $true, xnorm0=$xnorm)
@@ -62,7 +61,7 @@ c, x, xnorm, vars, args, others, yield_stress = let
     c, x, xnorm, vars, args, others, yield_stress
 end
 
-# eqs = RheologyCalculator.generate_equations(c)
+# eqs = RheologyCalculator.RheologyModels.generate_equations(c)
 # for eq in eqs
 #     println(
 #       "
