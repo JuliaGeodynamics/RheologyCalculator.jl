@@ -34,6 +34,8 @@ x_keys
 ```@docs
 initial_guess_x
 normalisation_x
+RCSolution
+NonConvergenceError
 solve
 tangent
 stress_index
@@ -86,7 +88,6 @@ generated residual system.
 
 ```@docs
 RheologyCalculator.CompositeEquation
-RheologyCalculator.compute_residual
 RheologyCalculator.evaluate_state_function
 RheologyCalculator.superflatten
 RheologyCalculator.isvolumetric

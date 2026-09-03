@@ -56,10 +56,16 @@ vars   = (; ε = 1.0e-14, θ = 0.0)
 args   = (; τ = 1.0e3, P = 0.0)
 others = (; dt = 1.0e10, τ0 = (0.0,), P0 = (0.0,))
 
-x = initial_guess_x(c, vars, args, others)
-x = solve(c, x, vars, others)
+x0  = initial_guess_x(c, vars, args, others)
+sol = solve(c, x0, vars, others)
+
+sol.x     # solved SVector
+sol.vars  # variable name for each entry
 ```
 
+`solve` returns an `RCSolution`. It supports positional indexing (`sol[1]`) and
+can be passed directly to the next `solve`; use `sol.x` for the underlying
+`SVector` and `sol.vars` for its variable names.
 
 ## Composite Models
 

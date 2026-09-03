@@ -1,4 +1,39 @@
 """
+    RCSolution(x, vars)
+
+Solution of a local rheological system: the solved values `x` paired with the
+symbol naming the unknown each entry stands for (`x_keys` of the model).
+
+An `RCSolution` is an `AbstractVector`, so it supports positional indexing and
+iteration. Entries can also be retrieved by name, `sol[:τ]`, provided that
+name labels a single entry.
+"""
+struct RCSolution{N, T} <: AbstractVector{T}
+    x::SVector{N, T}
+    vars::NTuple{N, Symbol}
+end
+
+RCSolution(c::AbstractCompositeModel, x::SVector) = RCSolution(x, x_keys(c))
+
+Base.size(::RCSolution{N}) where {N} = (N,)
+Base.IndexStyle(::Type{<:RCSolution}) = IndexLinear()
+Base.@propagate_inbounds Base.getindex(sol::RCSolution, i::Int) = sol.x[i]
+
+function Base.getindex(sol::RCSolution, k::Symbol)
+    n = count(==(k), sol.vars)
+    isone(n) || throw(ArgumentError("`:$k` labels $n entries of the solution; index those by position"))
+    return sol.x[findfirst(==(k), sol.vars)]
+end
+
+function Base.show(io::IO, ::MIME"text/plain", sol::RCSolution)
+    println(io, "RCSolution:")
+    for (k, v) in zip(sol.vars, sol.x)
+        println(io, "  ", k, " = ", v)
+    end
+    return nothing
+end
+
+"""
     solve(c::AbstractCompositeModel, x::SVector, vars, others; xnorm0=nothing,
           atol=1.0e-12, rtol=1.0e-12, itermax=1.0e4, verbose=false)
 
@@ -19,6 +54,9 @@ of the corrected effective strain-rate tensor.
 - `rtol`: relative residual tolerance against the initial residual.
 - `itermax`: maximum Newton iterations.
 - `verbose`: print the final iteration count, residual norm, and line-search step.
+
+Returns an [`RCSolution`](@ref) pairing the solved vector with the names of the
+unknowns.
 
 Throws [`NonConvergenceError`](@ref) if the iteration ends without meeting
 either tolerance, which includes the case of a residual that became `NaN`.
@@ -95,8 +133,11 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0=noth
     # A NaN residual compares false against both tolerances and so exits the loop
     # by the same door as a converged one; `isfinite` is what separates them.
     isfinite(er) && (er ≤ atol || er ≤ rtol * er0) || throw(NonConvergenceError(it, er, x))
-    return x
+    return RCSolution(c, x)
 end
+
+solve(c::AbstractCompositeModel, sol::RCSolution, vars0, others; kwargs...) = solve(c, sol.x, vars0, others; kwargs...)
+compute_residual(c, sol::RCSolution, vars, others) = compute_residual(c, sol.x, vars, others)
 
 """
     NonConvergenceError(iterations, residual, x)
