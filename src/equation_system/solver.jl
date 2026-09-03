@@ -1,4 +1,39 @@
 """
+    RCSolution(x, vars)
+
+Solution of a local rheological system: the solved values `x` paired with the
+symbol naming the unknown each entry stands for (`x_keys` of the model).
+
+An `RCSolution` is an `AbstractVector`, so positional indexing, iteration and
+broadcasting behave exactly as on the underlying `SVector`. Entries can also be
+retrieved by name, `sol[:τ]`, provided that name labels a single entry.
+"""
+struct RCSolution{N, T} <: AbstractVector{T}
+    x::SVector{N, T}
+    vars::NTuple{N, Symbol}
+end
+
+RCSolution(c::AbstractCompositeModel, x::SVector) = RCSolution(x, x_keys(c))
+
+Base.size(::RCSolution{N}) where {N} = (N,)
+Base.IndexStyle(::Type{<:RCSolution}) = IndexLinear()
+Base.@propagate_inbounds Base.getindex(sol::RCSolution, i::Int) = sol.x[i]
+
+function Base.getindex(sol::RCSolution, k::Symbol)
+    n = count(==(k), sol.vars)
+    isone(n) || throw(ArgumentError("`:$k` labels $n entries of the solution; index those by position"))
+    return sol.x[findfirst(==(k), sol.vars)]
+end
+
+function Base.show(io::IO, ::MIME"text/plain", sol::RCSolution)
+    println(io, "RCSolution:")
+    for (k, v) in zip(sol.vars, sol.x)
+        println(io, "  ", k, " = ", v)
+    end
+    return nothing
+end
+
+"""
     solve(c::AbstractCompositeModel, x::SVector, vars, others; xnorm0=nothing,
           atol=1.0e-12, rtol=1.0e-12, itermax=1.0e4, verbose=false)
 
@@ -19,6 +54,9 @@ of the corrected effective strain-rate tensor.
 - `rtol`: relative residual tolerance against the initial residual.
 - `itermax`: maximum Newton iterations.
 - `verbose`: print the final iteration count, residual norm, and line-search step.
+
+Returns an [`RCSolution`](@ref) pairing the solved vector with the names of the
+unknowns.
 """
 function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0=nothing, atol::Float64 = 1.0e-12, rtol::Float64 = 1.0e-12, itermax = 1.0e4, verbose::Bool = false)
    
@@ -67,8 +105,10 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0=noth
     if verbose && it > 1
         println("Iterations: $it, Error: $er, α = $α")
     end
-    return x
+    return RCSolution(c, x)
 end
+
+solve(c::AbstractCompositeModel, sol::RCSolution, vars0, others; kwargs...) = solve(c, sol.x, vars0, others; kwargs...)
 
 """
     bt_line_search(Δx, x, composite, vars, others, xnorm; α=1.0, ρ=0.5, lstol=0.9, α_min=1.0e-8)

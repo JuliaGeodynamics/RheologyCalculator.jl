@@ -112,8 +112,8 @@ vars   = (; ε = 1.0e-14, θ = 0.0)          # prescribed kinematic inputs
 args   = (; τ = 1.0e3, P = 0.0)            # initial guess for unknowns
 others = (; dt = 1.0e10, τ0 = (0.0,), P0 = (0.0,))  # history / auxiliary fields
 
-x = initial_guess_x(c, vars, args, others)
-x = solve(c, x, vars, others)              # Newton solve
+x0  = initial_guess_x(c, vars, args, others)
+sol = solve(c, x0, vars, others)            # values in sol.x, names in sol.vars
 ```
 
 More elaborate networks — generalized Maxwell/Kelvin–Voigt bodies, Burgers

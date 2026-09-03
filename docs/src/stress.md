@@ -64,7 +64,7 @@ function stress_time(c, vars, x; ntime = 200, dt = 1.0e8)
     for i in 2:ntime
         # non-differentiable variables needed to evaluate the state functions
         others = (; dt = dt, τ0 = τ_e, P0 = P_e) 
-        # solve the system of equations
+        # solve returns an RCSolution; it can seed the next solve directly
         x      = solve(c, x, vars, others)
         # Post-process the results
         τ_e    = compute_stress_elastic(c, x, others)   # elastic stress
@@ -79,6 +79,9 @@ end
 
 t_v, τ = stress_time(c, vars, x; ntime = 25, dt = 1.0e9);
 ```
+
+The returned `RCSolution` stores the solved static vector in `x.x` and its
+variable names in `x.vars`; positional indexing such as `x[1]` also works.
 
 We can finally compute the analytical solution of the stress time-evolution, and compare it against our results
 

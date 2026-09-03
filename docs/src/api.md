@@ -15,6 +15,7 @@ x_keys
 ```@docs
 initial_guess_x
 normalisation_x
+RCSolution
 solve
 effective_strain_rate_correction
 RheologyCalculator.second_invariant

@@ -40,7 +40,7 @@ function elastic_stress_history_2D(c, τII, ε, τ0, others)
     return (stress_tensor_from_invariant_2D(τII, ε_eff),)
 end
 
-function elastic_stress_history_2D(c, x::SVector, ε, τ0, others)
+function elastic_stress_history_2D(c, x::AbstractVector, ε, τ0, others)
     ε_corr = effective_strain_rate_correction(c, ε, τ0, others)
     ε_eff  = ε .+ ε_corr
     τII_elastic = compute_stress_elastic(c, x, others)
@@ -53,7 +53,7 @@ function elastic_stress_history_3D(c, τII, ε, τ0, others)
     return (stress_tensor_from_invariant_3D(τII, ε_eff),)
 end
 
-function elastic_stress_history_3D(c, x::SVector, ε, τ0, others)
+function elastic_stress_history_3D(c, x::AbstractVector, ε, τ0, others)
     ε_corr = effective_strain_rate_correction(c, ε, τ0, others)
     ε_eff  = ε .+ ε_corr
     τII_elastic = compute_stress_elastic(c, x, others)

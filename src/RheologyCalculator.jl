@@ -41,7 +41,7 @@ include("equation_system/normalize_x.jl")
 export normalisation_x
 
 include("equation_system/solver.jl")
-export solve
+export solve, RCSolution
 
 include("postprocessing/strain_rate_correction.jl")
 export effective_strain_rate_correction
