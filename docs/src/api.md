@@ -27,6 +27,7 @@ ParallelModel
 CompositeModel
 generate_equations
 x_keys
+inspect
 ```
 
 ## Solver

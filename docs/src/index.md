@@ -66,8 +66,10 @@ others = (; dt = 1.0e10, τ0 = (0.0,), P0 = (0.0,))
 x0  = initial_guess_x(c, vars, args, others)
 sol = solve(c, x0, vars, others)
 
-sol.x     # solved SVector
-sol.vars  # variable name for each entry
+sol.x           # solved SVector
+sol.iterations  # Newton iterations taken
+sol.residual    # final normalized residual norm
+inspect(c)      # what each entry stands for, and which equation solves it
 ```
 
 Here `vars` contains prescribed rates (`ε`, `θ`), `args` seeds the solver
@@ -75,8 +77,22 @@ unknowns (`τ`, `P`, and any branch-local unknowns), and `others` carries values
 that are not differentiated by the local Newton solve (`dt`, elastic history,
 grain size, temperature, pressure-dependent parameters, and similar fields).
 `solve` returns an [`RCSolution`](@ref), which supports positional indexing and
-can be passed directly to the next solve. Its `x` field is the solved `SVector`;
-its `vars` field contains the corresponding variable names.
+can be passed directly to the next solve. Its `x` field is the solved `SVector`,
+and `iterations` and `residual` record how the Newton iteration ended.
+
+A solution carries numbers only, which keeps it `isbits` and therefore usable
+inside a GPU kernel. [`inspect`](@ref) describes its entries, giving for each one
+the name of the unknown, the equation that solves it, whether that equation is
+global or belongs to a parallel branch, and the elements it spans:
+
+```julia
+inspect(c)[1]  # (var = :τ, equation = :compute_strain_rate, isglobal = true, ...)
+```
+
+A name repeats when several equations share the same physical unknown — a
+composite with a parallel branch has one `:τ` per branch, the global one being
+the stress of the model as a whole — and the remaining fields are what tell
+those apart.
 
 `solve` raises `NonConvergenceError` when the requested tolerances are not
 reached. The exception includes the last iterate, normalized residual, and a

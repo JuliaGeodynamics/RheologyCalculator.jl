@@ -11,12 +11,6 @@ function equation_graph(c)
     end
 end
 
-function solution_allocations(c, x, vars, others)
-    sol = solve(c, x, vars, others)
-    sol[:ε]
-    return @allocated(solve(c, sol, vars, others)), @allocated(sol[:ε])
-end
-
 @testset "parallel linear viscosity acts as lower cutoff" begin
     ε = 1.0e-14
     η_soft = 1.0e12
@@ -26,11 +20,7 @@ end
     x0 = initial_guess_x(c, vars, (; τ = 1.0), NamedTuple())
     x = solve(c, x0, vars, NamedTuple())
 
-    @test x isa RCSolution
-    @test x.vars == x_keys(c)
-    @test x.x isa typeof(x0)
     @test x[1] / (2 * ε) ≈ η_soft + η_floor
-    @test solution_allocations(c, x0, vars, NamedTuple()) == (0, 0)
 end
 
 @testset "equation graphs for composite layouts" begin

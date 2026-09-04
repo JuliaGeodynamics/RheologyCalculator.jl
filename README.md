@@ -59,13 +59,18 @@ others = (; dt = 1.0e10, τ0 = (0.0,), P0 = (0.0,))
 x0  = initial_guess_x(c, vars, args, others)
 sol = solve(c, x0, vars, others)
 
-sol.x     # solved SVector
-sol.vars  # variable name for each entry
+sol.x           # solved SVector
+sol.iterations  # Newton iterations taken
+sol.residual    # final normalized residual norm
+inspect(c)      # what each entry stands for, and which equation solves it
 ```
 
 `solve` returns an `RCSolution`. It supports positional indexing (`sol[1]`) and
 can be passed directly to the next `solve`; use `sol.x` for the underlying
-`SVector` and `sol.vars` for its variable names.
+`SVector`. A solution holds numbers only, so it is `isbits` and can be built
+inside a GPU kernel; `inspect(c)` describes the entries, giving for each the name
+of the unknown, the equation that solves it, and the elements that equation
+spans.
 
 ## Composite Models
 

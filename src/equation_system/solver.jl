@@ -1,35 +1,31 @@
 """
-    RCSolution(x, vars)
+    RCSolution(x::SVector, iterations, residual)
 
-Solution of a local rheological system: the solved values `x` paired with the
-symbol naming the unknown each entry stands for (`x_keys` of the model).
+Solution of a local rheological system: the solved values `x`, the number of
+Newton iterations [`solve`](@ref) needed, and the final normalized residual
+norm.
 
 An `RCSolution` is an `AbstractVector`, so it supports positional indexing and
-iteration. Entries can also be retrieved by name, `sol[:τ]`, provided that
-name labels a single entry.
+iteration, and it can be passed straight back into `solve`. It holds numbers
+only, and so is `isbits` and usable inside GPU kernels; [`inspect`](@ref)
+describes what each entry stands for.
 """
-struct RCSolution{N, T} <: AbstractVector{T}
+struct RCSolution{N, T, R} <: AbstractVector{T}
     x::SVector{N, T}
-    vars::NTuple{N, Symbol}
+    iterations::Int
+    residual::R
 end
 
-RCSolution(c::AbstractCompositeModel, x::SVector) = RCSolution(x, x_keys(c))
+@inline RCSolution(x::SVector{N, T}, iterations, residual) where {N, T} =
+    RCSolution{N, T, typeof(residual)}(x, iterations, residual)
 
 Base.size(::RCSolution{N}) where {N} = (N,)
 Base.IndexStyle(::Type{<:RCSolution}) = IndexLinear()
 Base.@propagate_inbounds Base.getindex(sol::RCSolution, i::Int) = sol.x[i]
 
-function Base.getindex(sol::RCSolution, k::Symbol)
-    n = count(==(k), sol.vars)
-    isone(n) || throw(ArgumentError("`:$k` labels $n entries of the solution; index those by position"))
-    return sol.x[findfirst(==(k), sol.vars)]
-end
-
 function Base.show(io::IO, ::MIME"text/plain", sol::RCSolution)
-    println(io, "RCSolution:")
-    for (k, v) in zip(sol.vars, sol.x)
-        println(io, "  ", k, " = ", v)
-    end
+    println(io, "RCSolution (iterations: ", sol.iterations, ", residual: ", sol.residual, ")")
+    Base.print_array(io, sol.x)
     return nothing
 end
 
@@ -55,8 +51,8 @@ of the corrected effective strain-rate tensor.
 - `itermax`: maximum Newton iterations.
 - `verbose`: print the final iteration count, residual norm, and line-search step.
 
-Returns an [`RCSolution`](@ref) pairing the solved vector with the names of the
-unknowns.
+Returns an [`RCSolution`](@ref) holding the solved vector, the iteration count,
+and the final residual norm. [`inspect`](@ref) describes its entries.
 
 Throws [`NonConvergenceError`](@ref) if the iteration ends without meeting
 either tolerance, which includes the case of a residual that became `NaN`.
@@ -81,8 +77,10 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0=noth
     xnorm = correct_xnorm(x, xnorm0)
     r     = compute_residual(c, x, vars, others)   # initial residual
     it = 0
-    er = Inf
     er0 = mynorm(r, xnorm)
+    # `oftype` keeps the residual a single type across the loop, so that the
+    # value stored in the returned `RCSolution` is inferrable.
+    er = oftype(er0, Inf)
 
     nonneg = branch_strain_rate_mask(c)
 
@@ -133,7 +131,7 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0=noth
     # A NaN residual compares false against both tolerances and so exits the loop
     # by the same door as a converged one; `isfinite` is what separates them.
     isfinite(er) && (er ≤ atol || er ≤ rtol * er0) || throw(NonConvergenceError(it, er, x))
-    return RCSolution(c, x)
+    return RCSolution(x, it, er)
 end
 
 solve(c::AbstractCompositeModel, sol::RCSolution, vars0, others; kwargs...) = solve(c, sol.x, vars0, others; kwargs...)
