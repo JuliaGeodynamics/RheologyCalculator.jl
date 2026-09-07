@@ -51,12 +51,12 @@ The typical workflow is:
    and [`compute_pressure_elastic`](@ref RheologyCalculator.compute_pressure_elastic),
    when needed.
 
-```julia
+```jldoctest quickstart
 using RheologyCalculator
 using RheologyCalculator.RheologyModels
 
 viscous = LinearViscosity(1e22)
-elastic = IncompressibleElasticity(1e10)
+elastic = Elasticity(1e10, 4.667e10)
 c = SeriesModel(viscous, elastic)
 
 vars = (; ε = 1.0e-14, θ = 0.0)
@@ -66,10 +66,11 @@ others = (; dt = 1.0e10, τ0 = (0.0,), P0 = (0.0,))
 x0  = initial_guess_x(c, vars, args, others)
 sol = solve(c, x0, vars, others)
 
-sol.x           # solved SVector
-sol.iterations  # Newton iterations taken
-sol.residual    # final normalized residual norm
-inspect(c)      # what each entry stands for, and which equation solves it
+# output
+
+RCSolution (iterations: 1, residual: 0.0)
+ 1.9801980198019804e6
+ 0.0
 ```
 
 Here `vars` contains prescribed rates (`ε`, `θ`), `args` seeds the solver
@@ -85,19 +86,28 @@ inside a GPU kernel. [`inspect`](@ref) describes its entries, giving for each on
 the name of the unknown, the equation that solves it, whether that equation is
 global or belongs to a parallel branch, and the elements it spans:
 
-```julia-repl
+```jldoctest quickstart
+julia> sol.x
+2-element StaticArraysCore.SVector{2, Float64} with indices SOneTo(2):
+ 1.9801980198019804e6
+ 0.0
+
+julia> sol.iterations, sol.residual
+(1, 0.0)
+
 julia> inspect(c)
-1-element ModelInspection:
-  index  var  equation             scope   elements
-      1  τ    compute_strain_rate  global  LinearViscosity 1, IncompressibleElasticity 1
+2-element ModelInspection:
+  index  var  equation                        scope   elements
+      1  τ    compute_strain_rate             global  LinearViscosity 1, Elasticity 1
+      2  P    compute_volumetric_strain_rate  global  LinearViscosity 1, Elasticity 1
 ```
 
 The table earns its keep on a composite with a parallel branch, where a name
 repeats — one `:τ` per branch, the global one being the stress of the model as a
 whole — and the `equation` and `elements` columns are what tell those apart:
 
-```julia-repl
-julia> inspect(SeriesModel(viscous, ParallelModel(LinearViscosity(1e21), elastic)))
+```jldoctest quickstart
+julia> inspect(SeriesModel(viscous, ParallelModel(LinearViscosity(1e21), IncompressibleElasticity(1e10))))
 2-element ModelInspection:
   index  var  equation             scope   elements
       1  τ    compute_strain_rate  global  LinearViscosity 1

@@ -16,7 +16,7 @@ makedocs(;
         devurl = "dev",
         sidebar_drawer = true,
     ),
-    warnonly = Documenter.except(:footnote),
+    warnonly = [:footnote],
     checkdocs = :exports,
     draft    = false,
     source   = "src",

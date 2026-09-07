@@ -5,6 +5,13 @@ configurations in series, parallel, or hybrid nested networks.
 
 All concrete elements in this page are provided by the material catalogue:
 
+```@meta
+DocTestSetup = quote
+    using RheologyCalculator
+    using RheologyCalculator.RheologyModels
+end
+```
+
 ```julia
 using RheologyCalculator
 using RheologyCalculator.RheologyModels
@@ -26,15 +33,16 @@ Example of a Maxwell visco-elastic model, with a viscous damper of viscosity
 $\eta=10^{20}$ and an elastic spring with $G=10$ GPa and $K=46.67$ GPa. First
 we define the individual components:
 
-```julia
-viscous_damper  = LinearViscosity(1e20)
-elastic_spring  = Elasticity(10e9, 46.67e9)
+```jldoctest composites
+julia> viscous_damper = LinearViscosity(1e20);
+
+julia> elastic_spring = Elasticity(10e9, 46.67e9);
 ```
 
 and then we stitch them together in a `SeriesModel` object:
 
-```julia
-maxwell_material = SeriesModel(viscous_damper, elastic_spring)
+```jldoctest composites
+julia> maxwell_material = SeriesModel(viscous_damper, elastic_spring);
 ```
 
 Any number of individual rheology models can be placed inside one
@@ -45,8 +53,8 @@ Any number of individual rheology models can be placed inside one
 Now let's define the Kelvin-Voigt visco-elastic model with the same individual
 elements. In this case, put them together in a `ParallelModel`:
 
-```julia
-KelvinVoigt_material = ParallelModel(viscous_damper, elastic_spring)
+```jldoctest composites
+julia> KelvinVoigt_material = ParallelModel(viscous_damper, elastic_spring);
 ```
 
 As before, a `ParallelModel` can contain any number of rheology elements.
@@ -57,19 +65,39 @@ We can also combine any number of series and parallel rheologies. In the
 following example we define the Kelvin representation of the
 [Burgers viscoelastic material](https://en.wikipedia.org/wiki/Burgers_material):
 
-```julia
-parallel_element = ParallelModel(viscous_damper, elastic_spring)
-Burgers_material = SeriesModel(viscous_damper, elastic_spring, parallel_element)
+```jldoctest composites
+julia> parallel_element = ParallelModel(viscous_damper, elastic_spring);
+
+julia> Burgers_material = SeriesModel(viscous_damper, elastic_spring, parallel_element);
 ```
 
-The resulting equation layout can be inspected with:
+The resulting equation layout can be read off with [`inspect`](@ref), which
+returns one entry per entry of the solver vector:
 
-```julia
-eqs = generate_equations(Burgers_material)
-x_keys(Burgers_material)
+```jldoctest composites
+julia> inspect(Burgers_material)
+4-element ModelInspection:
+  index  var  equation                        scope   elements
+      1  τ    compute_strain_rate             global  LinearViscosity 1, Elasticity 1
+      2  ε    compute_stress                  branch  LinearViscosity 2, Elasticity 2
+      3  P    compute_volumetric_strain_rate  global  LinearViscosity 1, Elasticity 1
+      4  θ    compute_pressure                branch  LinearViscosity 2, Elasticity 2
 ```
 
-`generate_equations` returns the generated residual equations in solver-vector
-order. `x_keys` returns the corresponding unknown names, which is useful when
-choosing an initial `args` tuple or a normalization vector with
-[`normalisation_x`](@ref).
+The `scope` column separates the equations of the outer `SeriesModel` from those
+local to the parallel branch, and `elements` numbers the elements as
+`display(Burgers_material)` draws them. The bare names alone are available as
+[`x_keys`](@ref), which is useful when choosing an initial `args` tuple or a
+normalization vector with [`normalisation_x`](@ref):
+
+```jldoctest composites
+julia> x_keys(Burgers_material)
+(:τ, :ε, :P, :θ)
+```
+
+[`generate_equations`](@ref) returns the residual equations themselves, in the
+same solver-vector order.
+
+Solving a composite is covered in [Stress-time curve of a Burger's
+material](@ref); [`solve`](@ref) returns an [`RCSolution`](@ref) whose entries
+line up with the table above.
