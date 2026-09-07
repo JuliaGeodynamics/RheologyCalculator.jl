@@ -53,9 +53,18 @@ tangent(c::AbstractCompositeModel, sol::RCSolution, vars0, others) = tangent(c, 
 
 Return the position of the deviatoric stress invariant `τ` in the solver vector
 of composite model `c`, as laid out by [`x_keys`](@ref).
-"""
-@inline stress_index(c::AbstractCompositeModel) = _stress_index(x_keys(c))
 
+Selection is topological, not by symbol: the entry is the one belonging to the
+unique global `compute_strain_rate` equation. A nested composite has one `:τ`
+unknown per `SeriesModel` node, and only the global one is the stress carried by
+the composite as a whole, so `findfirst(==(:τ), x_keys(c))` would be correct only
+by the accident that the root equation is generated first.
+"""
+@inline stress_index(c::AbstractCompositeModel) = primary_stress_index(c)
+
+# Retained for the key-only call: it cannot distinguish a global unknown from a
+# branch-local one, so it is only valid where the caller already knows the model
+# has a single `:τ`.
 @inline function _stress_index(ks::NTuple{N, Symbol}) where {N}
     i = findfirst(==(:τ), ks)
     i === nothing && throw(

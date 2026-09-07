@@ -11,8 +11,17 @@ function runtests()
     files = readdir(@__DIR__)
     test_files = filter(f -> startswith(f, "test_") && endswith(f, ".jl"), files)
 
-    allocations_only = "--allocations-only" in ARGS
-    if allocations_only
+    # Explicit `test_*.jl` names in ARGS select individual files, so that
+    # `Pkg.test(; test_args=["test_foo.jl"])` runs only those. Going through
+    # `Pkg.test` rather than including a file directly is what materializes the
+    # weak test dependencies (SparseConnectivityTracer), which are absent under
+    # the bare package project.
+    requested = filter(arg -> startswith(arg, "test_") && endswith(arg, ".jl"), ARGS)
+    if !isempty(requested)
+        unknown = setdiff(requested, test_files)
+        isempty(unknown) || throw(ArgumentError("unknown test file(s): $(join(unknown, ", "))"))
+        test_files = filter(in(requested), test_files)
+    elseif "--allocations-only" in ARGS
         test_files = filter(==("test_allocations.jl"), test_files)
     elseif Base.JLOptions().code_coverage != 0
         filter!(!=("test_allocations.jl"), test_files)
