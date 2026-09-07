@@ -35,7 +35,10 @@ include("core/others.jl")
 include("post_processing/post_calculations.jl")
 
 include("equation_system/initial_guess.jl")
-export initial_guess_x, x_keys, inspect
+export initial_guess_x, x_keys
+
+include("equation_system/inspect.jl")
+export inspect
 
 include("equation_system/normalize_x.jl")
 export normalisation_x

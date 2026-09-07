@@ -85,14 +85,24 @@ inside a GPU kernel. [`inspect`](@ref) describes its entries, giving for each on
 the name of the unknown, the equation that solves it, whether that equation is
 global or belongs to a parallel branch, and the elements it spans:
 
-```julia
-inspect(c)[1]  # (var = :τ, equation = :compute_strain_rate, isglobal = true, ...)
+```julia-repl
+julia> inspect(c)
+1-element ModelInspection:
+  index  var  equation             scope   elements
+      1  τ    compute_strain_rate  global  LinearViscosity 1, IncompressibleElasticity 1
 ```
 
-A name repeats when several equations share the same physical unknown — a
-composite with a parallel branch has one `:τ` per branch, the global one being
-the stress of the model as a whole — and the remaining fields are what tell
-those apart.
+The table earns its keep on a composite with a parallel branch, where a name
+repeats — one `:τ` per branch, the global one being the stress of the model as a
+whole — and the `equation` and `elements` columns are what tell those apart:
+
+```julia-repl
+julia> inspect(SeriesModel(viscous, ParallelModel(LinearViscosity(1e21), elastic)))
+2-element ModelInspection:
+  index  var  equation             scope   elements
+      1  τ    compute_strain_rate  global  LinearViscosity 1
+      2  ε    compute_stress       branch  LinearViscosity 2, IncompressibleElasticity 1
+```
 
 `solve` raises `NonConvergenceError` when the requested tolerances are not
 reached. The exception includes the last iterate, normalized residual, and a

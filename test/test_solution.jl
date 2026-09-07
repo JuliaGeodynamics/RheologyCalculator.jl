@@ -46,13 +46,14 @@ end
 
     @testset "inspect describes the entries" begin
         entries = inspect(c)
-        @test map(e -> e.var, entries) == x_keys(c) == (:τ, :ε, :τ)
-        @test map(e -> e.equation, entries) ==
-            (:compute_strain_rate, :compute_stress, :compute_strain_rate)
+        @test entries isa AbstractVector
+        @test [e.var for e in entries] == collect(x_keys(c)) == [:τ, :ε, :τ]
+        @test [e.equation for e in entries] ==
+            [:compute_strain_rate, :compute_stress, :compute_strain_rate]
 
         # the global `:τ` is the stress of the composite as a whole; the other
         # belongs to the Maxwell sub-branch
-        @test map(e -> e.isglobal, entries) == (true, false, false)
+        @test [e.isglobal for e in entries] == [true, false, false]
         @test findfirst(e -> e.var === :τ && e.isglobal, entries) == stress_index(c)
         @test entries[3].elements ==
             (:LinearViscosity => 3, :IncompressibleElasticity => 1)
@@ -65,9 +66,21 @@ end
             ParallelModel(LinearViscosity(1.0e20), IncompressibleElasticity(1.0e10)),
         )
         branches = inspect(kelvin)
-        @test map(e -> e.var, branches) == (:τ, :ε, :ε)
+        @test [e.var for e in branches] == [:τ, :ε, :ε]
         @test branches[2].elements == (:LinearViscosity => 2, :IncompressibleElasticity => 1)
         @test branches[3].elements == (:LinearViscosity => 3, :IncompressibleElasticity => 2)
+    end
+
+    @testset "inspect displays as a table" begin
+        rendered = sprint(show, MIME"text/plain"(), inspect(c))
+        lines = split(rendered, '\n')
+
+        @test lines[1] == "3-element ModelInspection:"
+        @test lines[2] == "  index  var  equation             scope   elements"
+        @test lines[5] ==
+            "      3  τ    compute_strain_rate  branch  LinearViscosity 3, IncompressibleElasticity 1"
+        # the last column is left unpadded
+        @test !any(endswith(line, " ") for line in lines)
     end
 
     @testset "allocations" begin

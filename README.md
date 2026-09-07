@@ -68,9 +68,14 @@ inspect(c)      # what each entry stands for, and which equation solves it
 `solve` returns an `RCSolution`. It supports positional indexing (`sol[1]`) and
 can be passed directly to the next `solve`; use `sol.x` for the underlying
 `SVector`. A solution holds numbers only, so it is `isbits` and can be built
-inside a GPU kernel; `inspect(c)` describes the entries, giving for each the name
-of the unknown, the equation that solves it, and the elements that equation
-spans.
+inside a GPU kernel; `inspect(c)` describes the entries instead:
+
+```julia-repl
+julia> inspect(c)
+1-element ModelInspection:
+  index  var  equation             scope   elements
+      1  τ    compute_strain_rate  global  LinearViscosity 1, IncompressibleElasticity 1
+```
 
 ## Composite Models
 

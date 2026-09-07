@@ -28,6 +28,7 @@ CompositeModel
 generate_equations
 x_keys
 inspect
+RheologyCalculator.ModelInspection
 ```
 
 ## Solver
