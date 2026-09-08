@@ -11,7 +11,6 @@ import RheologyCalculator: rheology_category
 
 @testset "rheology_category classifies every bundled element" begin
     @test rheology_category(LinearViscosity(1.0e19)) === Val(:viscous)
-    @test rheology_category(BulkViscosity(1.0e19)) === Val(:viscous)
     @test rheology_category(PowerLawViscosity(1.0e19, 3)) === Val(:viscous)
     @test rheology_category(IncompressibleElasticity(1.0e10)) === Val(:elastic)
     @test rheology_category(Elasticity(1.0e10, 2.0e11)) === Val(:elastic)
@@ -75,22 +74,6 @@ end
     @test length(p.plastic_ε) == 1
 end
 
-@testset "BulkViscosity exercises the volumetric term" begin
-    η, χ, ε, θ, dt = 1.0e19, 1.0e20, 1.0e-13, -1.0e-14, 1.0e10   # θ < 0: compaction
-    c = SeriesModel(LinearViscosity(η), BulkViscosity(χ))
-    vars, others = (; ε, θ), (; dt)
-    x = solve(c, initial_guess_x(c, vars, (; τ = 1.0e6, P = 1.0e6), others), vars, others)
-    p = constitutive_partition(c, x, vars, others)
-
-    P = primary_pressure(c, x)
-    θ_bulk = only(filter(!iszero, p.viscous_θ))
-
-    @test any(!iszero, p.viscous_θ)                 # the volumetric term is live
-    @test p.viscous_Φ_vol ≈ -P * θ_bulk
-    @test p.viscous_Φ_vol ≥ 0                       # requires the BulkViscosity sign fix
-    @test Val(:BulkViscosity) in p.viscous_mechanisms
-end
-
 @testset "dissipation is nonnegative across the bundled elements" begin
     dt = 1.0e10
     fixtures = (
@@ -98,7 +81,6 @@ end
         (SeriesModel(PowerLawViscosity(1.0e19, 3)), (; ε = 1.0e-13), (; dt)),
         (SeriesModel(ParallelModel(LinearViscosity(1.0e19), LinearViscosity(1.0e20))), (; ε = 1.0e-13), (; dt)),
         (SeriesModel(LinearViscosity(1.0e19), IncompressibleElasticity(1.0e10), DruckerPrager(1.0e6, 30.0, 0.0)), (; ε = 1.0e-13), (; dt, τ0 = (0.0,))),
-        (SeriesModel(LinearViscosity(1.0e19), BulkViscosity(1.0e20)), (; ε = 1.0e-13, θ = -1.0e-14), (; dt)),
     )
     for (c, vars, others) in fixtures
         x = solve(c, initial_guess_x(c, vars, (; τ = 1.0e6, P = 1.0e6), others), vars, others)
