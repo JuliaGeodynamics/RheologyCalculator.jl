@@ -112,11 +112,11 @@ end
     o1 = (; dt, τ0 = (0.0,))
     o2 = (; dt, τ0 = (5.0e5,))
 
-x1 = solve(c, initial_guess_x(c, vars, (; τ = 1.0e6), o1), vars, o1)
-p1 = dissipation_partition(c, x1, vars, o1)
-# same solution vector, different history: the partition depends on x, not τ0
-p2 = dissipation_partition(c, x1, vars, o2)
-@test p1.viscous_Φ == p2.viscous_Φ
+    x1 = solve(c, initial_guess_x(c, vars, (; τ = 1.0e6), o1), vars, o1)
+    p1 = dissipation_partition(c, x1, vars, o1)
+    # same solution vector, different history: the partition depends on x, not τ0
+    p2 = dissipation_partition(c, x1, vars, o2)
+    @test p1.viscous_Φ == p2.viscous_Φ
 
     # and a genuinely different history gives a different solve, hence different
     # rates -- confirming the test above is not vacuous
