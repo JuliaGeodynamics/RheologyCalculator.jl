@@ -51,9 +51,6 @@ partition.viscous_Φ       # deviatoric viscous dissipation
 partition.plastic_Φ       # deviatoric plastic dissipation
 ```
 
-Volumetric pressure--volume work is outside this API and must be treated together
-with the chosen compressible thermodynamic closure.
-
 [`shear_heating`](@ref) returns only the deviatoric viscous and plastic
 dissipation. Its optional Taylor--Quinney factor `β` applies to the deviatoric
 plastic term; for example, `shear_heating(partition; β = 0.9)` converts 90% of
