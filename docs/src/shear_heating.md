@@ -34,7 +34,8 @@ c = SeriesModel(
 )
 vars = (; ε)
 others = (; dt, τ0 = (0.0,))
-x = solve(c, initial_guess_x(c, vars, (; τ = 1.0e6), others), vars, others)
+x = initial_guess_x(c, vars, (; τ = 1.0e6), others)
+sol = solve(c, x, vars, others)
 ```
 
 ## Dissipation partition and shear heating
@@ -45,7 +46,7 @@ deliberately excluded because elastic work is reversible storage. Both fields ha
 units of W/m³.
 
 ```julia
-partition = dissipation_partition(c, x, vars, others)
+partition = dissipation_partition(c, sol, vars, others)
 
 partition.viscous_Φ       # deviatoric viscous dissipation
 partition.plastic_Φ       # deviatoric plastic dissipation
