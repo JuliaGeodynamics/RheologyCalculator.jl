@@ -17,9 +17,6 @@ end
 @inline parallel_state_functions(::BulkViscosity) = (compute_pressure,)
 
 # Sign convention: `P` is positive in compression and `θ` positive in dilation, so
-# compressing the material must compact it and the two carry opposite signs. This
-# matches `BulkElasticity`, whose `θ = -(P - P0)/(K*dt)` carries the same minus.
-# Without it the volumetric dissipation `-P*θ = -P^2/χ` would be negative, i.e. a
-# viscous element generating energy.
+# compressing the material must compact it and the two carry opposite signs.
 @inline compute_volumetric_strain_rate(r::BulkViscosity; P = 0, kwargs...) = -P / r.χ
 @inline compute_pressure(r::BulkViscosity; θ = 0, kwargs...) = -θ * r.χ
