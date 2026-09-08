@@ -9,6 +9,11 @@ using RheologyCalculator, Test, StaticArrays, ForwardDiff
 using RheologyCalculator.RheologyModels
 import RheologyCalculator: rheology_category
 
+function global_deviatoric_stress(c, x)
+    i = only(findall(entry -> entry.isglobal && entry.equation === :compute_strain_rate, inspect(c)))
+    return x[i]
+end
+
 @testset "rheology_category classifies every bundled element" begin
     @test rheology_category(LinearViscosity(1.0e19)) === Val(:viscous)
     @test rheology_category(PowerLawViscosity(1.0e19, 3)) === Val(:viscous)
@@ -24,7 +29,7 @@ end
     vars, others = (; ε), (; dt, τ0 = (0.0,))
     x = solve(c, initial_guess_x(c, vars, (; τ = 1.0e6), others), vars, others)
     p = constitutive_partition(c, x, vars, others)
-    τ = primary_deviatoric_stress(c, x)
+    τ = global_deviatoric_stress(c, x)
 
     @test only(p.viscous_ε) ≈ τ / (2η)
     @test p.viscous_Φ ≈ 2τ * only(p.viscous_ε)
@@ -65,7 +70,7 @@ end
 
     @test p.viscous_mechanisms == (Val(:LinearViscosity),)
     @test p.plastic_mechanisms == (Val(:DruckerPrager),)
-    @test only(p.viscous_ε) ≈ primary_deviatoric_stress(c, x) / (2η)
+    @test only(p.viscous_ε) ≈ global_deviatoric_stress(c, x) / (2η)
     @test p.plastic_Φ > 0
     @test p.viscous_Φ > 0
 

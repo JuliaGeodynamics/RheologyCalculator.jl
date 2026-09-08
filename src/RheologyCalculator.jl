@@ -49,10 +49,6 @@ export solve, RCSolution, NonConvergenceError
 include("post_processing/strain_rate_correction.jl")
 export effective_strain_rate_correction
 
-include("post_processing/solution_queries.jl")
-export solution_values, primary_deviatoric_stress, primary_pressure, plastic_multipliers
-export primary_stress_index, primary_pressure_index
-
 include("post_processing/constitutive_partition.jl")
 export ConstitutivePartition, constitutive_partition, shear_heating, rheology_category
 
