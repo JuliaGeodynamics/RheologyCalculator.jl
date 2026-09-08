@@ -81,6 +81,10 @@ RheologyCalculator.extract_local_kwargs
 ```@docs
 RheologyCalculator.compute_stress_elastic
 RheologyCalculator.compute_pressure_elastic
+DissipationPartition
+dissipation_partition
+shear_heating
+RheologyCalculator.rheology_category
 ```
 
 ## Internals

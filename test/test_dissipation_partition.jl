@@ -1,4 +1,4 @@
-# Per-mechanism rates and dissipation.
+# Dissipation by rheological category.
 #
 # The property under test throughout is that dissipation is formed from each
 # element's *own* conjugate pair. In a series node the elements share a stress and
@@ -10,8 +10,7 @@ using RheologyCalculator.RheologyModels
 import RheologyCalculator: rheology_category
 
 function global_deviatoric_stress(c, x)
-    i = only(findall(entry -> entry.isglobal && entry.equation === :compute_strain_rate, inspect(c)))
-    return x[i]
+    return x[stress_index(c)]
 end
 
 @testset "rheology_category classifies every bundled element" begin
@@ -23,22 +22,18 @@ end
     @test rheology_category(DruckerPrager(1.0e6, 30.0, 0.0)) === Val(:plastic)
 end
 
-@testset "flat viscoelastic: analytical rate and dissipation" begin
+@testset "flat viscoelastic: analytical dissipation" begin
     η, G, ε, dt = 1.0e19, 1.0e10, 1.0e-13, 1.0e10
     c = SeriesModel(LinearViscosity(η), IncompressibleElasticity(G))
     vars, others = (; ε), (; dt, τ0 = (0.0,))
     x = solve(c, initial_guess_x(c, vars, (; τ = 1.0e6), others), vars, others)
-    p = constitutive_partition(c, x, vars, others)
+    p = dissipation_partition(c, x, vars, others)
     τ = global_deviatoric_stress(c, x)
 
-    @test only(p.viscous_ε) ≈ τ / (2η)
-    @test p.viscous_Φ ≈ 2τ * only(p.viscous_ε)
+    @test p.viscous_Φ ≈ 2τ * (τ / (2η))
     @test p.viscous_Φ ≥ 0
 
     # the elastic element is excluded: reversible storage is not dissipation
-    @test length(p.viscous_ε) == 1
-    @test p.viscous_mechanisms == (Val(:LinearViscosity),)
-    @test isempty(p.plastic_ε)
     @test p.plastic_Φ == 0
 end
 
@@ -47,12 +42,11 @@ end
     c = SeriesModel(ParallelModel(LinearViscosity(η1), LinearViscosity(η2)))
     vars, others = (; ε), (; dt)
     x = solve(c, initial_guess_x(c, vars, (; τ = 1.0e6), others), vars, others)
-    p = constitutive_partition(c, x, vars, others)
+    p = dissipation_partition(c, x, vars, others)
 
     # both leaves share the branch strain rate; their stresses differ by η
     εb = x[2]
     τ1, τ2 = 2η1 * εb, 2η2 * εb
-    @test all(≈(εb), p.viscous_ε)
     @test p.viscous_Φ ≈ 2τ1 * εb + 2τ2 * εb
     @test p.viscous_Φ ≥ 0
 
@@ -66,17 +60,10 @@ end
     c = SeriesModel(LinearViscosity(η), IncompressibleElasticity(G), DruckerPrager(1.0e6, 30.0, 0.0))
     vars, others = (; ε), (; dt, τ0 = (0.0,))
     x = solve(c, initial_guess_x(c, vars, (; τ = 1.0e6), others), vars, others)
-    p = constitutive_partition(c, x, vars, others)
+    p = dissipation_partition(c, x, vars, others)
 
-    @test p.viscous_mechanisms == (Val(:LinearViscosity),)
-    @test p.plastic_mechanisms == (Val(:DruckerPrager),)
-    @test only(p.viscous_ε) ≈ global_deviatoric_stress(c, x) / (2η)
     @test p.plastic_Φ > 0
     @test p.viscous_Φ > 0
-
-    # yield-residual equations (compute_lambda) are not conjugate pairs and must
-    # not be traversed as if they were rates
-    @test length(p.plastic_ε) == 1
 end
 
 @testset "dissipation is nonnegative across the bundled elements" begin
@@ -89,15 +76,10 @@ end
     )
     for (c, vars, others) in fixtures
         x = solve(c, initial_guess_x(c, vars, (; τ = 1.0e6, P = 1.0e6), others), vars, others)
-        p = constitutive_partition(c, x, vars, others)
+        p = dissipation_partition(c, x, vars, others)
         @test p.viscous_Φ ≥ 0
-        @test p.viscous_Φ_vol ≥ 0
         @test p.plastic_Φ ≥ 0
-        @test p.plastic_Φ_vol ≥ 0
         @test shear_heating(p) ≥ 0
-        # tuples stay index-aligned so `mechanisms[i]` labels entry `i`
-        @test length(p.viscous_ε) == length(p.viscous_θ) == length(p.viscous_mechanisms)
-        @test length(p.plastic_ε) == length(p.plastic_θ) == length(p.plastic_mechanisms)
     end
 end
 
@@ -106,12 +88,17 @@ end
     c = SeriesModel(LinearViscosity(η), IncompressibleElasticity(G), DruckerPrager(1.0e6, 30.0, 0.0))
     vars, others = (; ε), (; dt, τ0 = (0.0,))
     x = solve(c, initial_guess_x(c, vars, (; τ = 1.0e6), others), vars, others)
-    p = constitutive_partition(c, x, vars, others)
+    p = dissipation_partition(c, x, vars, others)
 
-    @test shear_heating(p) ≈ p.viscous_Φ + p.viscous_Φ_vol + p.plastic_Φ + p.plastic_Φ_vol
-    # β applies to the plastic terms only; steady-state creep has no counterpart
-    @test shear_heating(p; β = 0.9) ≈ p.viscous_Φ + p.viscous_Φ_vol + 0.9 * (p.plastic_Φ + p.plastic_Φ_vol)
-    @test shear_heating(p; β = 0.0) ≈ p.viscous_Φ + p.viscous_Φ_vol
+    @test shear_heating(p) ≈ p.viscous_Φ + p.plastic_Φ
+    # β applies to deviatoric plastic dissipation only.
+    @test shear_heating(p; β = 0.9) ≈ p.viscous_Φ + 0.9 * p.plastic_Φ
+    @test shear_heating(p; β = 0.0) ≈ p.viscous_Φ
+
+    synthetic_partition = DissipationPartition(2.0, 5.0)
+    @test shear_heating(synthetic_partition) == 7.0
+    @test shear_heating(synthetic_partition; β = 0.9) == 6.5
+    @test shear_heating(synthetic_partition; β = 0.0) == 2.0
 end
 
 @testset "partition reads no history" begin
@@ -126,10 +113,9 @@ end
     o2 = (; dt, τ0 = (5.0e5,))
 
     x1 = solve(c, initial_guess_x(c, vars, (; τ = 1.0e6), o1), vars, o1)
-    p1 = constitutive_partition(c, x1, vars, o1)
+    p1 = dissipation_partition(c, x1, vars, o1)
     # same solution vector, different history: the partition depends on x, not τ0
-    p2 = constitutive_partition(c, x1, vars, o1)
-    @test p1.viscous_ε == p2.viscous_ε
+    p2 = dissipation_partition(c, x1, vars, o1)
     @test p1.viscous_Φ == p2.viscous_Φ
 
     # and a genuinely different history gives a different solve, hence different
@@ -144,18 +130,18 @@ end
     vars, others = (; ε), (; dt, τ0 = (0.0,))
     x = solve(c, initial_guess_x(c, vars, (; τ = 1.0e6), others), vars, others)
 
-    @test (@inferred constitutive_partition(c, x, vars, others)) isa ConstitutivePartition
+    @test (@inferred dissipation_partition(c, x, vars, others)) isa DissipationPartition
 
     # differentiate the heat source with respect to the applied strain rate
     g = ForwardDiff.derivative(e -> begin
             v = (; ε = e)
             xx = solve(c, initial_guess_x(c, v, (; τ = 1.0e6), others), v, others)
-            shear_heating(constitutive_partition(c, xx, v, others))
+            shear_heating(dissipation_partition(c, xx, v, others))
         end, ε)
     @test isfinite(g)
     @test g > 0        # heating increases with strain rate
 
-    f(c, x, vars, others) = @allocated constitutive_partition(c, x, vars, others)
+    f(c, x, vars, others) = @allocated dissipation_partition(c, x, vars, others)
     f(c, x, vars, others)
     @test f(c, x, vars, others) == 0
 end
