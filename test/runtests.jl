@@ -9,7 +9,7 @@ import RheologyCalculator.RheologyModels: second_invariant_2D, tensor_strain_rat
 
 function runtests()
     files = readdir(@__DIR__)
-    test_files = filter(startswith("test_"), files)
+    test_files = filter(f -> startswith(f, "test_") && endswith(f, ".jl"), files)
 
     allocations_only = "--allocations-only" in ARGS
     if allocations_only

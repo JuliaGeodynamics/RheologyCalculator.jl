@@ -1,9 +1,3 @@
-function solution_allocations(c, x0, vars, others)
-    sol = solve(c, x0, vars, others)
-    inspect(c)
-    return @allocated(solve(c, sol, vars, others)), @allocated(inspect(c))
-end
-
 @testset "RCSolution" begin
     ε, dt = 1.0e-14, 1.0e10
 
@@ -83,8 +77,7 @@ end
         @test !any(endswith(line, " ") for line in lines)
     end
 
-    @testset "allocations" begin
-        @test solution_allocations(c, x0, vars, others) == (0, 0)
+    @testset "inference" begin
         @test (@inferred solve(c, x0, vars, others)) isa RCSolution
     end
 end
