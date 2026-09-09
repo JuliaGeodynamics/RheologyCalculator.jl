@@ -52,6 +52,9 @@ export effective_strain_rate_correction
 include("post_processing/dissipation_partition.jl")
 export DissipationPartition, dissipation_partition, shear_heating, rheology_category
 
+include("post_processing/component_partition.jl")
+export ComponentPartition, component_partition
+
 include("equation_system/tangent.jl")
 export tangent, stress_index
 
