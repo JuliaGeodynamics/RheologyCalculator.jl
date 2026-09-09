@@ -37,6 +37,9 @@ export generate_equations, compute_residual
 
 include("core/others.jl")
 
+include("post_processing/strain_rate_correction.jl")
+export effective_strain_rate_correction
+
 include("post_processing/post_calculations.jl")
 
 include("equation_system/initial_guess.jl")
@@ -50,9 +53,6 @@ export normalisation_x
 
 include("equation_system/solver.jl")
 export solve, solve_batch, solve_with_retries, RCSolution, jacobian, NonConvergenceError
-
-include("post_processing/strain_rate_correction.jl")
-export effective_strain_rate_correction
 
 include("post_processing/component_partition.jl")
 export ComponentPartition, component_partition

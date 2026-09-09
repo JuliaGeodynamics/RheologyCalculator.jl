@@ -90,9 +90,13 @@ end
 
 # maptuple walks the branches left to right, which is what lets `iself_ref`
 # thread the running equation counter from one sibling to the next.
-@inline function generate_equations_unroller(branches::NTuple{N, Any}, fn::F, el_num, global_eqs, iself_ref) where {N, F}
-    return maptuple(branches, el_num[2]) do b, num
-        eqs = generate_equations(b, fn, 0, Val(false), isvolumetric(b), num; iparent = global_eqs.self, iself = iself_ref[])
+@generated function generate_equations_unroller(branches::NTuple{N, Any}, fn::F, el_num, global_eqs, iself_ref) where {N, F}
+    return quote
+        Base.@ntuple $N i -> begin
+            @inline
+            b = branches[i]
+            num = el_num[2][i]
+            eqs = generate_equations(b, fn, 0, Val(false), isvolumetric(b), num; iparent = global_eqs.self, iself = iself_ref[])
         # generate_equations creates its own *local* Ref for `b`'s subtree, so
         # the running counter must be threaded back here explicitly, otherwise
         # every sibling branch starts numbering its own equations from the same
@@ -102,7 +106,8 @@ end
         # (e.g. a non-volumetric branch during the volumetric pass), in which
         # case the counter is left untouched.
         isempty(eqs) || (iself_ref[] = eqs[end].self)
-        eqs
+            eqs
+        end
     end
 end
 
