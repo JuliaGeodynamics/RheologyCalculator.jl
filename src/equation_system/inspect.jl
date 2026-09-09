@@ -79,8 +79,10 @@ end
     inputs = keys(residual_kwargs(eq.fn))
     history = _history_keys(eq.rheology)
     return ntuple(Val(length(ks))) do i
-        (; var = ks[i], equation, isglobal = isglob, elements,
-           parent = eq.parent, children = eq.child, inputs, history)
+        (;
+            var = ks[i], equation, isglobal = isglob, elements,
+            parent = eq.parent, children = eq.child, inputs, history,
+        )
     end
 end
 
@@ -88,7 +90,7 @@ end
     keys = Symbol[]
     for T in rheology.parameters
         local_keys = T <: AbstractElasticity ? (:τ0, :P0) :
-                     T <: AbstractViscosity ? (:d,) : ()
+            T <: AbstractViscosity ? (:d,) : ()
         for key in local_keys
             key ∉ keys && push!(keys, key)
         end

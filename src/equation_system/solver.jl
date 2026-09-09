@@ -25,7 +25,7 @@ Base.@propagate_inbounds Base.getindex(sol::RCSolution, i::Int) = sol.x[i]
 
 function Base.show(io::IO, ::MIME"text/plain", sol::RCSolution)
     println(io, "RCSolution (iterations: ", sol.iterations, ", residual: ", sol.residual, ")")
-Base.print_array(io, sol.x)
+    Base.print_array(io, sol.x)
     return nothing
 end
 
@@ -103,8 +103,10 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0 = no
         J = jacobian(c, x, vars, others)
         Δx = backsolve(J, r)
         α = max_feasible_step(x, Δx, nonneg)
-        α = bt_line_search(Δx, x, c, vars, others, xnorm, er;
-            α = α, ρ = 0.5, lstol = 0.95, α_min = 0.1)
+        α = bt_line_search(
+            Δx, x, c, vars, others, xnorm, er;
+            α = α, ρ = 0.5, lstol = 0.95, α_min = 0.1
+        )
         x_next = x + α .* Δx
 
         # check convergence
@@ -165,12 +167,14 @@ Retry a failed local solve from its last iterate with progressively relaxed
 tolerances. This orchestration is host-side; the ordinary `solve` path remains
 deterministic and device-friendly.
 """
-function solve_with_retries(c::AbstractCompositeModel, x::SVector, vars, others;
-                            max_retries::Integer = 2,
-                            tolerance_factor = 10,
-                            atol = 1.0e-12,
-                            rtol = 1.0e-12,
-                            kwargs...)
+function solve_with_retries(
+        c::AbstractCompositeModel, x::SVector, vars, others;
+        max_retries::Integer = 2,
+        tolerance_factor = 10,
+        atol = 1.0e-12,
+        rtol = 1.0e-12,
+        kwargs...
+    )
     max_retries ≥ 0 || throw(ArgumentError("max_retries must be non-negative"))
     tolerance_factor ≥ 1 || throw(ArgumentError("tolerance_factor must be at least one"))
     current_x = x
@@ -178,8 +182,10 @@ function solve_with_retries(c::AbstractCompositeModel, x::SVector, vars, others;
     current_rtol = rtol
     for attempt in 0:max_retries
         try
-            return solve(c, current_x, vars, others;
-                atol = current_atol, rtol = current_rtol, kwargs...)
+            return solve(
+                c, current_x, vars, others;
+                atol = current_atol, rtol = current_rtol, kwargs...
+            )
         catch err
             err isa NonConvergenceError || rethrow()
             attempt == max_retries && rethrow()
