@@ -1,4 +1,4 @@
-# Component partition
+# Component partitioning
 
 A composite model solves for a handful of unknowns, but those unknowns do not say
 how the deformation is partitioned between the mechanisms that produced them. A
