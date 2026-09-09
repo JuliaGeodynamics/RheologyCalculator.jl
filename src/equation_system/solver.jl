@@ -103,9 +103,8 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0=noth
         J = jacobian(c, x, vars, others)
         Δx = backsolve(J, r)
         α = max_feasible_step(x, Δx, nonneg)
-        if it > 1
-            α = bt_line_search(Δx, x, c, vars, others, xnorm, er; α = α, ρ = 0.5, lstol = 0.95, α_min = 0.1)
-        end
+        α = bt_line_search(Δx, x, c, vars, others, xnorm, er;
+            α = α, ρ = 0.5, lstol = 0.95, α_min = 0.1)
         x_next = x + α .* Δx
 
         # check convergence
@@ -294,13 +293,17 @@ end
 
 Backtracking line search that repeatedly shrinks `α` by `ρ` until the residual
 norm at `x + α * Δx` is at most `lstol` times the current residual norm. The
-undamped full step (`α = 1.0`) is accepted outright whenever it does not
-increase the residual, without requiring the stricter `lstol` reduction.
+initial feasible step is accepted whenever it does not increase the residual;
+backtracked steps require the stricter `lstol` reduction. If no trial passes,
+the best finite trial is returned.
 """
 function bt_line_search(Δx, x, composite, vars, others, xnorm, rnorm; α = 1.0, ρ = 0.5, lstol = 0.9, α_min = 1.0e-8)
 
-    # Iterate unless step length becomes too small
-    while α > α_min
+    α_initial = α
+    best_α = α
+    best_rnorm = Inf
+
+    while α ≥ α_min
         # Apply scaled update
         perturbed_x = @. x + α * Δx
 
@@ -308,17 +311,22 @@ function bt_line_search(Δx, x, composite, vars, others, xnorm, rnorm; α = 1.0,
         perturbed_r = compute_residual(composite, perturbed_x, vars, others)
         perturbed_rnorm = mynorm(perturbed_r, xnorm)
 
-        # Check whether residual is sufficiently reduced
-        # for α = 1, only check if the residual decreases
-        if perturbed_rnorm ≤ (α == 1.0 ? 1.0 : lstol) * rnorm
-            break
+        if isfinite(perturbed_rnorm) && perturbed_rnorm < best_rnorm
+            best_α, best_rnorm = α, perturbed_rnorm
+        end
+
+        # The first feasible trial may be limited by non-negativity, so do not
+        # demand artificial decrease from a step that merely avoids growth.
+        target = α == α_initial ? 1.0 : lstol
+        if isfinite(perturbed_rnorm) && perturbed_rnorm ≤ target * rnorm
+            return α
         end
 
         # Bisect step length
         α *= ρ
     end
 
-    return α
+    return best_α
 end
 
 """
