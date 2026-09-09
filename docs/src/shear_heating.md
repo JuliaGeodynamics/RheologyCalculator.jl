@@ -38,6 +38,14 @@ x = initial_guess_x(c, vars, (; τ = 1.0e6), others)
 sol = solve(c, x, vars, others)
 ```
 
+## Component partition
+
+Before dissipation, it is worth knowing how the deformation itself is shared
+between the mechanisms. [`component_partition`](@ref) reports the deviatoric strain
+rate and conjugate stress of every individual component; see
+[Component partition](component_partition.md). The dissipation below is a reduction
+over exactly those components.
+
 ## Dissipation partition and shear heating
 
 [`dissipation_partition`](@ref) separates irreversible **deviatoric**

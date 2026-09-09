@@ -85,6 +85,8 @@ DissipationPartition
 dissipation_partition
 shear_heating
 RheologyCalculator.rheology_category
+ComponentPartition
+component_partition
 ```
 
 ## Internals
