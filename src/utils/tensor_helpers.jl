@@ -1,4 +1,7 @@
 
+# Symmetric tensors use engineering-free Voigt ordering:
+# 2-D: (xx, yy, xy); 3-D: (xx, yy, zz, yz, xz, xy).
+# Shear entries are tensor components, not engineering shear strains.
 const εxx_pure_shear = (1.0, -1.0, 0.0)
 const εxx_pure_shear_3D = (1.0, -1.0, 0.0, 0.0, 0.0, 0.0)
 

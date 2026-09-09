@@ -26,6 +26,8 @@ converged(c, vars, others, xnorm) =
         xnorm = normalisation_x(c, 1.0e6, vars.ε)
         x = converged(c, vars, (;), xnorm)
         @test tangent(c, x, vars, (;)) ≈ 2η rtol = 1.0e-12
+        @test (@inferred tangent(c, x, vars, (;))) isa Float64
+        @test isbitstype(typeof(tangent(c, x, vars, (;))))
     end
 
     @testset "power law against the analytical derivative" begin

@@ -25,9 +25,20 @@ Base.@propagate_inbounds Base.getindex(sol::RCSolution, i::Int) = sol.x[i]
 
 function Base.show(io::IO, ::MIME"text/plain", sol::RCSolution)
     println(io, "RCSolution (iterations: ", sol.iterations, ", residual: ", sol.residual, ")")
-    Base.print_array(io, sol.x)
+Base.print_array(io, sol.x)
     return nothing
 end
+
+"""
+    jacobian(c, x, vars, others)
+
+Build the local residual Jacobian with respect to the solver vector `x` using
+the default ForwardDiff backend. The function is a small backend boundary for
+future analytic or sparse implementations and currently preserves the
+package's static local-system representation.
+"""
+@inline jacobian(c::AbstractCompositeModel, x::SVector, vars, others) =
+    ForwardDiff.jacobian(y -> compute_residual(c, y, vars, others), x)
 
 """
     solve(c::AbstractCompositeModel, x::SVector, vars, others; xnorm0=nothing,
@@ -89,12 +100,11 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0=noth
     while er > atol && er > rtol * er0
         it += 1
 
-        J = ForwardDiff.jacobian(y -> compute_residual(c, y, vars, others), x)
+        J = jacobian(c, x, vars, others)
         Δx = backsolve(J, r)
         α = max_feasible_step(x, Δx, nonneg)
-        if it > 1
-            α = bt_line_search(Δx, x, c, vars, others, xnorm, er; α = α, ρ = 0.5, lstol = 0.95, α_min = 0.1)
-        end
+        α = bt_line_search(Δx, x, c, vars, others, xnorm, er;
+            α = α, ρ = 0.5, lstol = 0.95, α_min = 0.1)
         x_next = x + α .* Δx
 
         # check convergence
@@ -135,6 +145,51 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0=noth
 end
 
 solve(c::AbstractCompositeModel, sol::RCSolution, vars0, others; kwargs...) = solve(c, sol.x, vars0, others; kwargs...)
+
+"""
+    solve_batch(c, xs, vars, others; kwargs...)
+
+Solve a statically sized batch of independent local systems. The tuple-based
+API keeps the batch result concrete and is the reference path for later CPU or
+GPU kernels.
+"""
+function solve_batch(c::AbstractCompositeModel, xs::NTuple{N, SVector}, vars::NTuple{N}, others::NTuple{N}; kwargs...) where {N}
+    return ntuple(i -> solve(c, xs[i], vars[i], others[i]; kwargs...), Val(N))
+end
+
+"""
+    solve_with_retries(c, x, vars, others; max_retries=2,
+                       tolerance_factor=10, kwargs...)
+
+Retry a failed local solve from its last iterate with progressively relaxed
+tolerances. This orchestration is host-side; the ordinary `solve` path remains
+deterministic and device-friendly.
+"""
+function solve_with_retries(c::AbstractCompositeModel, x::SVector, vars, others;
+                            max_retries::Integer = 2,
+                            tolerance_factor = 10,
+                            atol = 1.0e-12,
+                            rtol = 1.0e-12,
+                            kwargs...)
+    max_retries ≥ 0 || throw(ArgumentError("max_retries must be non-negative"))
+    tolerance_factor ≥ 1 || throw(ArgumentError("tolerance_factor must be at least one"))
+    current_x = x
+    current_atol = atol
+    current_rtol = rtol
+    for attempt in 0:max_retries
+        try
+            return solve(c, current_x, vars, others;
+                atol = current_atol, rtol = current_rtol, kwargs...)
+        catch err
+            err isa NonConvergenceError || rethrow()
+            attempt == max_retries && rethrow()
+            current_x = err.x
+            current_atol *= tolerance_factor
+            current_rtol *= tolerance_factor
+        end
+    end
+    error("unreachable")
+end
 compute_residual(c, sol::RCSolution, vars, others) = compute_residual(c, sol.x, vars, others)
 
 """
@@ -238,13 +293,17 @@ end
 
 Backtracking line search that repeatedly shrinks `α` by `ρ` until the residual
 norm at `x + α * Δx` is at most `lstol` times the current residual norm. The
-undamped full step (`α = 1.0`) is accepted outright whenever it does not
-increase the residual, without requiring the stricter `lstol` reduction.
+initial feasible step is accepted whenever it does not increase the residual;
+backtracked steps require the stricter `lstol` reduction. If no trial passes,
+the best finite trial is returned.
 """
 function bt_line_search(Δx, x, composite, vars, others, xnorm, rnorm; α = 1.0, ρ = 0.5, lstol = 0.9, α_min = 1.0e-8)
 
-    # Iterate unless step length becomes too small
-    while α > α_min
+    α_initial = α
+    best_α = α
+    best_rnorm = Inf
+
+    while α ≥ α_min
         # Apply scaled update
         perturbed_x = @. x + α * Δx
 
@@ -252,17 +311,22 @@ function bt_line_search(Δx, x, composite, vars, others, xnorm, rnorm; α = 1.0,
         perturbed_r = compute_residual(composite, perturbed_x, vars, others)
         perturbed_rnorm = mynorm(perturbed_r, xnorm)
 
-        # Check whether residual is sufficiently reduced
-        # for α = 1, only check if the residual decreases
-        if perturbed_rnorm ≤ (α == 1.0 ? 1.0 : lstol) * rnorm
-            break
+        if isfinite(perturbed_rnorm) && perturbed_rnorm < best_rnorm
+            best_α, best_rnorm = α, perturbed_rnorm
+        end
+
+        # The first feasible trial may be limited by non-negativity, so do not
+        # demand artificial decrease from a step that merely avoids growth.
+        target = α == α_initial ? 1.0 : lstol
+        if isfinite(perturbed_rnorm) && perturbed_rnorm ≤ target * rnorm
+            return α
         end
 
         # Bisect step length
         α *= ρ
     end
 
-    return α
+    return best_α
 end
 
 """
