@@ -12,7 +12,7 @@ rheological category. Within a category the `ε`, `τ`, `elements`, and `indices
 tuples are index-aligned, so entry `i` of each refers to the same component, and
 `indices` gives its number in the per-type numbering that `display(c)` draws.
 
-## Series: one stress, divided strain rate
+## Series: one stress, partitioned strain rate
 
 ```jldoctest partition
 julia> using RheologyCalculator, RheologyCalculator.RheologyModels
@@ -31,11 +31,11 @@ ComponentPartition:
   plastic  ε = (5.24e-14,)  τ = (866000.0,)  indices = (1,)
 ```
 
-The three components share one stress and divide the imposed strain rate between
+The three components share one stress and partition the imposed strain rate between
 them, which is what a series connection means. Displayed values are rounded to
 three significant digits; the stored values are exact.
 
-## Parallel: one strain rate, divided stress
+## Parallel: one strain rate, partitioned stress
 
 ```jldoctest partition
 julia> cp = SeriesModel(ParallelModel(LinearViscosity(1.0e19), LinearViscosity(1.0e20)));
