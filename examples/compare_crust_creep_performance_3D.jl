@@ -5,11 +5,11 @@ using Statistics
 GLMakie.activate!(; visible = false)
 
 module Crust3DRheologyModelsExample
-include("Elastic_Diffusion_Dislocation_Crust_3D.jl")
+    include("Elastic_Diffusion_Dislocation_Crust_3D.jl")
 end
 
 module Crust3DNewtonExample
-include("Elastic_Diffusion_Dislocation_Crust_Newton_3D.jl")
+    include("Elastic_Diffusion_Dislocation_Crust_Newton_3D.jl")
 end
 
 const RC = Crust3DRheologyModelsExample
@@ -62,7 +62,7 @@ function measure(label, f; samples = 20, warmups = 3)
 end
 
 function print_result(r)
-    @printf(
+    return @printf(
         "%-28s %10.4f %10.4f %10.4f %14.2f\n",
         r.label,
         1.0e3 * minimum(r.times),

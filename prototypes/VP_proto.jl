@@ -1,7 +1,7 @@
 using ForwardDiff, StaticArrays
 using GLMakie
 using MathTeXEngine
-Makie.update_theme!( fonts = (regular = texfont(), bold = texfont(:bold), italic = texfont(:italic)))
+Makie.update_theme!(fonts = (regular = texfont(), bold = texfont(:bold), italic = texfont(:italic)))
 
 const SecYear = 3600 * 24 * 365.25
 
@@ -18,19 +18,19 @@ const SecYear = 3600 * 24 * 365.25
     end
 end
 
-viscous_strain_rate(η, τ)                    = τ / (2 * η)
-elastic_strain_rate(G, τ, τ0, dt)            = (τ - τ0) / (2 * G * dt)
+viscous_strain_rate(η, τ) = τ / (2 * η)
+elastic_strain_rate(G, τ, τ0, dt) = (τ - τ0) / (2 * G * dt)
 volumetric_elastic_strain_rate(P, P0, K, dt) = (P - P0) / (K * dt)
-volumetric_plastic_strain_rate(λ, τ, P, ψ)   = λ/2 * ForwardDiff.derivative(P -> compute_Q(τ, P, ψ), P)
-plastic_strain_rate(λ, τ, P, ψ)              = λ/2 * ForwardDiff.derivative(τ -> compute_Q(τ, P, ψ), τ)
+volumetric_plastic_strain_rate(λ, τ, P, ψ) = λ / 2 * ForwardDiff.derivative(P -> compute_Q(τ, P, ψ), P)
+plastic_strain_rate(λ, τ, P, ψ) = λ / 2 * ForwardDiff.derivative(τ -> compute_Q(τ, P, ψ), τ)
 
 compute_Q(τ, P, ψ) = τ - P * sind(ψ)
 
 function compute_F(τ, P, C, ϕ, ηvp, λ)
     η_mult = 1.0  # Lagarange multiplier, value doesn't matter
-    f      = τ - P * sind(ϕ) - C * cosd(ϕ)
-    f_vp   = τ - P * sind(ϕ) - C * cosd(ϕ) - ηvp*λ
-    F      = f_vp*(f>=0) + η_mult*λ*(f<0)
+    f = τ - P * sind(ϕ) - C * cosd(ϕ)
+    f_vp = τ - P * sind(ϕ) - C * cosd(ϕ) - ηvp * λ
+    F = f_vp * (f >= 0) + η_mult * λ * (f < 0)
     return F
 end
 
@@ -45,18 +45,18 @@ end
 function volumetric_strain_rate(τ, dt, λ, P, P0, K, ψ)
     θ_e = volumetric_elastic_strain_rate(P, P0, K, dt)
     θ_p = volumetric_plastic_strain_rate(λ, τ, P, ψ)
-    θ   = θ_e + θ_p
+    θ = θ_e + θ_p
     return θ
 end
 
-strain_rate_residual(ε, τ, τ0, dt, η, G, λ, P, ψ, ηvp)    = strain_rate(τ, τ0, dt, η, G, λ, P, ψ, ηvp) - ε
+strain_rate_residual(ε, τ, τ0, dt, η, G, λ, P, ψ, ηvp) = strain_rate(τ, τ0, dt, η, G, λ, P, ψ, ηvp) - ε
 volumetric_strain_rate_residual(θ, τ, dt, λ, P, P0, K, ψ) = volumetric_strain_rate(τ, dt, λ, P, P0, K, ψ) - θ
-F_residual(τ, P, C, ϕ, ηvp, λ, G, dt, η)                  = compute_F(τ, P, C, ϕ, ηvp, λ)
+F_residual(τ, P, C, ϕ, ηvp, λ, G, dt, η) = compute_F(τ, P, C, ϕ, ηvp, λ)
 
 function residual_vector(x::SVector, ε, τ0, dt, η, G, θ, P0, K, ψ, C, ϕ, ηvp)
-    τ   = x[1]
-    λ   = x[2]
-    P   = x[3]
+    τ = x[1]
+    λ = x[2]
+    P = x[3]
     r_τ = strain_rate_residual(ε, τ, τ0, dt, η, G, λ, P, ψ, ηvp)
     r_θ = volumetric_strain_rate_residual(θ, τ, dt, λ, P, P0, K, ψ)
     r_F = F_residual(τ, P, C, ϕ, ηvp, λ, G, dt, η)
@@ -65,15 +65,15 @@ end
 
 function solve(ε, τ, τ0, θ, dt, η, G, λ, P, P0, K, ψ, C, ϕ, ηvp; tol::Float64 = 1.0e-9, itermax = 1.0e4, verbose::Bool = false)
 
-    it = 0  
+    it = 0
     er = Inf
-    x  = SA[τ, λ, P]  # Initial guess
-    α  = 1e0
+    x = SA[τ, λ, P]  # Initial guess
+    α = 1.0e0
     while er > tol #&& it<=1
         it += 1
 
-        r = residual_vector(x,ε, τ0, dt, η, G, θ, P0, K, ψ, C, ϕ, ηvp)  
-        J = ForwardDiff.jacobian(x -> residual_vector(x,ε, τ0, dt, η, G, θ, P0, K, ψ, C, ϕ, ηvp), x)
+        r = residual_vector(x, ε, τ0, dt, η, G, θ, P0, K, ψ, C, ϕ, ηvp)
+        J = ForwardDiff.jacobian(x -> residual_vector(x, ε, τ0, dt, η, G, θ, P0, K, ψ, C, ϕ, ηvp), x)
         Δx = J \ r
         α = 1
         x -= α .* Δx
@@ -90,65 +90,65 @@ function solve(ε, τ, τ0, θ, dt, η, G, λ, P, P0, K, ψ, C, ϕ, ηvp; tol::F
     return x
 end
 
-@inline function analytical_solution(ε, t, G, η, P, C, ϕ) 
+@inline function analytical_solution(ε, t, G, η, P, C, ϕ)
     τ_ve = 2 * ε * η * (1 - exp(-G * t / η))
-    τ_p  = P * sind(ϕ) + C * cosd(ϕ)
+    τ_p = P * sind(ϕ) + C * cosd(ϕ)
     return (τ_ve < τ_p) * τ_ve + (τ_ve >= τ_p) * τ_p
 end
 
 function stress_time()
 
     ntime = 2_000
-    dt    = 1e8
-    ε     = 1e-14
-    θ     = 1e-18
-    τ     = 1e3
-    τ0    = 0
-    η     = 1e22
-    ηvp   = 1e20
-    G     = 10e9
-    K     = 30e9
-    λ     = 0
-    P     = 1e6
-    P0    = P
-    C     = 10e6
-    ϕ     = 30
-    ψ     = 30
+    dt = 1.0e8
+    ε = 1.0e-14
+    θ = 1.0e-18
+    τ = 1.0e3
+    τ0 = 0
+    η = 1.0e22
+    ηvp = 1.0e20
+    G = 10.0e9
+    K = 30.0e9
+    λ = 0
+    P = 1.0e6
+    P0 = P
+    C = 10.0e6
+    ϕ = 30
+    ψ = 30
 
     # Extract elastic stresses/pressure from solutio vector
-    τv    = zeros(ntime)
+    τv = zeros(ntime)
     τv_pc = zeros(ntime)
-    λv    = zeros(ntime)
+    λv = zeros(ntime)
     τv_an = zeros(ntime)
-    Pv    = zeros(ntime)
-    tv    = zeros(ntime)
-    t     = 0.0
-    τ_pc  = 0.0
+    Pv = zeros(ntime)
+    tv = zeros(ntime)
+    t = 0.0
+    τ_pc = 0.0
     for i in 2:ntime
-        sol                 = solve(ε, τ, τ0, θ, dt, η, G, λ, P, P0, K, ψ, C, ϕ, ηvp; verbose = true)
+        sol = solve(ε, τ, τ0, θ, dt, η, G, λ, P, P0, K, ψ, C, ϕ, ηvp; verbose = true)
         τv[i], λv[i], Pv[i] = sol
-        τ0                  = sol[1]
-        τ                   = sol[1] # this is just a guess for the next iteration
-        λ                   = sol[2] # this is just a guess for the next iteration
-        P                   = sol[3] # this is just a guess for the next iteration
-        P0                  = sol[3] 
-        t                  += dt
-        τv_an[i]            = analytical_solution(ε, t, G, η, P, C, ϕ)
-        tv[i]               = t
+        τ0 = sol[1]
+        τ = sol[1] # this is just a guess for the next iteration
+        λ = sol[2] # this is just a guess for the next iteration
+        P = sol[3] # this is just a guess for the next iteration
+        P0 = sol[3]
+        t += dt
+        τv_an[i] = analytical_solution(ε, t, G, η, P, C, ϕ)
+        tv[i] = t
 
         # Standard predictor-corrector
-        η_ve       = (1/η + 1/(G*dt))^-1
-        τ_pc0      = τ_pc
-        τ_pc       = 2*η_ve * (ε + τ_pc0/(2*G*dt))
-        f_p        = τ_pc - (C*cosd(ϕ) + P*sind(ϕ))
+        η_ve = (1 / η + 1 / (G * dt))^-1
+        τ_pc0 = τ_pc
+        τ_pc = 2 * η_ve * (ε + τ_pc0 / (2 * G * dt))
+        f_p = τ_pc - (C * cosd(ϕ) + P * sind(ϕ))
         if f_p > 0
-            λ    = f_p / (η_ve + ηvp)
-            εp   = λ*τ_pc/2/abs(τ_pc)
-            f_c  = τ_pc - η_ve*λ - (C*cosd(ϕ) + P*sind(ϕ) + λ*ηvp)   
+            λ = f_p / (η_ve + ηvp)
+            εp = λ * τ_pc / 2 / abs(τ_pc)
+            f_c = τ_pc - η_ve * λ - (C * cosd(ϕ) + P * sind(ϕ) + λ * ηvp)
             @show f_c
-            τ_pc = 2*η_ve * (ε + τ_pc0/(2*G*dt) - εp)
+            τ_pc = 2 * η_ve * (ε + τ_pc0 / (2 * G * dt) - εp)
         end
-        τv_pc[i]   = τ_pc
+        τv_pc[i] = τ_pc
     end
 
     return tv, τv, τv_pc, τv_an, Pv
@@ -159,17 +159,17 @@ let
     tv, τv, τv_pc, τv_an, Pv = stress_time()
 
     fig = Figure(fontsize = 30, size = (800, 600) .* 1)
-    ax1 = Axis(fig[1, 1], xlabel = L"$t$ [kyr]", ylabel = L"$\tau$ [MPa]", title=L"$$Stress - time")
-    ax2 = Axis(fig[2, 1], xlabel = L"$t$ [kyr]", ylabel = L"$\tau$ [MPa]", title=L"$$Error")
+    ax1 = Axis(fig[1, 1], xlabel = L"$t$ [kyr]", ylabel = L"$\tau$ [MPa]", title = L"$$Stress - time")
+    ax2 = Axis(fig[2, 1], xlabel = L"$t$ [kyr]", ylabel = L"$\tau$ [MPa]", title = L"$$Error")
 
     step1 = 10
     step2 = 100
-    lines!(ax1, tv / SecYear / 1.0e3, τv_an / 1.0e6, color=:black, label = "analytical")
-    scatter!(ax1, tv[1:step1:end] / SecYear / 1.0e3, τv[1:step1:end]    / 1.0e6,  color=:red, label = "numerical")
-    scatter!(ax1, tv[1:step2:end] / SecYear / 1.0e3, τv_pc[1:step2:end] / 1.0e6,  color=:blue, label = "predictor-corrector")
+    lines!(ax1, tv / SecYear / 1.0e3, τv_an / 1.0e6, color = :black, label = "analytical")
+    scatter!(ax1, tv[1:step1:end] / SecYear / 1.0e3, τv[1:step1:end] / 1.0e6, color = :red, label = "numerical")
+    scatter!(ax1, tv[1:step2:end] / SecYear / 1.0e3, τv_pc[1:step2:end] / 1.0e6, color = :blue, label = "predictor-corrector")
 
-    lines!(ax2, tv / SecYear / 1.0e3, (abs.(τv_an.-τv) ), color=:black)
-    lines!(ax2, tv / SecYear / 1.0e3, (abs.(τv_an.-τv_pc) ), color=:blue)
+    lines!(ax2, tv / SecYear / 1.0e3, (abs.(τv_an .- τv)), color = :black)
+    lines!(ax2, tv / SecYear / 1.0e3, (abs.(τv_an .- τv_pc)), color = :blue)
 
     axislegend(ax1, position = :rb)
     display(fig)

@@ -15,8 +15,10 @@ function creep_rates(diffusion, dislocation, τ, env)
     return ε̇_diff, ε̇_disl
 end
 
-function simulate_mantle_creep(c, diffusion, dislocation, vars, x, xnorm, env;
-        ntime = 501, dt = 250 * SecYear)
+function simulate_mantle_creep(
+        c, diffusion, dislocation, vars, x, xnorm, env;
+        ntime = 501, dt = 250 * SecYear
+    )
 
     time = zeros(ntime)
     τII = zeros(ntime)
@@ -56,24 +58,28 @@ function plot_mantle_creep_history(history, diffusion, dislocation, elastic, env
     η_eff = 1 ./ (1 ./ η_diff + 1 ./ η_disl + 1 ./ η_elastic)
 
     fig = Figure(fontsize = 24, size = (1300, 850), backgroundcolor = :black)
-    axτ = Axis(fig[1, 1],
+    axτ = Axis(
+        fig[1, 1],
         xlabel = rich("t", " [kyr]", font = :italic),
         ylabel = rich("τ", subscript("II"), " [MPa]", font = :italic),
         backgroundcolor = :black,
     )
-    axε = Axis(fig[1, 2],
+    axε = Axis(
+        fig[1, 2],
         xlabel = rich("τ", subscript("II"), " [MPa]", font = :italic),
         ylabel = rich("ε̇", subscript("II"), " [s", superscript("-1"), "]", font = :italic),
         yscale = log10,
         backgroundcolor = :black,
     )
-    axη = Axis(fig[2, 1],
+    axη = Axis(
+        fig[2, 1],
         xlabel = rich("τ", subscript("II"), " [MPa]", font = :italic),
         ylabel = rich("η", " [Pa s]", font = :italic),
         yscale = log10,
         backgroundcolor = :black,
     )
-    axf = Axis(fig[2, 2],
+    axf = Axis(
+        fig[2, 2],
         xlabel = rich("τ", subscript("II"), " [MPa]", font = :italic),
         ylabel = "dislocation fraction",
         backgroundcolor = :black,
@@ -132,8 +138,8 @@ c, diffusion, dislocation, elastic, vars, x, xnorm, env = let
         0.0,        # water fugacity exponent
         3.0,        # grain-size exponent
         1.58e-15,   # 10^9.2 MPa^-1 μm^3 s^-1 converted to Pa^-1 m^3 s^-1
-        375e3,      # activation energy [J mol^-1]
-        5e-6,       # activation volume [m^3 mol^-1]
+        375.0e3,      # activation energy [J mol^-1]
+        5.0e-6,       # activation volume [m^3 mol^-1]
         R,
     )
 
@@ -141,20 +147,20 @@ c, diffusion, dislocation, elastic, vars, x, xnorm, env = let
         3.5,        # n, dislocation creep
         0.0,        # water fugacity exponent
         1.1e-16,    # 1.1e5 MPa^-3.5 s^-1 converted to Pa^-3.5 s^-1
-        530e3,      # activation energy [J mol^-1]
-        14e-6,      # activation volume [m^3 mol^-1]
+        530.0e3,      # activation energy [J mol^-1]
+        14.0e-6,      # activation volume [m^3 mol^-1]
         R,
     )
 
-    elastic = IncompressibleElasticity(60e9)
+    elastic = IncompressibleElasticity(60.0e9)
     c = SeriesModel(diffusion, dislocation, elastic)
 
-    vars = vars_2D(1e-15, 0.0)
-    args = (; τ = 100e6, P = env.P)
+    vars = vars_2D(1.0e-15, 0.0)
+    args = (; τ = 100.0e6, P = env.P)
     others = (; env..., dt = 250 * SecYear, τ0 = (zero_stress_tensor_2D(),), P0 = (0.0,))
 
     x = initial_guess_x(c, vars, args, others)
-    xnorm = normalisation_x(c, 150e6, second_invariant_2D(vars.ε))
+    xnorm = normalisation_x(c, 150.0e6, second_invariant_2D(vars.ε))
 
     c, diffusion, dislocation, elastic, vars, x, xnorm, env
 end
@@ -164,7 +170,7 @@ fig = plot_mantle_creep_history(history, diffusion, dislocation, elastic, env)
 # save(joinpath(@__DIR__, "..", "mantle_history.png"), fig)
 
 println("Elastic + diffusion + dislocation creep, mantle-like conditions")
-println("T = $(env.T) K, P = $(env.P / 1e9) GPa, d = $(env.d * 1e3) mm, εII = $(second_invariant_2D(vars.ε)) s^-1")
+println("T = $(env.T) K, P = $(env.P / 1.0e9) GPa, d = $(env.d * 1.0e3) mm, εII = $(second_invariant_2D(vars.ε)) s^-1")
 println("time [kyr]   τII [MPa]   diffusion [s^-1]   dislocation [s^-1]   creep fraction disl.")
 
 for i in 1:20:length(history.time)
@@ -172,8 +178,8 @@ for i in 1:20:length(history.time)
     disl_fraction = iszero(total_creep) ? 0.0 : history.ε̇_disl[i] / total_creep
     @printf(
         "%10.1f%12.2f%20.4e%22.4e%21.3f\n",
-        history.time[i] / SecYear / 1e3,
-        history.τII[i] / 1e6,
+        history.time[i] / SecYear / 1.0e3,
+        history.τII[i] / 1.0e6,
         history.ε̇_diff[i],
         history.ε̇_disl[i],
         disl_fraction,

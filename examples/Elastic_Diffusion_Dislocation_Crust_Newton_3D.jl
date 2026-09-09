@@ -37,13 +37,15 @@ function residual_and_jacobian(diffusion, dislocation, elastic, τ, εII_eff, en
     ε̇_diff, ε̇_disl = creep_rates(diffusion, dislocation, τ, env)
     residual = ε̇_diff + ε̇_disl + τ / (2 * elastic.G * dt) - εII_eff
     jacobian = creep_rate_derivative(diffusion, τ, env) +
-               creep_rate_derivative(dislocation, τ, env) +
-               1 / (2 * elastic.G * dt)
+        creep_rate_derivative(dislocation, τ, env) +
+        1 / (2 * elastic.G * dt)
     return residual, jacobian
 end
 
-function solve_stress_newton(diffusion, dislocation, elastic, τ_guess, εII_eff, env, dt;
-        atol = 1.0e-20, rtol = 1.0e-10, itermax = 50)
+function solve_stress_newton(
+        diffusion, dislocation, elastic, τ_guess, εII_eff, env, dt;
+        atol = 1.0e-20, rtol = 1.0e-10, itermax = 50
+    )
 
     τ = max(τ_guess, 0.0)
     r0, _ = residual_and_jacobian(diffusion, dislocation, elastic, τ, εII_eff, env, dt)
@@ -68,8 +70,10 @@ function solve_stress_newton(diffusion, dislocation, elastic, τ_guess, εII_eff
     error("Newton-Raphson stress solve did not converge after $itermax iterations; τ = $τ Pa")
 end
 
-function simulate_crustal_creep_newton_3D(diffusion, dislocation, elastic, vars, env;
-        ntime = 501, dt = 250 * SecYear)
+function simulate_crustal_creep_newton_3D(
+        diffusion, dislocation, elastic, vars, env;
+        ntime = 501, dt = 250 * SecYear
+    )
 
     time = zeros(ntime)
     τII = zeros(ntime)
@@ -110,24 +114,28 @@ function plot_crustal_creep_rates_3D(history, diffusion, dislocation, elastic, e
     η_eff = 1 ./ (1 ./ η_diff + 1 ./ η_disl + 1 ./ η_elastic)
 
     fig = Figure(fontsize = 24, size = (1300, 850), backgroundcolor = :black)
-    axτ = Axis(fig[1, 1],
+    axτ = Axis(
+        fig[1, 1],
         xlabel = rich("t", " [kyr]", font = :italic),
         ylabel = rich("τ", subscript("II"), " [MPa]", font = :italic),
         backgroundcolor = :black,
     )
-    axε = Axis(fig[1, 2],
+    axε = Axis(
+        fig[1, 2],
         xlabel = rich("τ", subscript("II"), " [MPa]", font = :italic),
         ylabel = rich("ε̇", subscript("II"), " [s", superscript("-1"), "]", font = :italic),
         yscale = log10,
         backgroundcolor = :black,
     )
-    axη = Axis(fig[2, 1],
+    axη = Axis(
+        fig[2, 1],
         xlabel = rich("τ", subscript("II"), " [MPa]", font = :italic),
         ylabel = rich("η", " [Pa s]", font = :italic),
         yscale = log10,
         backgroundcolor = :black,
     )
-    axf = Axis(fig[2, 2],
+    axf = Axis(
+        fig[2, 2],
         xlabel = rich("τ", subscript("II"), " [MPa]", font = :italic),
         ylabel = "dislocation fraction",
         backgroundcolor = :black,
@@ -177,29 +185,29 @@ end
 function setup_crustal_creep_newton_3D()
     R = 8.314462618
 
-    env = (; T = 273.15 + 400, P = 500e6, f = 1.0, d = 1e-3)
+    env = (; T = 273.15 + 400, P = 500.0e6, f = 1.0, d = 1.0e-3)
 
     diffusion = DiffusionCreep(
         1,
         0.0,
         3.0,
-        3e-21,
-        160e3,
-        8e-6,
+        3.0e-21,
+        160.0e3,
+        8.0e-6,
         R,
     )
 
     dislocation = DislocationCreep(
         3.0,
         0.0,
-        7e-26,
-        190e3,
-        8e-6,
+        7.0e-26,
+        190.0e3,
+        8.0e-6,
         R,
     )
 
-    elastic = IncompressibleElasticity(60e9)
-    vars = vars_3D(1e-14, 0.0)
+    elastic = IncompressibleElasticity(60.0e9)
+    vars = vars_3D(1.0e-14, 0.0)
 
     return (; diffusion, dislocation, elastic, vars, env)
 end
@@ -213,7 +221,7 @@ function main()
 
     println("Elastic + diffusion + dislocation creep, crust-like conditions, 3D stress tensor")
     println("Stress is solved with a scalar Newton-Raphson method.")
-    println("T = $(env.T) K, P = $(env.P / 1e6) MPa, d = $(env.d * 1e3) mm, εII = $(second_invariant_3D(vars.ε)) s^-1")
+    println("T = $(env.T) K, P = $(env.P / 1.0e6) MPa, d = $(env.d * 1.0e3) mm, εII = $(second_invariant_3D(vars.ε)) s^-1")
     println("time [kyr]   τII [MPa]   diffusion [s^-1]   dislocation [s^-1]   creep fraction disl.")
 
     for i in 1:20:length(history.time)
@@ -221,8 +229,8 @@ function main()
         disl_fraction = iszero(total_creep) ? 0.0 : history.ε̇_disl[i] / total_creep
         @printf(
             "%10.1f%12.2f%20.4e%22.4e%21.3f\n",
-            history.time[i] / SecYear / 1e3,
-            history.τII[i] / 1e6,
+            history.time[i] / SecYear / 1.0e3,
+            history.τII[i] / 1.0e6,
             history.ε̇_diff[i],
             history.ε̇_disl[i],
             disl_fraction,

@@ -14,8 +14,10 @@ function creep_rates(diffusion, dislocation, τ, env)
     return ε̇_diff, ε̇_disl
 end
 
-function simulate_crustal_creep(c, diffusion, dislocation, vars, x, xnorm, env;
-        ntime = 501, dt = 250 * SecYear)
+function simulate_crustal_creep(
+        c, diffusion, dislocation, vars, x, xnorm, env;
+        ntime = 501, dt = 250 * SecYear
+    )
 
     time = zeros(ntime)
     τII = zeros(ntime)
@@ -36,8 +38,10 @@ function simulate_crustal_creep(c, diffusion, dislocation, vars, x, xnorm, env;
     return (; time, τII, ε̇_diff, ε̇_disl, x)
 end
 
-function plot_crustal_creep_rates_1D(history, diffusion, dislocation, elastic, env;
-        τ_range = range(0.1, 150.0, length = 250))
+function plot_crustal_creep_rates_1D(
+        history, diffusion, dislocation, elastic, env;
+        τ_range = range(0.1, 150.0, length = 250)
+    )
 
     time_kyr = history.time / SecYear / 1.0e3
     dt = history.time[2] - history.time[1]
@@ -57,26 +61,30 @@ function plot_crustal_creep_rates_1D(history, diffusion, dislocation, elastic, e
     η_eff = 1 ./ (1 ./ η_diff + 1 ./ η_disl + 1 ./ η_elastic)
 
     fig = Figure(fontsize = 24, size = (1300, 850), backgroundcolor = :black)
-    axτ = Axis(fig[1, 1],
+    axτ = Axis(
+        fig[1, 1],
         # title = "Elastic + diffusion + dislocation creep",
         xlabel = rich("t", " [kyr]", font = :italic),
         ylabel = rich("τ", subscript("II"), " [MPa]", font = :italic),
         backgroundcolor = :black,
     )
-    axε = Axis(fig[1, 2],
+    axε = Axis(
+        fig[1, 2],
         # title = "Creep rates at crust-like conditions",
         xlabel = rich("τ", subscript("II"), " [MPa]", font = :italic),
         ylabel = rich("ε̇", subscript("II"), " [s", superscript("-1"), "]", font = :italic),
         yscale = log10,
         backgroundcolor = :black,
     )
-    axη = Axis(fig[2, 1],
+    axη = Axis(
+        fig[2, 1],
         xlabel = rich("τ", subscript("II"), " [MPa]", font = :italic),
         ylabel = rich("η", " [Pa s]", font = :italic),
         yscale = log10,
         backgroundcolor = :black,
     )
-    axf = Axis(fig[2, 2],
+    axf = Axis(
+        fig[2, 2],
         xlabel = rich("τ", subscript("II"), " [MPa]", font = :italic),
         ylabel = "dislocation fraction",
         backgroundcolor = :black,
@@ -127,7 +135,7 @@ function setup_crustal_creep()
     R = 8.314462618
 
     # Crust-like conditions: about 10-12 km depth and 500 degC.
-    env = (; T = 273.15 + 400, P = 500e6, f = 1.0, d = 1e-3)
+    env = (; T = 273.15 + 400, P = 500.0e6, f = 1.0, d = 1.0e-3)
     # env = (; T = 773.15, P = 2e9, f = 1.0, d = 1e-3)
     # env = (; T = 273 + 1200e0, P = 10e9, f = 1.0, d = 1e-3)
 
@@ -135,33 +143,33 @@ function setup_crustal_creep()
         1,       # n, diffusion creep
         0.0,     # water fugacity exponent
         3.0,     # grain-size exponent
-        3e-21,   # material parameter, SI-style example value
-        160e3,   # activation energy [J mol^-1]
-        8e-6,     # activation volume [m^3 mol^-1]
+        3.0e-21,   # material parameter, SI-style example value
+        160.0e3,   # activation energy [J mol^-1]
+        8.0e-6,     # activation volume [m^3 mol^-1]
         R,
     )
 
     dislocation = DislocationCreep(
         3.0,     # n, dislocation creep
         0.0,     # water fugacity exponent
-        7e-26,   # material parameter, SI-style example value
-        190e3,   # activation energy [J mol^-1]
-        8e-6,     # activation volume [m^3 mol^-1]
+        7.0e-26,   # material parameter, SI-style example value
+        190.0e3,   # activation energy [J mol^-1]
+        8.0e-6,     # activation volume [m^3 mol^-1]
         R,
     )
 
-    elastic = IncompressibleElasticity(60e9)
+    elastic = IncompressibleElasticity(60.0e9)
 
     # Maxwell-type viscoelastic model:
     # total strain rate = diffusion creep + dislocation creep + elastic strain rate.
     c = SeriesModel(diffusion, dislocation, elastic)
 
-    vars = vars_2D(1e-14, 0.0)
-    args = (; τ = 100e6, P = env.P)
+    vars = vars_2D(1.0e-14, 0.0)
+    args = (; τ = 100.0e6, P = env.P)
     others = (; env..., dt = 100 * SecYear, τ0 = (zero_stress_tensor_2D(),), P0 = (0.0,))
 
     x = initial_guess_x(c, vars, args, others)
-    xnorm = normalisation_x(c, 150e6, second_invariant_2D(vars.ε))
+    xnorm = normalisation_x(c, 150.0e6, second_invariant_2D(vars.ε))
 
     return (; c, diffusion, dislocation, elastic, vars, x, xnorm, env)
 end
@@ -175,15 +183,15 @@ function main()
     # save(joinpath(@__DIR__, "..", "history.png"), fig)
 
     println("Elastic + diffusion + dislocation creep, crust-like conditions")
-    println("T = $(env.T) K, P = $(env.P / 1e6) MPa, d = $(env.d * 1e3) mm, εII = $(second_invariant_2D(vars.ε)) s^-1")
+    println("T = $(env.T) K, P = $(env.P / 1.0e6) MPa, d = $(env.d * 1.0e3) mm, εII = $(second_invariant_2D(vars.ε)) s^-1")
     println("time [kyr]   τII [MPa]   diffusion [s^-1]   dislocation [s^-1]   creep fraction disl.")
 
     for i in 1:20:length(history.time)
         total_creep = history.ε̇_diff[i] + history.ε̇_disl[i]
         disl_fraction = iszero(total_creep) ? 0.0 : history.ε̇_disl[i] / total_creep
         println(
-            lpad(round(history.time[i] / SecYear / 1e3; digits = 1), 10),
-            lpad(round(history.τII[i] / 1e6; digits = 2), 12),
+            lpad(round(history.time[i] / SecYear / 1.0e3; digits = 1), 10),
+            lpad(round(history.τII[i] / 1.0e6; digits = 2), 12),
             lpad(round(history.ε̇_diff[i]; sigdigits = 4), 20),
             lpad(round(history.ε̇_disl[i]; sigdigits = 4), 22),
             lpad(round(disl_fraction; digits = 3), 21),
@@ -196,4 +204,3 @@ end
 if abspath(PROGRAM_FILE) == @__FILE__
     main()
 end
-

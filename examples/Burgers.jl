@@ -26,8 +26,8 @@ function stress_time(c, vars, x; ntime = 200, dt = 1.0e8)
         @inbounds τ1[i] = second_invariant_2D(τ_e[1])
         @inbounds P1[i] = P_e[1]
         # if length(τ_e) > 1
-            @inbounds τ2[i] = second_invariant_2D(τ_e[2])
-            @inbounds P2[i] = P_e[2]
+        @inbounds τ2[i] = second_invariant_2D(τ_e[2])
+        @inbounds P2[i] = P_e[2]
         # end
         t += others.dt
         t_v[i] = t
@@ -37,8 +37,8 @@ end
 
 # Analytical solution for Burgers model
 function simulate_series_Burgers_model(E1, η1, E2, η2, ε̇, N, dt)
-    t    = LinRange(0., N*dt, N)
-    σ    = zeros(N)          # Stress
+    t = LinRange(0.0, N * dt, N)
+    σ = zeros(N)          # Stress
     ε_KV = zeros(N)          # Strain in Kelvin–Voigt element
     σ_KV = zeros(N)
     σ_spring = zeros(N) # Stress in the spring of the Kelvin-Voigt element
@@ -94,20 +94,20 @@ end
 
 let
     function figure()
-        dt = 1e9 .* [1.0, 1/2, 1/4, 1/8]
+        dt = 1.0e9 .* [1.0, 1 / 2, 1 / 4, 1 / 8]
         nt = 25 .* [1.0, 2, 4, 8]
-        ϵ  = zero(dt)
+        ϵ = zero(dt)
 
         for it in eachindex(dt)
             # Burgers model, numerics
-            t_v, τ1, τ2, P1, P2, x1 = stress_time(c, vars, x; ntime = Int64(nt[it]), dt = dt[it]);
-            t_anal, τ1_anal, τ2_anal = simulate_series_Burgers_model(G1, η1, G2, η2, second_invariant_2D(vars.ε), Int64(nt[it]),  dt[it]);
+            t_v, τ1, τ2, P1, P2, x1 = stress_time(c, vars, x; ntime = Int64(nt[it]), dt = dt[it])
+            t_anal, τ1_anal, τ2_anal = simulate_series_Burgers_model(G1, η1, G2, η2, second_invariant_2D(vars.ε), Int64(nt[it]), dt[it])
             ϵ[it] = maximum(abs.(τ1 .- τ1_anal))
 
             # Order
-            θ      = log(ϵ[1]/ϵ[2]) / log(dt[1]/dt[2])
+            θ = log(ϵ[1] / ϵ[2]) / log(dt[1] / dt[2])
             dt_arr = LinRange(dt[end], dt[1], 100)
-            ϵ_arr  = 10 .^(log10.(ϵ[1]) .- θ.*( log10.(1 ./ (dt_arr)) .- log10.(1 ./ (dt_arr[end]))))
+            ϵ_arr = 10 .^ (log10.(ϵ[1]) .- θ .* (log10.(1 ./ (dt_arr)) .- log10.(1 ./ (dt_arr[end]))))
 
             SecYear = 3600 * 24 * 365.25
             fig = Figure(fontsize = 30, size = (800, 600))
@@ -116,40 +116,40 @@ let
             lines!(ax1, t_anal / SecYear / 1.0e3, τ1_anal / 1.0e6, label = "analytical", linewidth = 5, color = :black)
             scatter!(ax1, t_v[1:10:end] / SecYear / 1.0e3, τ1[1:10:end] / 1.0e6, label = "numerical", color = :red, markersize = 15)
             #scatter!(ax1,t_v/SecYear/1e3,τ2/1e6, label="τ2")
-            axislegend(ax1, position = :rb, labelsize=18)
+            axislegend(ax1, position = :rb, labelsize = 18)
 
             ax2 = Axis(fig[2, 1], title = L"$$Convergence", xlabel = L"$\log_{10}$ $\frac{1}{dt}$ [1/s]", ylabel = L"$\log_{10}$ $ϵ$ [Pa]")
-            lines!(ax2, log10.(1 ./ dt_arr), log10.(ϵ_arr), color=:black, label="1st order")
-            scatter!(ax2, log10.(1 ./ dt), log10.(ϵ), color=:black, label="numerics")
-            axislegend(labelsize=18)
+            lines!(ax2, log10.(1 ./ dt_arr), log10.(ϵ_arr), color = :black, label = "1st order")
+            scatter!(ax2, log10.(1 ./ dt), log10.(ϵ), color = :black, label = "numerics")
+            axislegend(labelsize = 18)
 
             save(joinpath(@__DIR__, "..", "docs", "assets", "Burgers_model.png"), fig)
             display(fig)
         end
-        @show ϵ
+        return @show ϵ
     end
     with_theme(figure, theme_latexfonts())
 end
 
 
 Base.@kwdef mutable struct Foo
-    type   ::Union{String, Missing}          = missing
-    nel    ::Union{Int64,  Missing}          = missing
-    nf     ::Union{Int64,  Missing}          = missing
-    nv     ::Union{Int64,  Missing}          = missing
-    nn_el  ::Union{Int64,  Missing}          = missing
-    nf_el  ::Union{Int64,  Missing}          = missing
+    type::Union{String, Missing} = missing
+    nel::Union{Int64, Missing} = missing
+    nf::Union{Int64, Missing} = missing
+    nv::Union{Int64, Missing} = missing
+    nn_el::Union{Int64, Missing} = missing
+    nf_el::Union{Int64, Missing} = missing
 end
 
-a=Foo(nel=20)
+a = Foo(nel = 20)
 @b $a.nel
 
-function foo(x; a=1, b=2, kwargs...)
-    x + a + b
+function foo(x; a = 1, b = 2, kwargs...)
+    return x + a + b
 end
 
 foo(x, kwargs) = foo(x; kwargs...)
 
-args = (; a=1, b=2, c=3)
+args = (; a = 1, b = 2, c = 3)
 
 foo(1, args)

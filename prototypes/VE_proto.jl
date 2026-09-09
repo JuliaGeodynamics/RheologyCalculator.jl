@@ -16,14 +16,14 @@ const SecYear = 3600 * 24 * 365.25
     end
 end
 
-viscous_strain_rate(η, τ)         = τ / (2 * η)
+viscous_strain_rate(η, τ) = τ / (2 * η)
 elastic_strain_rate(G, τ, τ0, dt) = (τ - τ0) / (2 * G * dt)
-plastic_strain_rate(λ, τ, P, ψ)   = λ / 2 * ForwardDiff.derivative(τ -> compute_Q(τ, P, ψ), τ)
+plastic_strain_rate(λ, τ, P, ψ) = λ / 2 * ForwardDiff.derivative(τ -> compute_Q(τ, P, ψ), τ)
 
 compute_Q(τ, P, ψ) = τ - P * sind(ψ)
 
 function compute_F(τ, P, C, ϕ, λ, ηve)
-    ηvp = 1e20
+    ηvp = 1.0e20
     F = τ - P * sind(ϕ) - C * cosd(ϕ) - λ * ηvp
     F *= (F > 0)
     return F - λ * ηve
@@ -41,9 +41,9 @@ strain_rate_residual(ε, τ, τ0, dt, η, G, λ, P, ψ) = strain_rate(τ, τ0, d
 F_residual(τ, P, C, ϕ, λ, ηve) = compute_F(τ, P, C, ϕ, λ, ηve)
 
 function residual_vector(x::SVector, ε, τ0, dt, η, G, P, ψ, C, ϕ)
-    τ   = x[1]
-    λ   = x[2]
-    ηve = 1/(1/(η) + 1/(G*dt))
+    τ = x[1]
+    λ = x[2]
+    ηve = 1 / (1 / (η) + 1 / (G * dt))
     r_τ = strain_rate_residual(ε, τ, τ0, dt, η, G, λ, P, ψ)
     r_F = F_residual(τ, P, C, ϕ, λ, ηve)
     return SA[r_τ, r_F]
@@ -53,15 +53,15 @@ function solver(ε, τ, τ0, dt, η, G, λ, P, ψ, C, ϕ; tol::Float64 = 1.0e-9,
 
     it = 0
     er = Inf
-    x  = SA[τ, λ]  # Initial guess
-    α  = 1e0
+    x = SA[τ, λ]  # Initial guess
+    α = 1.0e0
     while er > tol
         it += 1
 
         r = residual_vector(x, ε, τ0, dt, η, G, P, ψ, C, ϕ)
         J = ForwardDiff.jacobian(x -> residual_vector(x, ε, τ0, dt, η, G, P, ψ, C, ϕ), x)
         Δx = J \ r
-        α  = 1 # bt_line_search(Δx, J, x, r, c, vars, others)
+        α = 1 # bt_line_search(Δx, J, x, r, c, vars, others)
         x -= α .* Δx
         # check convergence
         er = mynorm(Δx, x)
@@ -79,33 +79,33 @@ end
 function stress_time()
 
     ntime = 20_000
-    dt    = 1e7
-    ε     = 1e-14
-    τ     = 1e3
-    τ0    = 0
-    η     = 1e22
-    G     = 10e9
-    λ     = 0
-    P     = 1e6
-    C     = 10e6
-    ϕ     = 30
-    ψ     = 0
+    dt = 1.0e7
+    ε = 1.0e-14
+    τ = 1.0e3
+    τ0 = 0
+    η = 1.0e22
+    G = 10.0e9
+    λ = 0
+    P = 1.0e6
+    C = 10.0e6
+    ϕ = 30
+    ψ = 0
 
     # Extract elastic stresses/pressure from solutio vector
-    τv    = zeros(ntime)
-    λv    = zeros(ntime)
+    τv = zeros(ntime)
+    λv = zeros(ntime)
     τv_an = zeros(ntime)
-    tv    = zeros(ntime)
-    t     = 0.0
+    tv = zeros(ntime)
+    t = 0.0
     for i in 2:ntime
-        sol          = solver(ε, τ, τ0, dt, η, G, λ, P, ψ, C, ϕ; verbose = true)
+        sol = solver(ε, τ, τ0, dt, η, G, λ, P, ψ, C, ϕ; verbose = true)
         τv[i], λv[i] = sol
-        τ0           = sol[1]
-        τ            = sol[1] # this is just a guess for the next iteration
-        λ            = sol[2] # this is just a guess for the next iteration
-        t           += dt
-        τv_an[i]     = analytical_solution(ε, t, G, η)
-        tv[i]       = t
+        τ0 = sol[1]
+        τ = sol[1] # this is just a guess for the next iteration
+        λ = sol[2] # this is just a guess for the next iteration
+        t += dt
+        τv_an[i] = analytical_solution(ε, t, G, η)
+        tv[i] = t
     end
 
     return tv, τv, τv_an
@@ -114,11 +114,11 @@ end
 tv, τv, τv_an = stress_time()
 
 fig = Figure(fontsize = 30, size = (800, 600) .* 2)
-ax  = Axis(fig[1, 1], xlabel = "t [kyr]", ylabel = L"\tau [MPa]")
+ax = Axis(fig[1, 1], xlabel = "t [kyr]", ylabel = L"\tau [MPa]")
 # ax2 = Axis(fig[2, 1], xlabel = "t [kyr]", ylabel = L"\tau [MPa]")
 
-lines!(  ax, tv / SecYear / 1.0e3, τv_an / 1.0e6, color=:black, label = "analytical")
-scatter!(ax, tv / SecYear / 1.0e3, τv / 1.0e6,    color=:green,   label = "numerical")
+lines!(ax, tv / SecYear / 1.0e3, τv_an / 1.0e6, color = :black, label = "analytical")
+scatter!(ax, tv / SecYear / 1.0e3, τv / 1.0e6, color = :green, label = "numerical")
 
 axislegend(ax, position = :rb)
 ax.xlabel = L"t [kyr]"

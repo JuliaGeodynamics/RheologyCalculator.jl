@@ -15,7 +15,7 @@ function stress_time(c, vars, x, xnorm, others; ntime = 200, dt = 1.0e8, verbose
 
     for i in 2:ntime
         others = (; others..., dt = dt, τ0 = τ_e, P0 = P_e)
-        x = solve(c, x, vars, others, verbose = verbose, xnorm0 = xnorm, atol = 1.0e-10, rtol = 1e-10)
+        x = solve(c, x, vars, others, verbose = verbose, xnorm0 = xnorm, atol = 1.0e-10, rtol = 1.0e-10)
         τ1[i] = x[1]
         t += others.dt
         τ_e = elastic_stress_history_2D(c, x[1], vars.ε, τ_e, others)
@@ -31,8 +31,8 @@ c1, x1, xnorm1, c2, x2, xnorm2, vars, others, yield_stress = let
         3.2,       # n, mafic granulite-style dislocation creep
         0.0,       # water fugacity exponent
         6.31e-22,  # Pa^-n s^-1
-        244e3,     # activation energy [J mol^-1]
-        4e-6,       # activation volume [m^3 mol^-1]
+        244.0e3,     # activation energy [J mol^-1]
+        4.0e-6,       # activation volume [m^3 mol^-1]
         R,
     )
     viscous_reg = LinearViscosity(1.0e20)
@@ -75,7 +75,8 @@ let
         temperature_C = others.T - 273.15
         pressure_GPa = others.P / 1.0e9
         fig = Figure(fontsize = 24, size = (1300, 850), backgroundcolor = darkmode ? :black : :white)
-        ax = Axis(fig[1, 1],
+        ax = Axis(
+            fig[1, 1],
             title = "T = $(round(temperature_C; digits = 0)) °C, P = $(round(pressure_GPa; digits = 2)) GPa",
             xlabel = L"t\ [\mathrm{kyr}]",
             ylabel = L"\tau\ [\mathrm{MPa}]",
@@ -98,24 +99,28 @@ let
             ax.bottomspinecolor = :white
         end
 
-        lines!(ax, t_v1 / SecYear / 1.0e3, τ1 / 1.0e6,
+        lines!(
+            ax, t_v1 / SecYear / 1.0e3, τ1 / 1.0e6,
             color = :deepskyblue2,
             label = L"V-E-VP",
             linewidth = 3,
         )
-        lines!(ax, t_v2 / SecYear / 1.0e3, τ2 / 1.0e6,
+        lines!(
+            ax, t_v2 / SecYear / 1.0e3, τ2 / 1.0e6,
             color = :orange,
             label = L"V-E",
             linewidth = 3,
         )
-        hlines!(ax, yield_stress / 1.0e6,
+        hlines!(
+            ax, yield_stress / 1.0e6,
             color = darkmode ? :white : :black,
             linestyle = :dash,
             linewidth = 3,
             label = L"\mathrm{yield\ stress}",
         )
 
-        Legend(fig[1, 2], ax;
+        Legend(
+            fig[1, 2], ax;
             backgroundcolor = darkmode ? (:black, 0.0) : :white,
             framecolor = darkmode ? (:white, 0.25) : :black,
             labelcolor = darkmode ? :white : :black,
