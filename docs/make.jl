@@ -26,6 +26,8 @@ makedocs(;
         "Composites" => "composites.md",
         "Rheology" => "rheology.md",
         "Solving" => "stress.md",
+        "Component partition" => "component_partition.md",
+        "Shear heating" => "shear_heating.md",
         "Elastic correction" => "strain_rate_correction.md",
         "Sparsity detection" => "sparsity_detection.md",
         "API" => "api.md",
