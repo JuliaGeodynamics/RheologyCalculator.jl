@@ -11,11 +11,11 @@ end
 end
 
 @testset "Compats" begin
-    @test !Aqua.test_deps_compat(
+    @test Aqua.test_deps_compat(
         RheologyCalculator;
         check_julia = true,
         check_extras = false,
-    ).anynonpass
+    ).anynonpass == 0
 end
 
 @testset "Stale dependencies" begin
