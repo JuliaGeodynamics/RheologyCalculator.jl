@@ -3,7 +3,7 @@
 Shear heating is the conversion of irreversible mechanical work into heat during
 viscous creep and plastic deformation. It is a
 volumetric source term that can locally raise temperature and thereby affect the
-material strength. Reversible elastic storage is not shear heating.
+material strength. Reversible elastic storage does contribute to shear heating.
 
 ## Problem definition
 
