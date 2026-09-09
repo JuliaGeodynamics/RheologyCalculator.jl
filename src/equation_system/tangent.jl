@@ -39,7 +39,7 @@ function tangent(c::AbstractCompositeModel, x::SVector, vars0, others)
     εII = second_invariant_value(vars0.ε .+ ε_corr)
     vars = merge(vars0, (; ε = εII))
 
-    J = ForwardDiff.jacobian(y -> compute_residual(c, y, vars, others), x)
+    J = jacobian(c, x, vars, others)
     dRdε = ForwardDiff.derivative(e -> compute_residual(c, x, merge(vars, (; ε = e)), others), εII)
     dxdε = backsolve(J, dRdε)
 
@@ -47,6 +47,76 @@ function tangent(c::AbstractCompositeModel, x::SVector, vars0, others)
 end
 
 tangent(c::AbstractCompositeModel, sol::RCSolution, vars0, others) = tangent(c, sol.x, vars0, others)
+
+"""
+    tangent_block(c, x, vars, others)
+
+Return the scalar deviatoric/volumetric consistent tangent block
+
+```text
+[ dτ/dε  dτ/dθ ]
+[ dP/dε  dP/dθ ]
+```
+
+using the package's implicit local solve. Missing pressure or volumetric
+unknowns produce zero rows or columns. Plastic coupling is included whenever
+the model contributes the corresponding residual equations.
+"""
+function tangent_block(c::AbstractCompositeModel, x::SVector, vars0, others)
+    vars0.ε isa Number || throw(ArgumentError("tangent_block requires scalar `vars.ε`"))
+    vars = merge(vars0, (; ε = second_invariant_value(vars0.ε .+ _direct_leaf_elastic_correction(c, vars0.ε, others))))
+    J = jacobian(c, x, vars, others)
+    ε = vars.ε
+    dRdε = ForwardDiff.derivative(e -> compute_residual(c, x, merge(vars, (; ε = e)), others), ε)
+    dxdε = backsolve(J, dRdε)
+    dxdθ = if hasproperty(vars, :θ)
+        θ = vars.θ
+        dRdθ = ForwardDiff.derivative(t -> compute_residual(c, x, merge(vars, (; θ = t)), others), θ)
+        backsolve(J, dRdθ)
+    else
+        zero(dxdε)
+    end
+    τi = stress_index(c)
+    Pi = findfirst(==(:P), x_keys(c))
+    τ_row = (dxdε[τi], dxdθ[τi])
+    P_row = Pi === nothing ? (zero(dxdε[τi]), zero(dxdε[τi])) : (dxdε[Pi], dxdθ[Pi])
+    return SMatrix{2, 2}(τ_row[1], P_row[1], τ_row[2], P_row[2])
+end
+
+tangent_block(c::AbstractCompositeModel, sol::RCSolution, vars, others) =
+    tangent_block(c, sol.x, vars, others)
+
+"""
+    tangent_tensor(c, x, vars, others)
+
+Return the isotropic deviatoric Voigt tangent `∂τᵢ/∂εⱼ` at a converged local
+solution. The supported tensor layouts are the package conventions `(xx, yy,
+xy)` and `(xx, yy, zz, yz, xz, xy)`. The result is a fixed-size `SMatrix`.
+
+This first form covers deviatoric invariant response only. Volumetric and
+plastic coupling blocks are intentionally outside this API.
+"""
+function tangent_tensor(c::AbstractCompositeModel, x::SVector, vars0, others)
+    ε_corr = _direct_leaf_elastic_correction(c, vars0.ε, others)
+    ε = vars0.ε .+ ε_corr
+    ε isa NTuple || throw(ArgumentError("tangent_tensor requires a Voigt strain-rate tuple"))
+    N = length(ε)
+    N ∈ (3, 6) || throw(ArgumentError("tangent_tensor supports 2D or 3D Voigt tuples"))
+    εII = second_invariant_value(ε)
+    iszero(εII) && throw(ArgumentError("tangent_tensor is undefined at zero strain rate"))
+    τ = x[stress_index(c)]
+    dτdε = tangent(c, x, vars0, others)
+    εv = SVector{N}(ε)
+    f = y -> begin
+        e = second_invariant_value(Tuple(y))
+        τy = τ + dτdε * (e - εII)
+        (τy / e) .* y
+    end
+    return SMatrix{N, N}(ForwardDiff.jacobian(f, εv))
+end
+
+tangent_tensor(c::AbstractCompositeModel, sol::RCSolution, vars, others) =
+    tangent_tensor(c, sol.x, vars, others)
 
 """
     stress_index(c::AbstractCompositeModel)

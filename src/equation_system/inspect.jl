@@ -31,6 +31,9 @@ Each entry is a `NamedTuple` with fields
   rather than to a parallel branch;
 - `elements`: the rheology elements the equation spans, each paired with its
   number in the per-type numbering that `display(c)` draws.
+- `parent` and `children`: equation-graph dependencies.
+- `inputs`: prescribed differentiable input fields used by the equation.
+- `history`: auxiliary/history fields requested by its rheology elements.
 
 A name repeats when several equations share the same physical unknown: a
 composite with a parallel branch has one `:τ` per branch, of which the global
@@ -73,9 +76,24 @@ end
     equation = nameof(eq.fn)
     isglob = isglobal(eq) === Val(true)
     elements = map(=>, map(r -> nameof(typeof(r)), eq.rheology), eq.el_number)
+    inputs = keys(residual_kwargs(eq.fn))
+    history = _history_keys(eq.rheology)
     return ntuple(Val(length(ks))) do i
-        (; var = ks[i], equation, isglobal = isglob, elements)
+        (; var = ks[i], equation, isglobal = isglob, elements,
+           parent = eq.parent, children = eq.child, inputs, history)
     end
+end
+
+@generated function _history_keys(rheology::NTuple{N, AbstractRheology}) where {N}
+    keys = Symbol[]
+    for T in rheology.parameters
+        local_keys = T <: AbstractElasticity ? (:τ0, :P0) :
+                     T <: AbstractViscosity ? (:d,) : ()
+        for key in local_keys
+            key ∉ keys && push!(keys, key)
+        end
+    end
+    return Expr(:tuple, (QuoteNode(key) for key in keys)...)
 end
 
 Base.summary(io::IO, insp::ModelInspection) = print(io, length(insp), "-element ", nameof(typeof(insp)))

@@ -29,6 +29,7 @@ generate_equations
 x_keys
 inspect
 RheologyCalculator.ModelInspection
+RheologyCalculator.validate
 ```
 
 ## Solver
@@ -39,7 +40,12 @@ normalisation_x
 RCSolution
 NonConvergenceError
 solve
+solve_batch
+solve_with_retries
+jacobian
 tangent
+tangent_tensor
+tangent_block
 stress_index
 compute_residual
 effective_strain_rate_correction

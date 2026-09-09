@@ -79,6 +79,54 @@ julia> inspect(c)
       2  P    compute_volumetric_strain_rate  global  LinearViscosity 1, Elasticity 1
 ```
 
+Validate models and inputs before entering a numerical kernel:
+
+```julia
+validate(c, vars, others)
+```
+
+Validation is host-side. It checks finite and physically meaningful material
+parameters, required elastic history, and `isbits` compatibility without adding
+work to `solve`.
+
+## Batch solves and diagnostics
+
+For a fixed model, `solve_batch` accepts statically sized tuples of independent
+local systems and returns a statically sized tuple of `RCSolution`s:
+
+```julia
+xs = (x0_point_1, x0_point_2)
+vs = (vars_point_1, vars_point_2)
+os = (others_point_1, others_point_2)
+solutions = solve_batch(c, xs, vs, os)
+```
+
+This reference path avoids `Vector`-based device data structures. Per-point
+recovery from difficult solves is available through the explicit host-side
+`solve_with_retries` helper; ordinary `solve` remains deterministic.
+
+`jacobian(c, x, vars, others)` exposes the local residual Jacobian. It currently
+uses ForwardDiff and provides the boundary for future analytic or sparse
+backends.
+
+## Consistent tangents
+
+The scalar `tangent` returns `dτII/dεII` for a converged local solve.
+`tangent_tensor` expands isotropic deviatoric response into the package's Voigt
+layout: `(xx, yy, xy)` in 2-D and `(xx, yy, zz, yz, xz, xy)` in 3-D. Shear
+entries are tensor components, not engineering shear components.
+
+For scalar deviatoric/volumetric models, `tangent_block` returns:
+
+```text
+[ dτ/dε  dτ/dθ ]
+[ dP/dε  dP/dθ ]
+```
+
+It uses implicit differentiation through the complete local residual system,
+so plastic coupling is included whenever the model contributes the relevant
+equations. All tangent results are fixed-size and `isbits`.
+
 ## Composite Models
 
 Models are assembled with `SeriesModel` and `ParallelModel`:

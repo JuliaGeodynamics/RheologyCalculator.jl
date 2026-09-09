@@ -120,5 +120,12 @@ reached. The exception includes the last iterate, normalized residual, and a
 stopped changing the iterate at floating-point precision; `:iteration_limit`
 indicates that `itermax` was reached first.
 
+Before solving, `validate(c, vars, others)` can check material parameters,
+history fields, and `isbits` compatibility on the host. For repeated local
+systems, `solve_batch` provides a statically sized tuple-based batch path.
+The `jacobian` function exposes the ForwardDiff residual Jacobian, while
+`tangent`, `tangent_tensor`, and `tangent_block` provide scalar, Voigt
+deviatoric, and coupled deviatoric/volumetric consistent tangents respectively.
+
 See [Composites](@ref composites) for model construction, [Rheologies](@ref) for
 the element interface, and [API](@ref) for the generated reference.
