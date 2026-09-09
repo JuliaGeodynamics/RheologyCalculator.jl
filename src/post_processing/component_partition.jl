@@ -23,7 +23,10 @@ struct ComponentPartition{EV, TV, RV, IV, EE, TE, RE, IE, EP, TP, RP, IP}
     plastic_indices::IP
 end
 
-# `_show_round` is defined in dissipation_partition.jl, which is included first.
+# print only 3 sigdigits to be pretty. Shared with `ComponentPartition`.
+_show_round(x::AbstractFloat) = round(x; sigdigits = 3)
+_show_round(x) = x
+_show_round(t::Tuple) = map(_show_round, t)
 
 function Base.show(io::IO, ::MIME"text/plain", p::ComponentPartition)
     println(io, "ComponentPartition:")
