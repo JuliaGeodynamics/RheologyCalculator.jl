@@ -1,7 +1,7 @@
 # Component partition
 
 A composite model solves for a handful of unknowns, but those unknowns do not say
-how the deformation is shared between the mechanisms that produced them. A
+how the deformation is partitioned between the mechanisms that produced them. A
 visco-elasto-plastic point may report a single stress while the viscous, elastic,
 and plastic components accommodate wildly different fractions of the imposed strain
 rate, and which one dominates changes with the loading.
