@@ -17,8 +17,8 @@ end
     η_floor = 1.0e16
     c = SeriesModel(ParallelModel(SeriesModel(LinearViscosity(η_soft)), LinearViscosity(η_floor)))
     vars = (; ε)
-    x = initial_guess_x(c, vars, (; τ = 1.0), NamedTuple())
-    x = solve(c, x, vars, NamedTuple())
+    x0 = initial_guess_x(c, vars, (; τ = 1.0), NamedTuple())
+    x = solve(c, x0, vars, NamedTuple())
 
     @test x[1] / (2 * ε) ≈ η_soft + η_floor
 end

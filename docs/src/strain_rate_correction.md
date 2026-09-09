@@ -225,7 +225,7 @@ t   = 0.0
 for _ in 1:1_000
     others = (; dt = 1.0e9, τ0 = τ_e, P0 = P_e)
     x      = solve(c, x, vars, others; xnorm0 = xnorm)
-    # pass the full x SVector — the elastic element is nested inside SeriesModel(η₃, G)
+    # pass the full solution — the elastic element is nested inside SeriesModel(η₃, G)
     # so compute_stress_elastic must look at x[3], not x[1]
     τ_e    = RheologyModels.elastic_stress_history_2D(c, x, vars.ε, τ_e, others)
     t     += 1.0e9
@@ -235,7 +235,7 @@ end
 `x_keys(c)` returns `(:τ, :ε, :τ)` for this composite — the three unknowns are the
 global stress, the strain rate entering the parallel branch, and the stress inside the
 inner Maxwell element. Because the elastic element is nested two levels deep,
-`elastic_stress_history_2D` receives the full `x` SVector (not just `x[1]`) so that
+`elastic_stress_history_2D` receives the full `RCSolution` (not just `x[1]`) so that
 `compute_stress_elastic` can locate the spring stress at index 3 and return the correct
 backstress for the next step.
 

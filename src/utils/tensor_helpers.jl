@@ -3,6 +3,9 @@
 # expected tuple length; each pair shares one dimension-agnostic body, which
 # reads the length from the tuple it is given.
 
+# Symmetric tensors use engineering-free Voigt ordering:
+# 2-D: (xx, yy, xy); 3-D: (xx, yy, zz, yz, xz, xy).
+# Shear entries are tensor components, not engineering shear strains.
 const εxx_pure_shear = (1.0, -1.0, 0.0)
 const εxx_pure_shear_3D = (1.0, -1.0, 0.0, 0.0, 0.0, 0.0)
 
@@ -119,7 +122,7 @@ function _elastic_stress_history(to_tensor::F, c, τII, ε, τ0, others) where {
     return (to_tensor(τII, ε_eff),)
 end
 
-function _elastic_stress_history(to_tensor::F, c, x::SVector, ε, τ0, others) where {F}
+function _elastic_stress_history(to_tensor::F, c, x::AbstractVector, ε, τ0, others) where {F}
     ε_eff = ε .+ effective_strain_rate_correction(c, ε, τ0, others)
     τII_elastic = compute_stress_elastic(c, x, others)
     return ntuple(i -> to_tensor(τII_elastic[i], ε_eff), length(τII_elastic))

@@ -48,8 +48,8 @@ function stress_time(c, vars, x, xnorm; ntime = 200, dt = 1.0e9)
     for i in 2:ntime
         others  = (; dt = dt, τ0 = τ_e, P0 = P_e)
         x       = solve(c, x, vars, others; xnorm0 = xnorm)
-        # The elastic element sits inside the inner SeriesModel; pass the full x
-        # SVector so that compute_stress_elastic extracts the correct spring stress.
+        # The elastic element sits inside the inner SeriesModel; pass the full
+        # solution so compute_stress_elastic extracts the correct spring stress.
         τ_e     = elastic_stress_history_2D(c, x, vars.ε, τ_e, others)
         t      += dt
         τ1[i]   = x[1]

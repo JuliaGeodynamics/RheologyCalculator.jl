@@ -1,5 +1,11 @@
 using Test
 
+function solution_allocations(c, x0, vars, others)
+    sol = solve(c, x0, vars, others)
+    inspect(c)
+    return @allocated(solve(c, sol, vars, others)), @allocated(inspect(c))
+end
+
 @testset "allocations" begin
     viscous1 = LinearViscosity(5.0e19)
     viscous2 = LinearViscosity(1.0e20)
@@ -67,6 +73,17 @@ using Test
         (c_plastic, vars_pl, others_pl, x_pl),
         (c_volumetric, vars_vol, others_vol, x_vol),
     )
+
+    @testset "RCSolution" begin
+        c = SeriesModel(
+            viscous1,
+            ParallelModel(SeriesModel(viscous2, IncompressibleElasticity(1.0e10)), viscous1),
+        )
+        vars = (; ε = 1.0e-14)
+        others = (; dt = 1.0e10, τ0 = (0.0,))
+        x0 = initial_guess_x(c, vars, (; τ = 1.0), others)
+        @test solution_allocations(c, x0, vars, others) == (0, 0)
+    end
 
     @testset "generate_equations" begin
         for (c, _, _, _) in cases

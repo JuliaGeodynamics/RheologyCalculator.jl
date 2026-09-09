@@ -38,6 +38,9 @@ SeriesModel
 ParallelModel
 generate_equations
 x_keys
+inspect
+RheologyCalculator.ModelInspection
+RheologyCalculator.validate
 ```
 
 ## Solver
@@ -45,9 +48,16 @@ x_keys
 ```@docs
 initial_guess_x
 normalisation_x
+RCSolution
+NonConvergenceError
 solve
 NonConvergenceError
+solve_batch
+solve_with_retries
+jacobian
 tangent
+tangent_tensor
+tangent_block
 stress_index
 compute_residual
 effective_strain_rate_correction
@@ -109,6 +119,12 @@ RheologyCalculator.RheologyModels.elastic_stress_history_3D
 ```@docs
 RheologyCalculator.compute_stress_elastic
 RheologyCalculator.compute_pressure_elastic
+DissipationPartition
+dissipation_partition
+shear_heating
+RheologyCalculator.rheology_category
+ComponentPartition
+component_partition
 ```
 
 ## Internals

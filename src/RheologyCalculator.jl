@@ -29,6 +29,9 @@ export SeriesModel, ParallelModel
 
 include("core/kwargs.jl")
 
+include("validation.jl")
+export validate
+
 include("equation_system/equations.jl")
 export generate_equations, compute_residual
 
@@ -39,17 +42,26 @@ include("post_processing/post_calculations.jl")
 include("equation_system/initial_guess.jl")
 export initial_guess_x, x_keys
 
+include("equation_system/inspect.jl")
+export inspect
+
 include("equation_system/normalize_x.jl")
 export normalisation_x
 
 include("equation_system/solver.jl")
-export solve, NonConvergenceError
+export solve, solve_batch, solve_with_retries, RCSolution, jacobian, NonConvergenceError
 
 include("post_processing/strain_rate_correction.jl")
 export effective_strain_rate_correction
 
+include("post_processing/component_partition.jl")
+export ComponentPartition, component_partition
+
+include("post_processing/dissipation_partition.jl")
+export DissipationPartition, dissipation_partition, shear_heating, rheology_category
+
 include("equation_system/tangent.jl")
-export tangent, stress_index
+export tangent, tangent_tensor, tangent_block, stress_index
 
 include("display/print_rheology.jl")
 

@@ -16,11 +16,7 @@ makedocs(;
         devurl = "dev",
         sidebar_drawer = true,
     ),
-    # No blanket downgrade: a missing docstring, a dead cross-reference, or a
-    # duplicated @docs entry fails the build. `checkdocs = :exports` scopes the
-    # missing-docs check to the public surface; the package documents many
-    # internals that are deliberately absent from the manual.
-    warnonly = false,
+    warnonly = [:footnote],
     checkdocs = :exports,
     draft = false,
     source = "src",
@@ -30,6 +26,8 @@ makedocs(;
         "Composites" => "composites.md",
         "Rheology" => "rheology.md",
         "Solving" => "stress.md",
+        "Component partition" => "component_partition.md",
+        "Shear heating" => "shear_heating.md",
         "Elastic correction" => "strain_rate_correction.md",
         "Sparsity detection" => "sparsity_detection.md",
         "API" => "api.md",

@@ -22,7 +22,6 @@ struct CompositeEquation{IsGlobal, T, F, R, RT}
         return new{B, T, F, R, RT}(parent, child, self, fn, rheology, ind_input, el_number)
 
     end
-end
 
 """
     generate_equations(c::AbstractCompositeModel)
@@ -258,13 +257,21 @@ plus all other differentiable values and nondifferentiable auxiliary fields.
 # entry of `x`, plus every other equation's unknown, plus `others`. The second
 # pass is what fills in the keys an equation does not own, taken from whichever
 # sibling does.
-@inline function generate_args_template(eqs::NTuple{N, Any}, x::SVector{N}, others::NamedTuple) where {N}
-    template = generate_args_template(eqs)
-    args = maptuple(template, Tuple(x)) do t, xi
-        merge(NamedTuple{keys(t)}(xi), others)
-    end
-    return maptuple(args) do a
-        merge(a, maptuple(other -> Base.structdiff(other, a), args)...)
+@generated function generate_args_template(eqs::NTuple{N, Any}, x::AbstractVector, others::NamedTuple) where {N}
+    return quote
+        args_template = generate_args_template(eqs)
+        args = Base.@ntuple $N i -> begin
+            @inline
+            name = keys(args_template[i])
+            merge(NamedTuple{name}(x[i]), others)
+        end
+
+        Base.@ntuple $N i -> begin
+            diffs = Base.@ntuple $N j -> begin
+                Base.structdiff(args[j], args[i])
+            end
+            merge(args[i], diffs...)
+        end
     end
 end
 
@@ -325,13 +332,40 @@ end
 
 @inline evaluate_state_function(fn::F, rheology::Tuple{}, args, others, el_number) where {F} = 0
 
-@inline function evaluate_state_function(fn::F, rheology::NTuple{N, AbstractRheology}, args, others, el_number) where {N, F}
-    vals = maptuple(rheology, el_number) do r, n
-        args_local = extract_local_kwargs(others, history_kwargs(r), n)
-        fn(r, merge(args, args_local))
+@generated function evaluate_state_function(fn::F, rheology::NTuple{N, AbstractRheology}, args, others, el_number) where {N, F}
+    return quote
+        @inline
+        sum(evaluate_state_function_perleaf(fn, rheology, args, others, el_number))
     end
-    return sum(vals)
 end
+
+"""
+    evaluate_state_function_perleaf(fn, rheology, args, others, el_number)
+
+The per-element contributions that [`evaluate_state_function`](@ref) sums, returned
+as a tuple instead.
+
+Each entry is evaluated with exactly the arguments its residual equation uses, so
+the value is paired with the correct conjugate: for a `compute_strain_rate`
+equation the entries are the elements' strain rates at the node's shared stress,
+and for a `compute_stress` equation they are the elements' stresses at the node's
+shared strain rate. Post-processing needs the individual terms to form each
+element's own dissipation; the residual only needs their sum.
+"""
+@generated function evaluate_state_function_perleaf(fn::F, rheology::NTuple{N, AbstractRheology}, args, others, el_number) where {N, F}
+    return quote
+        @inline
+        Base.@ntuple $N i -> begin
+            keys_hist = history_kwargs(rheology[i])
+            args_local = extract_local_kwargs(others, keys_hist, el_number[i])
+            args_combined = merge(args, args_local)
+            fn(rheology[i], args_combined)
+        end
+        end
+    end
+end
+
+@inline evaluate_state_function_perleaf(fn::F, ::Tuple{}, args, others, el_number) where {F} = ()
 
 @inline evaluate_state_function(fn::F, rheology::Tuple{}, args, others) where {F} = 0.0e0
 

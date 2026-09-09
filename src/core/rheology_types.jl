@@ -103,3 +103,43 @@ state equations.
         Base.IteratorsMD.flatten(f)
     end
 end
+
+"""
+    get_unique_state_functions(composite, model)
+
+Collect the unique state functions for a tuple of rheologies under `:series` or
+`:parallel` composition.
+"""
+function get_unique_state_functions(composite::NTuple{N, AbstractRheology}, model::Symbol) where {N}
+    funs = if model === :series
+        get_unique_state_functions(composite, series_state_functions)
+    elseif model === :parallel
+        get_unique_state_functions(composite, parallel_state_functions)
+    else
+        error("Model not defined. Accepted models are :series or :parallel")
+    end
+    return funs
+end
+
+function get_unique_state_functions(composite::NTuple{N, AbstractRheology}, state_fn) where {N}
+    funs = state_fn(composite)
+    # get unique state functions
+    return flatten_repeated_functions(funs)
+end
+
+"""
+    rheology_category(r::AbstractRheology)
+
+Classify a rheology element as `Val(:viscous)`, `Val(:elastic)` or `Val(:plastic)`.
+
+Used by post-processing to decide how an element's contribution is accounted for:
+viscous and plastic contributions are irreversible and dissipate, elastic ones are
+reversible storage and dissipate nothing. Custom rheologies should specialize this
+method rather than being classified by name or module.
+
+The default is `Val(:unknown)`, which post-processing skips rather than guessing.
+"""
+@inline rheology_category(::AbstractRheology) = Val(:unknown)
+@inline rheology_category(::AbstractViscosity) = Val(:viscous)
+@inline rheology_category(::AbstractElasticity) = Val(:elastic)
+@inline rheology_category(::AbstractPlasticity) = Val(:plastic)
