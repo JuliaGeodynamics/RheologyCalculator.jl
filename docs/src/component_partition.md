@@ -56,17 +56,17 @@ times the stress and therefore dissipates ten times the power. This is why
 dissipation cannot be read off a strain-rate field: each component must be paired
 with its own conjugate stress, never a global stress with a summed local rate.
 
-## Why the partition is worth looking at
+## Why is partitioning worth looking at
 
 Sweeping the imposed strain rate over six orders of magnitude for the
-visco-elasto-plastic point above shows what the stress alone cannot.
+visco-elasto-plastic point above shows what the stresses alone cannot.
 
-![](https://raw.githubusercontent.com/albert-de-montserrat/RheologyCalculator.jl/main/docs/assets/component_partition.png)
+![](https://raw.githubusercontent.com/juliageodynamics/RheologyCalculator.jl/main/docs/assets/component_partition.png)
 
-Below yield, stress rises linearly with the imposed rate and the viscous/elastic
+Below yield, stresses rise linearly with the imposed rate and the viscous/elastic
 split is fixed by the ratio ``\eta / (G \Delta t)``. Once the Drucker--Prager yield
-stress ``C\cos\phi`` is reached the stress saturates and stops carrying
+stress ``C\cos\phi`` is reached, the stresses saturate and stop carrying
 information: every further increment of imposed strain rate is taken up by plastic
-flow, and only the partition shows that handover.
+flow, and only the partitioning shows that handover.
 
 The figure is produced by `examples/component_partition.jl`.

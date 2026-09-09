@@ -3,13 +3,13 @@
 Shear heating is the conversion of irreversible mechanical work into heat during
 inelastic deformation. It is a
 volumetric source term that can locally raise temperature and thereby affect the
-material strength. Reversible elastic storage does contribute to shear heating.
+material strength. Reversible elastic storage does not contribute to shear heating.
 
 ## Problem definition
 
 Consider one material point in a visco-elasto-plastic rock undergoing a prescribed
 deviatoric strain rate. The point contains linear viscous creep, an elastic spring,
-and Drucker--Prager plasticity connected in series. At each time step we solve for
+and Drucker--Prager plasticity connected in series. At each time step, we solve for
 the stress and the strain-rate contribution of each mechanism. The dissipative
 viscous and plastic work can then be supplied to an energy equation as a volumetric
 heat source.
@@ -38,15 +38,15 @@ x = initial_guess_x(c, vars, (; τ = 1.0e6), others)
 sol = solve(c, x, vars, others)
 ```
 
-## Component partition
+## Component partitioning
 
 Before dissipation, it is worth knowing how the deformation itself is shared
 between the mechanisms. [`component_partition`](@ref) reports the deviatoric strain
 rate and conjugate stress of every individual component; see
-[Component partition](component_partition.md). The dissipation below is a reduction
+[Component partitioning](component_partition.md). The dissipation below is a reduction
 over exactly those components.
 
-## Dissipation partition and shear heating
+## Dissipation partitioning and shear heating
 
 [`dissipation_partition`](@ref) separates irreversible **deviatoric**
 dissipation into viscous and plastic contributions. Elastic contributions are
