@@ -16,5 +16,7 @@ end
 @inline series_state_functions(::BulkViscosity) = (compute_volumetric_strain_rate,)
 @inline parallel_state_functions(::BulkViscosity) = (compute_pressure,)
 
-@inline compute_volumetric_strain_rate(r::BulkViscosity; P = 0, kwargs...) = P / r.χ
-@inline compute_pressure(r::BulkViscosity; θ = 0, kwargs...) = θ * r.χ
+# Sign convention: `P` is positive in compression and `θ` positive in dilation, so
+# compressing the material must compact it and the two carry opposite signs.
+@inline compute_volumetric_strain_rate(r::BulkViscosity; P = 0, kwargs...) = -P / r.χ
+@inline compute_pressure(r::BulkViscosity; θ = 0, kwargs...) = -θ * r.χ
