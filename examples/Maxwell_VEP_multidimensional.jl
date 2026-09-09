@@ -11,27 +11,27 @@ analytical_solution(ϵ, t, G, η) = 2 * ϵ * η * (1 - exp(-G * t / η))
 
 function stress_time(c, vars, x, xnorm, others; ntime = 200, dt = 1.0e8)
     # Extract elastic stresses/pressure from solution vector
-    τ1   = zeros(ntime)
+    τ1 = zeros(ntime)
     τ_an = zeros(ntime)
-    t_v  = zeros(ntime)
-    
-    τ_e  = (zero_stress_tensor_2D(),)
-    P_e  = (0.0,)
-    t    = 0.0
+    t_v = zeros(ntime)
+
+    τ_e = (zero_stress_tensor_2D(),)
+    P_e = (0.0,)
+    t = 0.0
     εII0 = second_invariant_2D(vars.ε)
 
     for i in 2:ntime
-        others   = (; dt = dt, P = others.P, τ0 = τ_e, P0 = P_e) # other non-differentiable variables needed to evaluate the state functions
+        others = (; dt = dt, P = others.P, τ0 = τ_e, P0 = P_e) # other non-differentiable variables needed to evaluate the state functions
 
-        x      = solve(c, x, vars, others, verbose=false, xnorm0=xnorm)
-        τII    = x[1] 
-        τ_e    = elastic_stress_history_2D(c, τII, vars.ε, τ_e, others)
+        x = solve(c, x, vars, others, verbose = false, xnorm0 = xnorm)
+        τII = x[1]
+        τ_e = elastic_stress_history_2D(c, τII, vars.ε, τ_e, others)
 
-        τ1[i]  = τII
-        
-        t      += others.dt
+        τ1[i] = τII
+
+        t += others.dt
         τ_an[i] = analytical_solution(εII0, t, c.leafs[2].G, c.leafs[1].η)
-    
+
         t_v[i] = t
     end
 
@@ -40,43 +40,43 @@ end
 
 c, x, xnorm, vars, args, others = let
 
-    viscous = LinearViscosity(1e22)
-    elastic = IncompressibleElasticity(10e9)
-    plastic = DruckerPrager(10e6, 30, 0)
+    viscous = LinearViscosity(1.0e22)
+    elastic = IncompressibleElasticity(10.0e9)
+    plastic = DruckerPrager(10.0e6, 30, 0)
 
     # Maxwell viscoelastic model
     # elastic --- viscous --- plastic
-    c      = SeriesModel(viscous, elastic, plastic)
+    c = SeriesModel(viscous, elastic, plastic)
 
-    εᵢⱼ    = tensor_strain_rate_2D(1e-14)
-    τ0ᵢⱼ   = (zero_stress_tensor_2D(),)
-    vars   = (; ε = εᵢⱼ, θ = 0e0)           # input variables (constant)
-    args   = (; τ = 2e3, λ = 0e0)       # guess variables (we solve for these, differentiable)
-    others = (; dt = 1.0e8, P = 1.0e6, τ0 = τ0ᵢⱼ, P0 = (0.0, )) # other non-differentiable variables needed to evaluate the state functions
+    εᵢⱼ = tensor_strain_rate_2D(1.0e-14)
+    τ0ᵢⱼ = (zero_stress_tensor_2D(),)
+    vars = (; ε = εᵢⱼ, θ = 0.0e0)           # input variables (constant)
+    args = (; τ = 2.0e3, λ = 0.0e0)       # guess variables (we solve for these, differentiable)
+    others = (; dt = 1.0e8, P = 1.0e6, τ0 = τ0ᵢⱼ, P0 = (0.0,)) # other non-differentiable variables needed to evaluate the state functions
 
-    x       = initial_guess_x(c, vars, args, others)
-    char_τ  = plastic.C
-    char_ε  = second_invariant_2D(vars.ε)
-    xnorm   = normalisation_x(c, char_τ, char_ε)
+    x = initial_guess_x(c, vars, args, others)
+    char_τ = plastic.C
+    char_ε = second_invariant_2D(vars.ε)
+    xnorm = normalisation_x(c, char_τ, char_ε)
 
     c, x, xnorm, vars, args, others
 end
 
 let
-    t_v, τ, τ_an = stress_time(c, vars, x, xnorm, others; ntime = 1_500, dt = 1e8)
+    t_v, τ, τ_an = stress_time(c, vars, x, xnorm, others; ntime = 1_500, dt = 1.0e8)
 
     function figure()
         SecYear = 3600 * 24 * 365.25
         fig = Figure(fontsize = 30, size = (800, 600) .* 2)
-        ax  = Axis(fig[1, 1], title = "Visco-elasto-plastic model", xlabel = "t [kyr]", ylabel = L"\tau [MPa]")
+        ax = Axis(fig[1, 1], title = "Visco-elasto-plastic model", xlabel = "t [kyr]", ylabel = L"\tau [MPa]")
 
-        lines!(ax, t_v / SecYear / 1.0e3, τ_an / 1.0e6, color=:black, label = "viscoelastic analytical")
-        scatter!(ax, t_v / SecYear / 1.0e3, τ / 1.0e6,  color=:red, label = "numerical")
+        lines!(ax, t_v / SecYear / 1.0e3, τ_an / 1.0e6, color = :black, label = "viscoelastic analytical")
+        scatter!(ax, t_v / SecYear / 1.0e3, τ / 1.0e6, color = :red, label = "numerical")
 
         axislegend(ax, position = :rb)
         ax.xlabel = L"$t$ [kyr]"
         ax.ylabel = L"$\tau$ [MPa]"
-        display(fig)
+        return display(fig)
     end
     with_theme(figure, theme_latexfonts())
 end

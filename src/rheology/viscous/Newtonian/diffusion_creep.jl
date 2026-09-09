@@ -1,7 +1,3 @@
-import ..RheologyCalculator: series_state_functions, parallel_state_functions
-import ..RheologyCalculator: compute_strain_rate, compute_stress
-import ..RheologyCalculator: compute_viscosity, compute_viscosity_series, compute_viscosity_parallel
-
 """
     DiffusionCreep{I,T} <: AbstractViscosity
 
@@ -45,6 +41,5 @@ end
     return τ
 end
 
-@inline compute_viscosity(r::DiffusionCreep; ε = 0, kwargs...)   = compute_stress(r; ε = ε, kwargs...)/(2*ε)
-@inline compute_viscosity_series(r::DiffusionCreep; ε = 0, kwargs...)   = compute_stress(r; ε = ε, kwargs...)/(2*ε)
+@inline compute_viscosity(r::DiffusionCreep; ε = 0, kwargs...) = compute_stress(r; ε = ε, kwargs...) / (2 * ε)
 @inline compute_viscosity_parallel(r::DiffusionCreep; τ = 0, kwargs...) = τ / (2 * compute_strain_rate(r; τ = τ, kwargs...))

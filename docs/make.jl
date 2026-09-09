@@ -8,9 +8,9 @@ using RheologyCalculator.RheologyModels
 @info "Making documentation..."
 makedocs(;
     sitename = "RheologyCalculator.jl",
-    authors  = "Albert de Montserrat and Boris Kaus",
-    modules  = [RheologyCalculator, RheologyCalculator.RheologyModels],
-    format   = DocumenterVitepress.MarkdownVitepress(;
+    authors = "Albert de Montserrat and Boris Kaus",
+    modules = [RheologyCalculator, RheologyCalculator.RheologyModels],
+    format = DocumenterVitepress.MarkdownVitepress(;
         repo = "github.com/JuliaGeodynamics/RheologyCalculator.jl",
         devbranch = "main",
         devurl = "dev",
@@ -18,10 +18,10 @@ makedocs(;
     ),
     warnonly = [:footnote],
     checkdocs = :exports,
-    draft    = false,
-    source   = "src",
-    build    = "build",
-    pages    = [
+    draft = false,
+    source = "src",
+    build = "build",
+    pages = [
         "Home" => "index.md",
         "Composites" => "composites.md",
         "Rheology" => "rheology.md",
@@ -35,9 +35,9 @@ makedocs(;
 )
 
 DocumenterVitepress.deploydocs(;
-    repo       = "github.com/JuliaGeodynamics/RheologyCalculator.jl",
-    target     = joinpath(@__DIR__, "build"),
-    branch     = "gh-pages",
-    devbranch  = "main",
+    repo = "github.com/JuliaGeodynamics/RheologyCalculator.jl",
+    target = joinpath(@__DIR__, "build"),
+    branch = "gh-pages",
+    devbranch = "main",
     push_preview = true,
 )

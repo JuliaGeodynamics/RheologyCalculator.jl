@@ -39,7 +39,7 @@ end
 
 c, x, vars, args, others = let
 
-    viscous1 = LinearViscosity(1e21)
+    viscous1 = LinearViscosity(1.0e21)
     elastic0 = Elasticity(1.0e10, 4.0e10)
     elastic1 = Elasticity(1.0e10, 3.0e10)
 
@@ -51,8 +51,8 @@ c, x, vars, args, others = let
     # viscous
 
     c0 = SeriesModel(viscous1, elastic1)
-    p  = ParallelModel(c0, elastic0)
-    c  = SeriesModel(p)
+    p = ParallelModel(c0, elastic0)
+    c = SeriesModel(p)
 
     vars = vars_2D(1.0e-15, 1.0e-20)         # input variables (constant)
     args = (; τ = 2.0e3, P = 1.0e6)             # guess variables (we solve for these, differentiable)

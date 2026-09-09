@@ -17,13 +17,15 @@ import ForwardDiff: ForwardDiff
 
 import Base.IteratorsMD.flatten
 
+include("core/tuple_utils.jl")
+
 include("core/rheology_types.jl")
-export AbstractViscosity, AbstractPlasticity, AbstractElasticity
+export AbstractViscosity, AbstractPlasticity, AbstractCapPlasticity, AbstractElasticity
 
 include("core/state_functions.jl")
 
 include("core/composite.jl")
-export CompositeModel, SeriesModel, ParallelModel
+export SeriesModel, ParallelModel
 
 include("core/kwargs.jl")
 
@@ -34,6 +36,9 @@ include("equation_system/equations.jl")
 export generate_equations, compute_residual
 
 include("core/others.jl")
+
+include("post_processing/strain_rate_correction.jl")
+export effective_strain_rate_correction
 
 include("post_processing/post_calculations.jl")
 
@@ -48,9 +53,6 @@ export normalisation_x
 
 include("equation_system/solver.jl")
 export solve, solve_batch, solve_with_retries, RCSolution, jacobian, NonConvergenceError
-
-include("post_processing/strain_rate_correction.jl")
-export effective_strain_rate_correction
 
 include("post_processing/component_partition.jl")
 export ComponentPartition, component_partition

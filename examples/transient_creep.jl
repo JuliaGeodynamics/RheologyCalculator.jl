@@ -21,13 +21,13 @@ function stress_time(c, vars, x; ntime = 200, dt = 1.0e8)
 
         x = solve(c, x, vars, others)
         τ_e = elastic_stress_history_2D(c, x, vars.ε, τ_e, others)
-       # P_e = compute_pressure_elastic(c, x, others)
+        # P_e = compute_pressure_elastic(c, x, others)
 
         @inbounds τ1[i] = second_invariant_2D(τ_e[1])
-#        @inbounds P1[i] = P_e[1]
+        #        @inbounds P1[i] = P_e[1]
         # if length(τ_e) > 1
-            @inbounds τ2[i] = second_invariant_2D(τ_e[2])
-       #     @inbounds P2[i] = P_e[2]
+        @inbounds τ2[i] = second_invariant_2D(τ_e[2])
+        #     @inbounds P2[i] = P_e[2]
         # end
         t += others.dt
         t_v[i] = t
@@ -47,7 +47,7 @@ c, x, vars, args, others = let
 
     p1 = ParallelModel(viscous1, elastic1)
     p2 = ParallelModel(viscous2, elastic2)
-    c = SeriesModel(p1,p2)
+    c = SeriesModel(p1, p2)
 
     vars = vars_2D(1.0e-15, 1.0e-20)                             # input variables (constant)
     args = (; τ = 2.0e3, P = 1.0e6)                                 # guess variables (we solve for these, differentiable)

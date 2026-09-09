@@ -290,7 +290,7 @@ existing Maxwell-leaf correction and all branch corrections:
 ## Implementation
 
 The correction is computed by `effective_strain_rate_correction` (defined in
-`src/strain_rate_correction.jl`) and called automatically by `solve` before
+`src/post_processing/strain_rate_correction.jl`) and called automatically by `solve` before
 each Newton step.  The decomposition into *leafs* and *branches* mirrors the
 internal structure of `SeriesModel`:
 

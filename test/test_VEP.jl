@@ -2,29 +2,29 @@ using LinearAlgebra
 
 @testset "VEP Model " begin
     function analytical_solution(ϵ, t, G, η, c, ϕ, P)
-        τ  = 2 * ϵ * η * (1 - exp(-G * t / η))
-        τy = c*cosd(ϕ) + P*sind(ϕ)
+        τ = 2 * ϵ * η * (1 - exp(-G * t / η))
+        τy = c * cosd(ϕ) + P * sind(ϕ)
         return τy < τ ? τy : τ
     end
 
     function stress_time(c, vars, x, xnorm, others; ntime = 200, dt = 1.0e8)
         # Extract elastic stresses/pressure from solutio vector
-        τ1   = zeros(ntime)
+        τ1 = zeros(ntime)
         τ_an = zeros(ntime)
-        t_v  = zeros(ntime)
-        τ_e  = (zero_stress_tensor_2D(),)
-        P_e  = (0.0,)
-        t    = 0.0
-        εII  = second_invariant_2D(vars.ε)
+        t_v = zeros(ntime)
+        τ_e = (zero_stress_tensor_2D(),)
+        P_e = (0.0,)
+        t = 0.0
+        εII = second_invariant_2D(vars.ε)
         for i in 2:ntime
             others = (; dt = dt, τ0 = τ_e, P = others.P, P0 = P_e)       # other non-differentiable variables needed to evaluate the state functions
 
-            x       = solve(c, x, vars, others, verbose = false, xnorm0=xnorm)
-            τ1[i]   = x[1]
-            t      += others.dt
+            x = solve(c, x, vars, others, verbose = false, xnorm0 = xnorm)
+            τ1[i] = x[1]
+            t += others.dt
             τ_an[i] = analytical_solution(εII, t, c.leafs[2].G, c.leafs[1].η, c.leafs[3].C, c.leafs[3].ϕ, others.P)
-            τ_e     = elastic_stress_history_2D(c, x[1], vars.ε, τ_e, others)
-            t_v[i]  = t
+            τ_e = elastic_stress_history_2D(c, x[1], vars.ε, τ_e, others)
+            t_v[i] = t
         end
 
         return t_v, τ1, τ_an
@@ -32,31 +32,31 @@ using LinearAlgebra
 
     c, x, xnorm, vars, args, others = let
 
-        viscous = LinearViscosity(1e22)
-        elastic = IncompressibleElasticity(10e9)
-        plastic = DruckerPrager(10e6, 30, 0)
+        viscous = LinearViscosity(1.0e22)
+        elastic = IncompressibleElasticity(10.0e9)
+        plastic = DruckerPrager(10.0e6, 30, 0)
 
         # Maxwell visco-elasto-plastic model
         # elastic --- viscous --- plastic
 
         c = SeriesModel(viscous, elastic, plastic)
-        
+
         # input variables (constant)
-        vars   = vars_2D(1.0e-14, 1.0e-20)
+        vars = vars_2D(1.0e-14, 1.0e-20)
         # guess variables (we solve for these, differentiable)
-        args   = (; τ = 0e0, λ = 0)
+        args = (; τ = 0.0e0, λ = 0)
         # other non-differentiable variables needed to evaluate the state functions
         others = (; dt = 1.0e8, P = 1.0e6, τ0 = (zero_stress_tensor_2D(),), P0 = (0.0,))
 
-        x       = initial_guess_x(c, vars, args, others)
-        char_τ  = 1e6
-        char_ε  = second_invariant_2D(vars.ε)
-        xnorm   = normalisation_x(c, char_τ, char_ε)
+        x = initial_guess_x(c, vars, args, others)
+        char_τ = 1.0e6
+        char_ε = second_invariant_2D(vars.ε)
+        xnorm = normalisation_x(c, char_τ, char_ε)
 
         c, x, xnorm, vars, args, others
     end
 
-    _, τ, τ_an = stress_time(c, vars, x, xnorm, others; ntime = 1_500, dt = 1e8)
+    _, τ, τ_an = stress_time(c, vars, x, xnorm, others; ntime = 1_500, dt = 1.0e8)
     @test error = norm((abs.(τ_an .- τ) ./ τ_an)[2:end]) < 0.0015
     @test all(isfinite, τ)
 end

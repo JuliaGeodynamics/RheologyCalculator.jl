@@ -133,11 +133,13 @@ end
     @test (@inferred dissipation_partition(c, x, vars, others)) isa DissipationPartition
 
     # differentiate the heat source with respect to the applied strain rate
-    g = ForwardDiff.derivative(e -> begin
+    g = ForwardDiff.derivative(
+        e -> begin
             v = (; ε = e)
             xx = solve(c, initial_guess_x(c, v, (; τ = 1.0e6), others), v, others)
             shear_heating(dissipation_partition(c, xx, v, others))
-        end, ε)
+        end, ε
+    )
     @test isfinite(g)
     @test g > 0        # heating increases with strain rate
 

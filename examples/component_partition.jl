@@ -56,8 +56,10 @@ function component_partition_figure()
     lines!(ax1, ε̇, τ ./ 1.0e6; color = :black, linewidth = 2)
     hlines!(ax1, [C * cosd(ϕ) / 1.0e6]; color = :red, linestyle = :dash)
     # anchored just under the yield line: top-aligned so the text hangs below it
-    text!(ax1, ε̇[8], C * cosd(ϕ) / 1.0e6 * 0.93; text = L"C\cos\phi",
-          color = :red, align = (:left, :top))
+    text!(
+        ax1, ε̇[8], C * cosd(ϕ) / 1.0e6 * 0.93; text = L"C\cos\phi",
+        color = :red, align = (:left, :top)
+    )
 
     ax2 = Axis(
         fig[1, 2];

@@ -18,11 +18,13 @@ function equal_mechanism_strain_rate(diffusion, dislocation, T, P, f, d)
     return ε̇_eq, τ_eq
 end
 
-function equal_mechanism_surface(diffusion, dislocation;
+function equal_mechanism_surface(
+        diffusion, dislocation;
         T_range = range(300.0, 2800.0, length = 121),
         P_range = range(0.1, 80, length = 121),
         f = 1.0,
-        d = 1.0e-3)
+        d = 1.0e-3
+    )
 
     log10_ε̇II = zeros(length(T_range), length(P_range))
     τII = similar(log10_ε̇II)
@@ -41,7 +43,8 @@ end
 
 function plot_equal_mechanism_surface(map; d = 1.0e-3)
     fig = Figure(fontsize = 22, size = (1250, 850), backgroundcolor = :black)
-    ax = Axis3(fig[1, 1],
+    ax = Axis3(
+        fig[1, 1],
         title = L"\mathrm{Diffusion-dislocation\ transition\ surface}",
         xlabel = L"T\ [^\circ\mathrm{C}]",
         ylabel = L"P\ [\mathrm{GPa}]",
@@ -77,7 +80,8 @@ function plot_equal_mechanism_surface(map; d = 1.0e-3)
     colgap!(fig.layout, 35)
     rowsize!(fig.layout, 1, Relative(0.88))
 
-    sf = surface!(ax, map.T_range, map.P_range, map.log10_ε̇II;
+    sf = surface!(
+        ax, map.T_range, map.P_range, map.log10_ε̇II;
         color = map.τII ./ 1.0e6,
         colormap = :lipari,
         shading = true,
@@ -93,7 +97,8 @@ function plot_equal_mechanism_surface(map; d = 1.0e-3)
     cb.rightspinecolor = :white
     cb.leftspinecolor = :white
     cb.bottomspinecolor = :white
-    Label(fig[2, 1:2],
+    Label(
+        fig[2, 1:2],
         latexstring("\\mathrm{Surface\\ marks\\ dislocation\\ creep\\ fraction}=0.5;\\ \\mathrm{grain\\ size}=$(d * 1.0e3)\\ \\mathrm{mm}"),
         fontsize = 18,
         color = :white,
@@ -110,18 +115,18 @@ diffusion, dislocation = let
         1,       # n, diffusion creep
         0.0,     # water fugacity exponent
         3.0,     # grain-size exponent
-        3e-21,   # material parameter, SI-style example value
-        160e3,   # activation energy [J mol^-1]
-        8e-6,     # activation volume [m^3 mol^-1]
+        3.0e-21,   # material parameter, SI-style example value
+        160.0e3,   # activation energy [J mol^-1]
+        8.0e-6,     # activation volume [m^3 mol^-1]
         R,
     )
 
     dislocation = DislocationCreep(
         3.0,     # n, dislocation creep
         0.0,     # water fugacity exponent
-        7e-26,   # material parameter, SI-style example value
-        190e3,   # activation energy [J mol^-1]
-        8e-6,     # activation volume [m^3 mol^-1]
+        7.0e-26,   # material parameter, SI-style example value
+        190.0e3,   # activation energy [J mol^-1]
+        8.0e-6,     # activation volume [m^3 mol^-1]
         R,
     )
 

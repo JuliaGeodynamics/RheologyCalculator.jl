@@ -25,7 +25,7 @@ Base.@propagate_inbounds Base.getindex(sol::RCSolution, i::Int) = sol.x[i]
 
 function Base.show(io::IO, ::MIME"text/plain", sol::RCSolution)
     println(io, "RCSolution (iterations: ", sol.iterations, ", residual: ", sol.residual, ")")
-Base.print_array(io, sol.x)
+    Base.print_array(io, sol.x)
     return nothing
 end
 
@@ -72,7 +72,7 @@ at floating-point precision for three consecutive iterations. This prevents a
 residual floor that cannot be represented by the selected numeric type from
 consuming the full `itermax` budget.
 """
-function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0=nothing, atol::Float64 = 1.0e-12, rtol::Float64 = 1.0e-12, itermax = 1.0e4, verbose::Bool = false)
+function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0 = nothing, atol::Float64 = 1.0e-12, rtol::Float64 = 1.0e-12, itermax = 1.0e4, verbose::Bool = false)
     # Pre-correct ONLY the direct elastic leafs of the outer composite
     # (simple Maxwell backstress).  Tensor arithmetic is used here so that
     # second_invariant(ε + τ0/(2G·dt)) is evaluated correctly even for
@@ -81,12 +81,12 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0=noth
     # compute_residual via subtract_elastic_correction, so they must NOT be
     # included here to avoid double-counting.
     ε_corr = _direct_leaf_elastic_correction(c, vars0.ε, others)
-    εII    = second_invariant_value(vars0.ε .+ ε_corr)
-    vars   = merge(vars0, (; ε = εII))
+    εII = second_invariant_value(vars0.ε .+ ε_corr)
+    vars = merge(vars0, (; ε = εII))
 
     # vars = merge((; ε = εII), vars0)
     xnorm = correct_xnorm(x, xnorm0)
-    r     = compute_residual(c, x, vars, others)   # initial residual
+    r = compute_residual(c, x, vars, others)   # initial residual
     it = 0
     er0 = mynorm(r, xnorm)
     # `oftype` keeps the residual a single type across the loop, so that the
@@ -95,7 +95,7 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0=noth
 
     nonneg = branch_strain_rate_mask(c)
 
-    α = 1e0
+    α = 1.0e0
     stagnant_iters = 0
     while er > atol && er > rtol * er0
         it += 1
@@ -103,8 +103,10 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0=noth
         J = jacobian(c, x, vars, others)
         Δx = backsolve(J, r)
         α = max_feasible_step(x, Δx, nonneg)
-        α = bt_line_search(Δx, x, c, vars, others, xnorm, er;
-            α = α, ρ = 0.5, lstol = 0.95, α_min = 0.1)
+        α = bt_line_search(
+            Δx, x, c, vars, others, xnorm, er;
+            α = α, ρ = 0.5, lstol = 0.95, α_min = 0.1
+        )
         x_next = x + α .* Δx
 
         # check convergence
@@ -165,12 +167,14 @@ Retry a failed local solve from its last iterate with progressively relaxed
 tolerances. This orchestration is host-side; the ordinary `solve` path remains
 deterministic and device-friendly.
 """
-function solve_with_retries(c::AbstractCompositeModel, x::SVector, vars, others;
-                            max_retries::Integer = 2,
-                            tolerance_factor = 10,
-                            atol = 1.0e-12,
-                            rtol = 1.0e-12,
-                            kwargs...)
+function solve_with_retries(
+        c::AbstractCompositeModel, x::SVector, vars, others;
+        max_retries::Integer = 2,
+        tolerance_factor = 10,
+        atol = 1.0e-12,
+        rtol = 1.0e-12,
+        kwargs...
+    )
     max_retries ≥ 0 || throw(ArgumentError("max_retries must be non-negative"))
     tolerance_factor ≥ 1 || throw(ArgumentError("tolerance_factor must be at least one"))
     current_x = x
@@ -178,8 +182,10 @@ function solve_with_retries(c::AbstractCompositeModel, x::SVector, vars, others;
     current_rtol = rtol
     for attempt in 0:max_retries
         try
-            return solve(c, current_x, vars, others;
-                atol = current_atol, rtol = current_rtol, kwargs...)
+            return solve(
+                c, current_x, vars, others;
+                atol = current_atol, rtol = current_rtol, kwargs...
+            )
         catch err
             err isa NonConvergenceError || rethrow()
             attempt == max_retries && rethrow()
@@ -277,12 +283,8 @@ function branch_strain_rate_mask(c::AbstractCompositeModel)
     return SA[branch_strain_rate_mask(eqs)...]
 end
 
-@generated function branch_strain_rate_mask(eqs::NTuple{N, CompositeEquation}) where {N}
-    return quote
-        @inline
-        Base.@ntuple $N i -> _is_branch_strain_rate(eqs[i].fn)
-    end
-end
+@inline branch_strain_rate_mask(eqs::NTuple{N, CompositeEquation}) where {N} =
+    maptuple(eq -> _is_branch_strain_rate(eq.fn), eqs)
 
 # The unknown of a `compute_stress` equation is a parallel branch's strain rate.
 @inline _is_branch_strain_rate(::F) where {F} = false
@@ -348,6 +350,6 @@ normalization factor is zero.
     end
 end
 
-@inline backsolve(J::SVector{1}, r::SVector{1})   = SA[-r[1] * inv(J[1])]
-@inline backsolve(J::SMatrix{1,1}, r::SVector{1}) = SA[-r[1] * inv(J[1])]
+@inline backsolve(J::SVector{1}, r::SVector{1}) = SA[-r[1] * inv(J[1])]
+@inline backsolve(J::SMatrix{1, 1}, r::SVector{1}) = SA[-r[1] * inv(J[1])]
 @inline backsolve(J, r) = J \ -r

@@ -9,8 +9,8 @@ analytical_solution(ϵ, t, G, η) = 2 * ϵ * η * (1 - exp(-G * t / η))
 
 function stress_time(c, vars, x, others; ntime = 200, dt = 1.0e8)
     # Extract elastic stresses/pressure from solutio vector
-    τ1   = zeros(ntime)
-    λ    = zeros(ntime)
+    τ1 = zeros(ntime)
+    λ = zeros(ntime)
     τ_an = zeros(ntime)
     # τ2 = zeros(ntime)
     # P1 = zeros(ntime)
@@ -23,35 +23,35 @@ function stress_time(c, vars, x, others; ntime = 200, dt = 1.0e8)
     for i in 2:ntime
         others = (; dt = dt, τ0 = τ_e, P0 = P_e)       # other non-differentiable variables needed to evaluate the state functions
 
-        x        = solve(c, x, vars, others, verbose = true)
-        τ1[i]    = x[1]
-        t       += others.dt
-        τ_an[i]  = analytical_solution(εII, t, c.leafs[2].G, c.leafs[1].η)
-        τ_e      = elastic_stress_history_2D(c, x[1], vars.ε, τ_e, others)
-        P_e      = compute_pressure_elastic(c, x, others)
-        t_v[i]   = t
+        x = solve(c, x, vars, others, verbose = true)
+        τ1[i] = x[1]
+        t += others.dt
+        τ_an[i] = analytical_solution(εII, t, c.leafs[2].G, c.leafs[1].η)
+        τ_e = elastic_stress_history_2D(c, x[1], vars.ε, τ_e, others)
+        P_e = compute_pressure_elastic(c, x, others)
+        t_v[i] = t
     end
 
     return t_v, τ1, τ_an
 end
 
 c, x, vars, args, others = let
-    viscous = LinearViscosity(1e22)
+    viscous = LinearViscosity(1.0e22)
     # elastic = IncompressibleElasticity(10e9)
-    elastic = Elasticity(10e9, 20e9)
-    plastic = DruckerPrager(10e6, 30, 10)
+    elastic = Elasticity(10.0e9, 20.0e9)
+    plastic = DruckerPrager(10.0e6, 30, 10)
 
     # Maxwell visco-elasto-plastic model
     # elastic --- viscous --- plastic
 
-    c  = SeriesModel(viscous, elastic, plastic)
-    
+    c = SeriesModel(viscous, elastic, plastic)
+
     # input variables (constant)
-    εᵢⱼ    = tensor_strain_rate_2D(1.0e-14)
-    τ0ᵢⱼ   = (zero_stress_tensor_2D(),)
-    vars   = (; ε = εᵢⱼ, θ = 1.0e-20)
+    εᵢⱼ = tensor_strain_rate_2D(1.0e-14)
+    τ0ᵢⱼ = (zero_stress_tensor_2D(),)
+    vars = (; ε = εᵢⱼ, θ = 1.0e-20)
     # guess variables (we solve for these, differentiable)
-    args   = (; τ = 0e0, P = 1.0e6, λ = 0)
+    args = (; τ = 0.0e0, P = 1.0e6, λ = 0)
     # other non-differentiable variables needed to evaluate the state functions
     others = (; dt = 1.0e8, τ0 = τ0ᵢⱼ, P0 = (0.0,))
 
@@ -61,20 +61,20 @@ c, x, vars, args, others = let
 end
 
 let
-    t_v, τ, τ_an = stress_time(c, vars, x, others; ntime = 1_500, dt = 1e8)
+    t_v, τ, τ_an = stress_time(c, vars, x, others; ntime = 1_500, dt = 1.0e8)
 
     function figure()
         SecYear = 3600 * 24 * 365.25
         fig = Figure(fontsize = 30, size = (800, 600) .* 2)
-        ax  = Axis(fig[1, 1], title = "Visco-elasto-plastic model", xlabel = "t [kyr]", ylabel = L"\tau [MPa]")
+        ax = Axis(fig[1, 1], title = "Visco-elasto-plastic model", xlabel = "t [kyr]", ylabel = L"\tau [MPa]")
 
-        lines!(ax, t_v / SecYear / 1.0e3, τ_an / 1.0e6, color=:black, label = "viscoelastic analytical")
-        scatter!(ax, t_v / SecYear / 1.0e3, τ / 1.0e6,  color=:red, label = "numerical")
+        lines!(ax, t_v / SecYear / 1.0e3, τ_an / 1.0e6, color = :black, label = "viscoelastic analytical")
+        scatter!(ax, t_v / SecYear / 1.0e3, τ / 1.0e6, color = :red, label = "numerical")
 
         axislegend(ax, position = :rb)
         ax.xlabel = L"$t$ [kyr]"
         ax.ylabel = L"$\tau$ [MPa]"
-        display(fig)
+        return display(fig)
     end
     with_theme(figure, theme_latexfonts())
 end

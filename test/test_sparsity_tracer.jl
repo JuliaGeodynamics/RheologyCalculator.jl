@@ -14,12 +14,12 @@ import RheologyCalculator.RheologyModels: DruckerPragerCap
 # zero cases that motivated the guards in the first place.
 @testset "tracer guards preserve Float64 semantics" begin
     for v in (4.0, -2.5, 1.0e-30)
-        @test safe_inv(v)     === (iszero(v) ? zero(v) : inv(v))
-        @test safe_inv_one(v) === (iszero(v) ? one(v)  : inv(v))
+        @test safe_inv(v) === (iszero(v) ? zero(v) : inv(v))
+        @test safe_inv_one(v) === (iszero(v) ? one(v) : inv(v))
     end
-    @test safe_inv(0.0)     === 0.0    # guard: no Inf
+    @test safe_inv(0.0) === 0.0    # guard: no Inf
     @test safe_inv_one(0.0) === 1.0    # guard: neutral element, no Inf
-    @test safe_inv(4.0)     === 0.25
+    @test safe_inv(4.0) === 0.25
     @test safe_inv_one(4.0) === 0.25
 end
 
@@ -41,7 +41,8 @@ end
         strain_rate, volumetric_strain_rate = input
         vars = vars_2D(strain_rate, volumetric_strain_rate)
         x = initial_guess_x(c, vars, args, others)
-        return solve(c, x, vars, others;
+        return solve(
+            c, x, vars, others;
             xnorm0 = normalisation_x(c, plastic.C, 7.0e-14),
         )
     end
@@ -75,8 +76,10 @@ end
 
     @testset "traced auxiliary values survive local extraction" begin
         function extract_temperature(temperature_input)
-            others = (; T = temperature_input[1], dt = 1.0,
-                τ0 = ((0.0, 0.0, 0.0),))
+            others = (;
+                T = temperature_input[1], dt = 1.0,
+                τ0 = ((0.0, 0.0, 0.0),),
+            )
             local_others = RheologyCalculator.extract_local_kwargs(others, (:τ0,), 1)
             return local_others.T
         end

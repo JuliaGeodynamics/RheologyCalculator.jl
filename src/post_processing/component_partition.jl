@@ -81,8 +81,8 @@ end
 end
 
 @inline _component_equation(
-        ::F, _eq, _args, _others, _category, ε, τ, elements, indices,
-    ) where {F} = (ε, τ, elements, indices)
+    ::F, _eq, _args, _others, _category, ε, τ, elements, indices,
+) where {F} = (ε, τ, elements, indices)
 
 @inline function _component_equation(
         fn::Union{typeof(compute_strain_rate), typeof(compute_stress)},
@@ -144,5 +144,5 @@ end
 end
 
 @inline _component_step(
-        ::Val, ::Val, _rheology, _index, _fn, _value, _args, ε, τ, elements, indices,
-    ) = (ε, τ, elements, indices)
+    ::Val, ::Val, _rheology, _index, _fn, _value, _args, ε, τ, elements, indices,
+) = (ε, τ, elements, indices)

@@ -1,6 +1,3 @@
-import ..RheologyCalculator: series_state_functions, parallel_state_functions
-import ..RheologyCalculator: compute_strain_rate, compute_stress
-
 """
     DislocationCreep{I,T} <: AbstractViscosity
 

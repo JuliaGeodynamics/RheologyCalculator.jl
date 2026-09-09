@@ -1,35 +1,4 @@
 """
-    augment_args(args, Δx)
-
-Return a copy of `args` with the first `length(Δx)` values incremented by `Δx`.
-This helper is kept for small local updates of differentiable argument tuples.
-"""
-@inline function augment_args(args, Δx)
-    k = keys(args)
-    vals = MVector(values(args))
-    for i in eachindex(Δx)
-        vals[i] += Δx[i]
-    end
-    return (; zip(k, vals)...)
-end
-
-"""
-    update_args2(args, x)
-
-Return a `NamedTuple` with the same keys as `args` and values taken from static
-vector `x`.
-"""
-@inline function update_args2(args, x::SVector{N, T}) where {N, T}
-    k = keys(args)
-    N0 = length(args)
-    vals = @MVector zeros(T, N0)
-    for i in 1:length(args)
-        vals[i] = x[i]
-    end
-    return (; zip(k, vals)...)
-end
-
-"""
     history_kwargs(r)
 
 Return the names of `others` fields that are interpreted as element-local
@@ -76,43 +45,6 @@ function. These keys define how entries of `x` are exposed to rheology methods.
 @inline differentiable_kwargs(::Tuple{}) = (;)
 @inline differentiable_kwargs(funs::NTuple{N, Any}) where {N} = differentiable_kwargs(Float64, funs)
 
-@generated function differentiable_kwargs(::Type{T}, funs::NTuple{N, Any}) where {N, T}
-    return quote
-        @inline
-        Base.@nexprs $N i -> nt_i = differentiable_kwargs($T, funs[i])
-        Base.@ncall $N merge nt
-    end
-end
+@inline differentiable_kwargs(::Type{T}, funs::NTuple{N, Any}) where {N, T} =
+    foldtuple(merge, (;), fn -> differentiable_kwargs(T, fn), funs)
 differentiable_kwargs(::Type{T}, funs::NTuple{0, Any}) where {T} = (;)
-
-"""
-    all_differentiable_kwargs(funs)
-
-Return the per-function differentiable keyword templates for every state
-function in `funs`.
-"""
-@inline all_differentiable_kwargs(funs::NTuple{N, Any}) where {N} = all_differentiable_kwargs(Float64, funs)
-
-@generated function all_differentiable_kwargs(::Type{T}, funs::NTuple{N, Any}) where {N, T}
-    return quote
-        @inline
-        Base.@ntuple $N i -> differentiable_kwargs($T, funs[i])
-    end
-end
-
-"""
-    split_args(args, statefuns)
-
-Split `args` into differentiable and nondifferentiable parts according to the
-keyword templates required by `statefuns`.
-"""
-function split_args(args, statefuns::NTuple{N, Any}) where {N}
-    # split args into differentiable and not differentiable
-    dummy = differentiable_kwargs(statefuns)
-    args_nondiff = Base.structdiff(args, dummy)
-    args_diff = Base.structdiff(dummy, args_nondiff)
-    args_diff0 = Base.structdiff(args, args_nondiff)
-
-    args_diff = merge(args_diff, args_diff0)
-    return args_diff, args_nondiff
-end

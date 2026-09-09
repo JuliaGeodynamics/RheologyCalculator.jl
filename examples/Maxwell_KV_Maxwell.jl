@@ -26,50 +26,50 @@ GLMakie.activate!(; visible = false)
 # τ∞      = 2η₁(η₂+η₃)/(η₁+η₂+η₃) εII  (long-time equilibrium)
 # t_relax = (η₁+η₂)η₃ / (G(η₁+η₂+η₃))  (relaxation timescale)
 function analytical_solution(t, εII, η1, η2, η3, G)
-    τ_init  = 2η1 * η2 / (η1 + η2) * εII
-    τ_inf   = 2η1 * (η2 + η3) / (η1 + η2 + η3) * εII
+    τ_init = 2η1 * η2 / (η1 + η2) * εII
+    τ_inf = 2η1 * (η2 + η3) / (η1 + η2 + η3) * εII
     t_relax = (η1 + η2) * η3 / (G * (η1 + η2 + η3))
     return τ_inf - (τ_inf - τ_init) * exp(-t / t_relax)
 end
 
 function stress_time(c, vars, x, xnorm; ntime = 200, dt = 1.0e9)
-    τ1   = zeros(ntime)
+    τ1 = zeros(ntime)
     τ_an = zeros(ntime)
-    t_v  = zeros(ntime)
-    τ_e  = (zero_stress_tensor_2D(),)
-    P_e  = (0.0,)
-    t    = 0.0
-    εII  = second_invariant_2D(vars.ε)
+    t_v = zeros(ntime)
+    τ_e = (zero_stress_tensor_2D(),)
+    P_e = (0.0,)
+    t = 0.0
+    εII = second_invariant_2D(vars.ε)
     # access model parameters for the analytical solution
     η1 = c.leafs[1].η
     η2 = c.branches[1].leafs[1].η
     η3 = c.branches[1].branches[1].leafs[1].η
-    G  = c.branches[1].branches[1].leafs[2].G
+    G = c.branches[1].branches[1].leafs[2].G
     for i in 2:ntime
-        others  = (; dt = dt, τ0 = τ_e, P0 = P_e)
-        x       = solve(c, x, vars, others; xnorm0 = xnorm)
+        others = (; dt = dt, τ0 = τ_e, P0 = P_e)
+        x = solve(c, x, vars, others; xnorm0 = xnorm)
         # The elastic element sits inside the inner SeriesModel; pass the full
         # solution so compute_stress_elastic extracts the correct spring stress.
-        τ_e     = elastic_stress_history_2D(c, x, vars.ε, τ_e, others)
-        t      += dt
-        τ1[i]   = x[1]
+        τ_e = elastic_stress_history_2D(c, x, vars.ε, τ_e, others)
+        t += dt
+        τ1[i] = x[1]
         τ_an[i] = analytical_solution(t, εII, η1, η2, η3, G)
-        t_v[i]  = t
+        t_v[i] = t
     end
     return t_v, τ1, τ_an
 end
 
 c, x, xnorm, vars, args, others = let
-    η1 = LinearViscosity(1e22)
-    η2 = LinearViscosity(1e21)
-    η3 = LinearViscosity(1e21)
-    el = IncompressibleElasticity(1e10)
+    η1 = LinearViscosity(1.0e22)
+    η2 = LinearViscosity(1.0e21)
+    η3 = LinearViscosity(1.0e21)
+    el = IncompressibleElasticity(1.0e10)
 
     c = SeriesModel(η1, ParallelModel(η2, SeriesModel(η3, el)))
 
-    εII    = 1.0e-14
-    vars   = vars_2D(εII)
-    args   = (; τ = 2.0e7, P = 0.0)
+    εII = 1.0e-14
+    vars = vars_2D(εII)
+    args = (; τ = 2.0e7, P = 0.0)
     others = (; dt = 1.0e6, τ0 = (zero_stress_tensor_2D(),), P0 = (0.0,))
     # others = (; dt = 1.0e9, τ0 = (zero_stress_tensor_2D(),), P0 = (0.0,))
 
@@ -77,27 +77,27 @@ c, x, xnorm, vars, args, others = let
 
     # long-time equilibrium stress used as characteristic scale for normalisation
     τ_char = 2η1.η * (η2.η + η3.η) / (η1.η + η2.η + η3.η) * εII
-    xnorm  = normalisation_x(c, τ_char, εII)
+    xnorm = normalisation_x(c, τ_char, εII)
 
     c, x, xnorm, vars, args, others
 end
 
 let
     function figure()
-        dt = 1e10 .* [1.0, 1/2, 1/4, 1/8, 1/64]
+        dt = 1.0e10 .* [1.0, 1 / 2, 1 / 4, 1 / 8, 1 / 64]
         nt = 100 .* [1.0, 2, 4, 8, 64]
 
-        ϵ  = zero(dt)
+        ϵ = zero(dt)
         t_v = τ = τ_an = nothing
 
         for it in eachindex(dt)
             t_v, τ, τ_an = stress_time(c, vars, x, xnorm; ntime = Int64(nt[it]), dt = dt[it])
-            ϵ[it] = (100 .* abs.(τ .- τ_an)./τ_an)[2:end] |> mean # average relative error in percent, ignoring the first point
+            ϵ[it] = (100 .* abs.(τ .- τ_an) ./ τ_an)[2:end] |> mean # average relative error in percent, ignoring the first point
         end
 
-        θ      = log(ϵ[1]/ϵ[2]) / log(dt[1]/dt[2])
+        θ = log(ϵ[1] / ϵ[2]) / log(dt[1] / dt[2])
         dt_arr = LinRange(dt[1], dt[end], 100)
-        ϵ_arr  = ϵ[1] .* (dt_arr ./ dt[1]).^θ
+        ϵ_arr = ϵ[1] .* (dt_arr ./ dt[1]) .^ θ
 
         SecYear = 3600 * 24 * 365.25
         fig = Figure(fontsize = 30, size = (800, 600))
@@ -112,7 +112,7 @@ let
         axislegend(ax2, position = :rt, labelsize = 18)
 
         GLMakie.save(joinpath(@__DIR__, "..", "docs", "assets", "Maxwell_KV_Maxwell.png"), fig)
-        display(fig)
+        return display(fig)
     end
     with_theme(figure, theme_latexfonts())
 end

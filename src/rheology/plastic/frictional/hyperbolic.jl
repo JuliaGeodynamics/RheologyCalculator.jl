@@ -2,15 +2,10 @@
 # Drucker-Prager yield surface, as proposed in:
 # Abbo, A. J., and Sloan, S. W.: A smooth hyperbolic approximation to the
 #   Mohr-Coulomb yield criterion, Computers & Structures, 54(3), 427-441, 1995.
-import ForwardDiff: ForwardDiff
-import ..RheologyCalculator: compute_stress_elastic, compute_pressure_elastic
-import ..RheologyCalculator: series_state_functions, parallel_state_functions, _isvolumetric
-import ..RheologyCalculator: compute_strain_rate, compute_stress, compute_pressure, compute_volumetric_strain_rate, compute_volumetric_plastic_strain_rate
-import ..RheologyCalculator: compute_plastic_strain_rate, compute_lambda
 
 # Hyperbolic ------------------------------------------------------
 """
-    Hyperbolic{T} <: AbstractPlasticity
+    Hyperbolic{T} <: AbstractCapPlasticity
 
 Represents a Drucker-Prager plasticity model with a smooth hyperbolic
 approximation near the tensile cutoff, avoiding the non-differentiable corner
@@ -24,7 +19,7 @@ Computers & Structures.
 - `η_vp::T`: The Duvaut-Lions regeularisation viscosity for the plasticity model.
 - `Pt::T`: The tensile strength (should be < 0).
 """
-struct Hyperbolic{T} <: AbstractPlasticity
+struct Hyperbolic{T} <: AbstractCapPlasticity
     C::T
     ϕ::T        # in degrees for now
     ψ::T        # in degrees for now
@@ -34,11 +29,11 @@ struct Hyperbolic{T} <: AbstractPlasticity
     # computational parameters (precomputed, to speed up later calculations)
     sinϕ::T     # Friction angle
     cosϕ::T     # Friction angle
-    sinΨ::T     # Dilation angle 
+    sinΨ::T     # Dilation angle
     cosΨ::T     # Dilation angle
 end
 
-function Hyperbolic(; C=10e6, ϕ=30.0, ψ=0.0, η_vp=1e20, Pt=-1e5) 
+function Hyperbolic(; C = 10.0e6, ϕ = 30.0, ψ = 0.0, η_vp = 1.0e20, Pt = -1.0e5)
     sinϕ = sind(ϕ) # Friction angle
     cosϕ = cosd(ϕ) # Friction angle
     sinΨ = sind(ψ) # Dilation angle
@@ -47,55 +42,24 @@ function Hyperbolic(; C=10e6, ϕ=30.0, ψ=0.0, η_vp=1e20, Pt=-1e5)
 end
 
 #Hyperbolic(args...) = Hyperbolic(promote(args...)...)
-@inline _isvolumetric(::Hyperbolic) = true
-
-@inline series_state_functions(::Hyperbolic) = (compute_strain_rate, compute_lambda, compute_volumetric_strain_rate)
-@inline parallel_state_functions(::Hyperbolic) = compute_stress, compute_pressure, compute_lambda, compute_plastic_strain_rate, compute_volumetric_plastic_strain_rate
-
-@inline function compute_strain_rate(r::Hyperbolic; τ = 0, λ = 0, P = 0, kwargs...)
-    ε_pl = compute_plastic_strain_rate(r::Hyperbolic; τ_pl = τ, λ = λ, P_pl = P, kwargs...)
-    F = compute_F(r, τ, P)
-    return ε_pl/2* (F > -1e-8)
-end
-@inline function compute_volumetric_strain_rate(r::Hyperbolic; τ = 0, λ = 0, P = 0, kwargs...)
-    θ_pl = compute_volumetric_plastic_strain_rate(r::Hyperbolic; τ_pl = τ, λ = λ, P_pl = P, θ = 0, kwargs...)
-    F    = compute_F(r, τ, P)
-    return θ_pl* (F > -1e-8) # perhaps this derivative needs to be hardcoded
-end
-
-@inline function compute_lambda(r::Hyperbolic; τ = 0, λ = 0, P = 0, kwargs...)
-    F = compute_F(r, τ, P)
-    return -F* (F > -1e-8)  + λ*r.η_vp + λ*1        # last term is for regularisation below yield
-end
 
 function compute_F(r::Hyperbolic, τII, P)
     cosϕ, sinϕ, C, Pt = r.cosϕ, r.sinϕ, r.C, r.Pt
 
-    F  = sqrt(τII^2 + (C * cosϕ + Pt*sinϕ)^2) - (P * sinϕ + C * cosϕ)
+    F = sqrt(τII^2 + (C * cosϕ + Pt * sinϕ)^2) - (P * sinϕ + C * cosϕ)
 
     # Note that viscoplastic regularisation is taken into account in the residual function
-    return F #*(F>-1e-8) 
+    return F #*(F>-1e-8)
 end
 
-function compute_Q(r::Hyperbolic, τII, P) 
+function compute_Q(r::Hyperbolic, τII, P)
 
     # These parameters are required to compute the constant in the plastic flow
     # potential. Note that this constant does not matter apart when plotting,
-    # as we only need derivates of Q in general 
+    # as we only need derivates of Q in general
     cosΨ, sinΨ, C, Pt = r.cosΨ, r.sinΨ, r.C, r.Pt
 
-    Q  =  sqrt(τII^2 + (C * cosΨ + Pt*sinΨ)^2) - (P * sinΨ + C * cosΨ)
+    Q = sqrt(τII^2 + (C * cosΨ + Pt * sinΨ)^2) - (P * sinΨ + C * cosΨ)
 
     return Q
-end 
-
-@inline compute_stress(r::Hyperbolic; τ_pl = 0, kwargs...) = τ_pl
-@inline compute_pressure(r::Hyperbolic; P_pl = 0, kwargs...) = P_pl
-
-@inline function compute_plastic_strain_rate(r::Hyperbolic; τ_pl = 0, λ = 0, P_pl = 0, ε = 0, kwargs...)
-    return λ*ForwardDiff.derivative(x -> compute_Q(r, x, P_pl), τ_pl) - 0*ε # perhaps this derivative needs to be hardcoded 
-end
-
-@inline function compute_volumetric_plastic_strain_rate(r::Hyperbolic; τ_pl = 0, λ = 0, P_pl = 0, θ = 0, kwargs...)
-    return -λ * ForwardDiff.derivative(x -> compute_Q(r, τ_pl, x), P_pl) - 0*θ # perhaps this derivative needs to be hardcoded
 end
