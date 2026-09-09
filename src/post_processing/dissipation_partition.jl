@@ -13,10 +13,15 @@ struct DissipationPartition{Fv, Fp}
     plastic_Φ::Fp  # total deviatoric plastic dissipation
 end
 
+# print only 3 sigdigits to be pretty. Shared with `ComponentPartition`.
+_show_round(x::AbstractFloat) = round(x; sigdigits = 3)
+_show_round(x) = x
+_show_round(t::Tuple) = map(_show_round, t)
+
 function Base.show(io::IO, ::MIME"text/plain", p::DissipationPartition)
     println(io, "DissipationPartition:")
-    println(io, "  viscous  Φ = ", p.viscous_Φ)
-    println(io, "  plastic  Φ = ", p.plastic_Φ)
+    println(io, "  viscous  Φ = ", _show_round(p.viscous_Φ))
+    println(io, "  plastic  Φ = ", _show_round(p.plastic_Φ))
     return nothing
 end
 
