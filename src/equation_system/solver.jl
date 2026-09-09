@@ -1,4 +1,35 @@
 """
+    RCSolution(x::SVector, iterations, residual)
+
+Solution of a local rheological system: the solved values `x`, the number of
+Newton iterations [`solve`](@ref) needed, and the final normalized residual
+norm.
+
+An `RCSolution` is an `AbstractVector`, so it supports positional indexing and
+iteration, and it can be passed straight back into `solve`. It holds numbers
+only, and so is `isbits` and usable inside GPU kernels; [`inspect`](@ref)
+describes what each entry stands for.
+"""
+struct RCSolution{N, T, R} <: AbstractVector{T}
+    x::SVector{N, T}
+    iterations::Int
+    residual::R
+end
+
+@inline RCSolution(x::SVector{N, T}, iterations, residual) where {N, T} =
+    RCSolution{N, T, typeof(residual)}(x, iterations, residual)
+
+Base.size(::RCSolution{N}) where {N} = (N,)
+Base.IndexStyle(::Type{<:RCSolution}) = IndexLinear()
+Base.@propagate_inbounds Base.getindex(sol::RCSolution, i::Int) = sol.x[i]
+
+function Base.show(io::IO, ::MIME"text/plain", sol::RCSolution)
+    println(io, "RCSolution (iterations: ", sol.iterations, ", residual: ", sol.residual, ")")
+    Base.print_array(io, sol.x)
+    return nothing
+end
+
+"""
     solve(c::AbstractCompositeModel, x::SVector, vars, others; xnorm0=nothing,
           atol=1.0e-12, rtol=1.0e-12, itermax=1.0e4, verbose=false)
 
@@ -19,6 +50,9 @@ of the corrected effective strain-rate tensor.
 - `rtol`: relative residual tolerance against the initial residual.
 - `itermax`: maximum Newton iterations.
 - `verbose`: print the final iteration count, residual norm, and line-search step.
+
+Returns an [`RCSolution`](@ref) holding the solved vector, the iteration count,
+and the final residual norm. [`inspect`](@ref) describes its entries.
 
 Throws [`NonConvergenceError`](@ref) if the iteration ends without meeting
 either tolerance, which includes the case of a residual that became `NaN`.
@@ -43,8 +77,10 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0=noth
     xnorm = correct_xnorm(x, xnorm0)
     r     = compute_residual(c, x, vars, others)   # initial residual
     it = 0
-    er = Inf
     er0 = mynorm(r, xnorm)
+    # `oftype` keeps the residual a single type across the loop, so that the
+    # value stored in the returned `RCSolution` is inferrable.
+    er = oftype(er0, Inf)
 
     nonneg = branch_strain_rate_mask(c)
 
@@ -95,8 +131,11 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0=noth
     # A NaN residual compares false against both tolerances and so exits the loop
     # by the same door as a converged one; `isfinite` is what separates them.
     isfinite(er) && (er ≤ atol || er ≤ rtol * er0) || throw(NonConvergenceError(it, er, x))
-    return x
+    return RCSolution(x, it, er)
 end
+
+solve(c::AbstractCompositeModel, sol::RCSolution, vars0, others; kwargs...) = solve(c, sol.x, vars0, others; kwargs...)
+compute_residual(c, sol::RCSolution, vars, others) = compute_residual(c, sol.x, vars, others)
 
 """
     NonConvergenceError(iterations, residual, x)

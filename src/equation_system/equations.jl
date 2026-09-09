@@ -312,7 +312,7 @@ plus all other differentiable values and nondifferentiable auxiliary fields.
     end
 end
 
-@generated function generate_args_template(eqs::NTuple{N, Any}, x::SVector{N}, others::NamedTuple) where {N}
+@generated function generate_args_template(eqs::NTuple{N, Any}, x::AbstractVector, others::NamedTuple) where {N}
     return quote
         args_template = generate_args_template(eqs)
         args = Base.@ntuple $N i -> begin

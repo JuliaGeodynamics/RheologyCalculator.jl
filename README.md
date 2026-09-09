@@ -1,7 +1,8 @@
 # RheologyCalculator.jl
 
 [![CI](https://github.com/juliageodynamics/RheologyCalculator.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/juliageodynamics/RheologyCalculator.jl/actions/workflows/ci.yml)
-[![Docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://juliageodynamics.github.io/RheologyCalculator.jl/dev/)
+[![Docs](https://img.shields.io/badge/docs-stable-blue.svg)](https://juliageodynamics.github.io/RheologyCalculator.jl/stable/)
+[![Docs dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://juliageodynamics.github.io/RheologyCalculator.jl/dev/)
 [![codecov](https://codecov.io/gh/juliageodynamics/RheologyCalculator.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/juliageodynamics/RheologyCalculator.jl)
 [![version](https://juliahub.com/docs/General/RheologyCalculator/stable/version.svg)](https://juliahub.com/ui/Packages/General/RheologyCalculator)
 
@@ -49,17 +50,34 @@ using RheologyCalculator
 using RheologyCalculator.RheologyModels
 
 viscous = LinearViscosity(1e22)
-elastic = IncompressibleElasticity(1e10)
+elastic = Elasticity(1e10, 4.667e10)
 c = SeriesModel(viscous, elastic)
 
 vars   = (; ε = 1.0e-14, θ = 0.0)
 args   = (; τ = 1.0e3, P = 0.0)
 others = (; dt = 1.0e10, τ0 = (0.0,), P0 = (0.0,))
 
-x = initial_guess_x(c, vars, args, others)
-x = solve(c, x, vars, others)
+x0  = initial_guess_x(c, vars, args, others)
+sol = solve(c, x0, vars, others)
+
+sol.x           # solved SVector
+sol.iterations  # Newton iterations taken
+sol.residual    # final normalized residual norm
+inspect(c)      # what each entry stands for, and which equation solves it
 ```
 
+`solve` returns an `RCSolution`. It supports positional indexing (`sol[1]`) and
+can be passed directly to the next `solve`; use `sol.x` for the underlying
+`SVector`. A solution holds numbers only, so it is `isbits` and can be built
+inside a GPU kernel; `inspect(c)` describes the entries instead:
+
+```julia-repl
+julia> inspect(c)
+2-element ModelInspection:
+  index  var  equation                        scope   elements
+      1  τ    compute_strain_rate             global  LinearViscosity 1, Elasticity 1
+      2  P    compute_volumetric_strain_rate  global  LinearViscosity 1, Elasticity 1
+```
 
 ## Composite Models
 

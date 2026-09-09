@@ -53,9 +53,21 @@ and we build the solution vector `x` that contains the initial guess for the var
 x   = initial_guess_x(c, vars, args, others)
 ```
 
+The entries of `x` differ by twenty orders of magnitude — stresses of order
+$10^5$ Pa alongside strain rates of order $10^{-15}$ s$^{-1}$ — so the residual
+norm has to be scaled entry by entry before the requested tolerance means
+anything. [`normalisation_x`](@ref) builds that scaling from a characteristic
+stress and strain rate, and it is passed to [`solve`](@ref) as `xnorm0`. Without
+it the iteration stalls and `solve` raises a `NonConvergenceError`:
+
+```julia
+τ_char = 2 * η3 * vars.ε
+xnorm  = normalisation_x(c, τ_char, vars.ε)
+```
+
 Now we are ready to compute the time evolution of the stress tensor, with some aid from a helper function
 ```julia
-function stress_time(c, vars, x; ntime = 200, dt = 1.0e8)
+function stress_time(c, vars, x, xnorm; ntime = 200, dt = 1.0e8)
     τ     = zeros(ntime)
     t_v   = zeros(ntime)
     τ_e   = (0.0, 0.0)
@@ -64,8 +76,8 @@ function stress_time(c, vars, x; ntime = 200, dt = 1.0e8)
     for i in 2:ntime
         # non-differentiable variables needed to evaluate the state functions
         others = (; dt = dt, τ0 = τ_e, P0 = P_e)
-        # solve the system of equations
-        x      = solve(c, x, vars, others)
+        # solve returns an RCSolution; it can seed the next solve directly
+        x      = solve(c, x, vars, others; xnorm0 = xnorm)
         # Post-process the results
         τ_e    = compute_stress_elastic(c, x, others)   # elastic stress
         P_e    = compute_pressure_elastic(c, x, others) # elastic pressure
@@ -77,7 +89,26 @@ function stress_time(c, vars, x; ntime = 200, dt = 1.0e8)
     return t_v, τ
 end
 
-t_v, τ = stress_time(c, vars, x; ntime = 25, dt = 1.0e9);
+t_v, τ = stress_time(c, vars, x, xnorm; ntime = 25, dt = 1.0e9);
+```
+
+The returned `RCSolution` stores the solved static vector in `x.x`, along with
+the iteration count and final residual; positional indexing such as `x[1]` also
+works. [`inspect`](@ref) says what the four entries are:
+
+```jldoctest
+julia> using RheologyCalculator, RheologyCalculator.RheologyModels
+
+julia> c = SeriesModel(LinearViscosity(1e21), Elasticity(10e9, 30e9),
+                       ParallelModel(LinearViscosity(1e20), Elasticity(10e9, 46.67e9)));
+
+julia> inspect(c)
+4-element ModelInspection:
+  index  var  equation                        scope   elements
+      1  τ    compute_strain_rate             global  LinearViscosity 1, Elasticity 1
+      2  ε    compute_stress                  branch  LinearViscosity 2, Elasticity 2
+      3  P    compute_volumetric_strain_rate  global  LinearViscosity 1, Elasticity 1
+      4  θ    compute_pressure                branch  LinearViscosity 2, Elasticity 2
 ```
 
 We can finally compute the analytical solution of the stress time-evolution, and compare it against our results

@@ -5,6 +5,13 @@ abstract rheology supertypes. The package's bundled implementations live in
 `RheologyCalculator.RheologyModels`; import that module before constructing
 one of its exported elements:
 
+```@meta
+DocTestSetup = quote
+    using RheologyCalculator
+    using RheologyCalculator.RheologyModels
+end
+```
+
 ```julia
 using RheologyCalculator
 using RheologyCalculator.RheologyModels
@@ -36,9 +43,11 @@ A concrete rheology is a small immutable Julia type plus methods for:
 - `history_kwargs(r)`, when values from `others` should be indexed per element.
 
 For example, a deviatoric Newtonian viscosity contributes strain rate in series
-and stress in parallel:
+and stress in parallel. Two such dampers in series carry the same stress and
+their strain rates add, so the composite has the harmonic effective viscosity
+``\eta_1\eta_2/(\eta_1+\eta_2)``, which is what the last line below recovers:
 
-```julia
+```jldoctest
 struct MyLinearViscosity{T} <: RheologyCalculator.AbstractViscosity
     η::T
 end
@@ -50,6 +59,17 @@ RheologyCalculator.parallel_state_functions(::MyLinearViscosity) =
 
 RheologyCalculator.compute_strain_rate(r::MyLinearViscosity; τ = 0, kwargs...) = τ / (2 * r.η)
 RheologyCalculator.compute_stress(r::MyLinearViscosity; ε = 0, kwargs...) = 2 * r.η * ε
+
+c    = SeriesModel(MyLinearViscosity(1.0e20), MyLinearViscosity(2.0e20))
+vars = (; ε = 1.0e-14)
+x0   = initial_guess_x(c, vars, (; τ = 1.0), NamedTuple())
+sol  = solve(c, x0, vars, NamedTuple())
+
+sol[1] / (2 * vars.ε)
+
+# output
+
+6.666666666666666e19
 ```
 
 The solver passes local arguments as keywords. Unknowns come from the solver

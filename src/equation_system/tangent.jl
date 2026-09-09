@@ -46,6 +46,8 @@ function tangent(c::AbstractCompositeModel, x::SVector, vars0, others)
     return dxdε[stress_index(c)]
 end
 
+tangent(c::AbstractCompositeModel, sol::RCSolution, vars0, others) = tangent(c, sol.x, vars0, others)
+
 """
     stress_index(c::AbstractCompositeModel)
 

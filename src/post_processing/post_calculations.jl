@@ -80,7 +80,7 @@ function _compute_stress_elastic1(r::AbstractElasticity, self, fn::F, number, xn
 end
 
 """
-    compute_stress_elastic(c::SeriesModel, xnew::SVector, others)
+    compute_stress_elastic(c::SeriesModel, xnew::AbstractVector, others)
 
 Reconstruct the physical elastic spring stress for elastic elements nested
 inside `ParallelModel` branches of `c` (Kelvin-Voigt and generalized Maxwell
@@ -101,7 +101,7 @@ from which each elastic source's physical stress is recovered as
 `τ0_i + 2 * η_i * ε_p` (direct leaf) or `2 * η_eff_M_i * (ε_p + τ0_i / (2 * η_el_i))`
 (Maxwell sub-branch).
 """
-function compute_stress_elastic(c::SeriesModel, xnew::SVector, others)
+function compute_stress_elastic(c::SeriesModel, xnew::AbstractVector, others)
     eqs = generate_equations(c)
 
     # Walk all equations with the generic method. For elastic elements that are

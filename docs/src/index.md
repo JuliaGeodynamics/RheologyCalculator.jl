@@ -51,26 +51,68 @@ The typical workflow is:
    and [`compute_pressure_elastic`](@ref RheologyCalculator.compute_pressure_elastic),
    when needed.
 
-```julia
+```jldoctest quickstart
 using RheologyCalculator
 using RheologyCalculator.RheologyModels
 
 viscous = LinearViscosity(1e22)
-elastic = IncompressibleElasticity(1e10)
+elastic = Elasticity(1e10, 4.667e10)
 c = SeriesModel(viscous, elastic)
 
 vars = (; ε = 1.0e-14, θ = 0.0)
 args = (; τ = 1.0e3, P = 0.0)
 others = (; dt = 1.0e10, τ0 = (0.0,), P0 = (0.0,))
 
-x = initial_guess_x(c, vars, args, others)
-x = solve(c, x, vars, others)
+x0  = initial_guess_x(c, vars, args, others)
+sol = solve(c, x0, vars, others)
+
+# output
+
+RCSolution (iterations: 1, residual: 0.0)
+ 1.9801980198019804e6
+ 0.0
 ```
 
 Here `vars` contains prescribed rates (`ε`, `θ`), `args` seeds the solver
 unknowns (`τ`, `P`, and any branch-local unknowns), and `others` carries values
 that are not differentiated by the local Newton solve (`dt`, elastic history,
 grain size, temperature, pressure-dependent parameters, and similar fields).
+`solve` returns an [`RCSolution`](@ref), which supports positional indexing and
+can be passed directly to the next solve. Its `x` field is the solved `SVector`,
+and `iterations` and `residual` record how the Newton iteration ended.
+
+A solution carries numbers only, which keeps it `isbits` and therefore usable
+inside a GPU kernel. [`inspect`](@ref) describes its entries, giving for each one
+the name of the unknown, the equation that solves it, whether that equation is
+global or belongs to a parallel branch, and the elements it spans:
+
+```jldoctest quickstart
+julia> sol.x
+2-element StaticArraysCore.SVector{2, Float64} with indices SOneTo(2):
+ 1.9801980198019804e6
+ 0.0
+
+julia> sol.iterations, sol.residual
+(1, 0.0)
+
+julia> inspect(c)
+2-element ModelInspection:
+  index  var  equation                        scope   elements
+      1  τ    compute_strain_rate             global  LinearViscosity 1, Elasticity 1
+      2  P    compute_volumetric_strain_rate  global  LinearViscosity 1, Elasticity 1
+```
+
+The table earns its keep on a composite with a parallel branch, where a name
+repeats — one `:τ` per branch, the global one being the stress of the model as a
+whole — and the `equation` and `elements` columns are what tell those apart:
+
+```jldoctest quickstart
+julia> inspect(SeriesModel(viscous, ParallelModel(LinearViscosity(1e21), IncompressibleElasticity(1e10))))
+2-element ModelInspection:
+  index  var  equation             scope   elements
+      1  τ    compute_strain_rate  global  LinearViscosity 1
+      2  ε    compute_stress       branch  LinearViscosity 2, IncompressibleElasticity 1
+```
 
 `solve` raises `NonConvergenceError` when the requested tolerances are not
 reached. The exception includes the last iterate, normalized residual, and a
