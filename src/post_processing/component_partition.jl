@@ -23,7 +23,7 @@ struct ComponentPartition{EV, TV, RV, IV, EE, TE, RE, IE, EP, TP, RP, IP}
     plastic_indices::IP
 end
 
-# print only 3 sigdigits to be pretty. Shared with `ComponentPartition`.
+# print only 3 sigdigits to be pretty. Shared with `DissipationPartition`.
 _show_round(x::AbstractFloat) = round(x; sigdigits = 3)
 _show_round(x) = x
 _show_round(t::Tuple) = map(_show_round, t)
