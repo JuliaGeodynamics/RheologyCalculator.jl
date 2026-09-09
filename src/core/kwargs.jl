@@ -9,6 +9,22 @@ history_kwargs(::AbstractViscosity) = (:d,)
 history_kwargs(::AbstractPlasticity) = ()
 
 """
+    residual_kwargs(T, fn)
+    residual_kwargs(fn)
+
+Return a zero-valued `NamedTuple` describing the prescribed residual/input
+variable associated with a state function.
+"""
+@inline residual_kwargs(::Type{T}, ::Function) where {T} = (; tmp = zero(T))
+@inline residual_kwargs(::Type{T}, ::typeof(compute_strain_rate)) where {T} = (; ε = zero(T))
+@inline residual_kwargs(::Type{T}, ::typeof(compute_volumetric_strain_rate)) where {T} = (; θ = zero(T))
+@inline residual_kwargs(::Type{T}, ::typeof(compute_stress)) where {T} = (; τ = zero(T))
+@inline residual_kwargs(::Type{T}, ::typeof(compute_pressure)) where {T} = (; P = zero(T))
+
+@inline residual_kwargs(funs::F) where {F <: Function} = residual_kwargs(Float64, funs)
+@inline residual_kwargs(funs::NTuple{N, Any}) where {N} = residual_kwargs.(Float64, funs)
+
+"""
     differentiable_kwargs(T, fn)
     differentiable_kwargs(fn)
 

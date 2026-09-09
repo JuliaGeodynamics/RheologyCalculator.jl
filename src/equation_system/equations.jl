@@ -22,6 +22,7 @@ struct CompositeEquation{IsGlobal, T, F, R, RT}
         return new{B, T, F, R, RT}(parent, child, self, fn, rheology, ind_input, el_number)
 
     end
+end
 
 """
     generate_equations(c::AbstractCompositeModel)
@@ -363,7 +364,6 @@ element's own dissipation; the residual only needs their sum.
         end
         end
     end
-end
 
 @inline evaluate_state_function_perleaf(fn::F, ::Tuple{}, args, others, el_number) where {F} = ()
 
