@@ -59,8 +59,8 @@ function generate_equations(c::AbstractCompositeModel, fns_own_global::F, ind_in
     (; branches, leafs) = c
     local_el = el_num[1]
 
-    _, fns_own_local = get_own_functions(c)
-    # fns_branches_global,_ = get_own_functions(branches)
+    _, fns_own_local_all = get_own_functions(c)
+    fns_own_local = filter_local_functions(c, fns_own_local_all, fns_own_global)
 
     nown = 1 # length(fns_own_global)
     nlocal = length(fns_own_local)
@@ -189,6 +189,39 @@ end
 end
 
 get_own_functions(::Tuple{}) = (), ()
+
+"""
+    parallel_local_pass(F)
+
+The global state function whose pass owns the local parallel equation of type
+`F`, or `nothing` when the equation belongs to every pass. A parallel composite
+is visited once per global function, so an equation with a deviatoric or
+volumetric character must declare which visit emits it.
+"""
+@inline parallel_local_pass(::Type) = nothing
+for fn in (:compute_lambda, :compute_lambda_parallel, :compute_plastic_strain_rate)
+    @eval @inline parallel_local_pass(::Type{typeof($fn)}) = typeof(compute_stress)
+end
+@inline parallel_local_pass(::Type{typeof(compute_volumetric_plastic_strain_rate)}) = typeof(compute_pressure)
+
+"""
+    filter_local_functions(c, fns_local, fn_global)
+
+The subset of `fns_local` that contributes an equation to the pass driven by
+`fn_global`. A dilatant `DruckerPrager` in a parallel composite owns both a
+deviatoric and a volumetric local equation; emitting both in either pass would
+give the same unknown two equations and leave another with none.
+
+Filtering here, rather than when the equation is built, keeps the local
+equation count consistent with the indices handed to parent and sibling
+equations.
+"""
+@inline filter_local_functions(::AbstractCompositeModel, fns::NTuple{N, Any}, ::F) where {N, F} = fns
+
+@generated function filter_local_functions(::ParallelModel, fns::FNS, ::G) where {FNS <: Tuple, G}
+    kept = [:(fns[$i]) for (i, F) in enumerate(FNS.parameters) if parallel_local_pass(F) in (nothing, G)]
+    return Expr(:tuple, kept...)
+end
 
 @inline global_eltype_numbering(c::AbstractCompositeModel) = global_eltype_numbering(c, Ref(0), Ref(0), Ref(0))
 
@@ -392,6 +425,7 @@ add_child(x, ::CompositeEquation, eq_ind) = x[eq_ind]
 add_child(::SVector{N, T}, ::CompositeEquation{A, B, typeof(compute_lambda)}, eq_ind) where {N, A, B, T} = zero(T)
 add_child(::SVector{N, T}, ::CompositeEquation{A, B, typeof(compute_lambda_parallel)}, eq_ind) where {N, A, B, T} = zero(T)
 add_child(::SVector{N, T}, ::CompositeEquation{A, B, typeof(compute_plastic_strain_rate)}, eq_ind) where {N, A, B, T} = zero(T)
+add_child(::SVector{N, T}, ::CompositeEquation{A, B, typeof(compute_volumetric_plastic_strain_rate)}, eq_ind) where {N, A, B, T} = zero(T)
 # add_child(::SVector{Any, T}, ::CompositeEquation{Any, Any, typeof(compute_plastic_strain_rate)}, eq_ind) where T = zero(T)
 
 add_child(::SVector, ::Tuple{}) = 0.0e0
