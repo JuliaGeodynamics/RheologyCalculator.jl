@@ -47,6 +47,7 @@ include("rheology/viscous/Newtonian/diffusion_creep.jl")
 include("rheology/viscous/nonNewtonian/power_law_viscosity.jl")
 include("rheology/viscous/nonNewtonian/LTP_viscosity.jl")
 include("rheology/viscous/nonNewtonian/dislocation_creep.jl")
+include("rheology/viscous/nonNewtonian/goldsby_kohlstedt.jl")
 include("rheology/viscous/nonNewtonian/rate_state_hypo_plastic.jl")
 
 include("rheology/elastic/elasticity.jl")
@@ -69,6 +70,7 @@ include("utils/tensor_helpers.jl")
 export LinearViscosity, PowerLawViscosity
 export Elasticity, BulkElasticity, IncompressibleElasticity, BulkViscosity
 export LTPViscosity, DruckerPrager, DiffusionCreep, DislocationCreep
+export GoldsbyKohlstedtDiffusion, GoldsbyKohlstedtCreep
 
 # Tensor helpers: flat-tuple deviatoric tensors in Voigt order, used to build
 # the `vars` and `τ0` arguments of `solve`.
