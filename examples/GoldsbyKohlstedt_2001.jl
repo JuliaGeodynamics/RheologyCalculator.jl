@@ -2,6 +2,8 @@ using RheologyCalculator
 using RheologyCalculator.RheologyModels
 using GLMakie
 
+GLMakie.activate!(; visible = false)
+
 const R = 8.314
 
 diffusion = GoldsbyKohlstedtDiffusion(R, 9.1e-4, 59.4e3, 1.0e-4, 59.4e3, 1.97e-5, 1.0e-9)
@@ -34,4 +36,5 @@ for (j, d) in pairs(grain_sizes), (i, T) in pairs(temperatures)
     lines!(ax, rates, flow_curve(ice, rates, T, d), linewidth = 2)
 end
 Label(fig[0, :], "Goldsby–Kohlstedt (2001) Figure 7 attempt — native RC solve", fontsize = 24)
+save(joinpath(@__DIR__, "GoldsbyKohlstedt_2001.png"), fig)
 display(fig)
