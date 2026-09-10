@@ -130,26 +130,3 @@ let
     end
     with_theme(figure, theme_latexfonts())
 end
-
-
-Base.@kwdef mutable struct Foo
-    type::Union{String, Missing} = missing
-    nel::Union{Int64, Missing} = missing
-    nf::Union{Int64, Missing} = missing
-    nv::Union{Int64, Missing} = missing
-    nn_el::Union{Int64, Missing} = missing
-    nf_el::Union{Int64, Missing} = missing
-end
-
-a = Foo(nel = 20)
-@b $a.nel
-
-function foo(x; a = 1, b = 2, kwargs...)
-    return x + a + b
-end
-
-foo(x, kwargs) = foo(x; kwargs...)
-
-args = (; a = 1, b = 2, c = 3)
-
-foo(1, args)
