@@ -41,6 +41,7 @@ include("post_processing/strain_rate_correction.jl")
 export effective_strain_rate_correction
 
 include("post_processing/post_calculations.jl")
+export volumetric_plastic_strain_rate
 
 include("equation_system/initial_guess.jl")
 export initial_guess_x, x_keys

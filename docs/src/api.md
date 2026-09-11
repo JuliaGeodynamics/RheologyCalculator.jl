@@ -118,6 +118,7 @@ RheologyCalculator.RheologyModels.elastic_stress_history_3D
 ```@docs
 RheologyCalculator.compute_stress_elastic
 RheologyCalculator.compute_pressure_elastic
+volumetric_plastic_strain_rate
 DissipationPartition
 dissipation_partition
 shear_heating

@@ -64,6 +64,21 @@ end
     others_vol = (; dt = 1.0e10, τ0 = (0.0,), P0 = (0.0,))
     x_vol = initial_guess_x(c_volumetric, vars_vol, (; τ = 1.0e2, P = 1.0e6), others_vol)
 
+    # Dilatant plastic composites, in both the series and the parallel
+    # arrangement: the volumetric flow rule adds equations to the local system,
+    # and the dilatancy angle is a type parameter so that it need not allocate.
+    dilatant = DruckerPrager(1.0e6, 30.0, 30.0)
+    vars_dil = (; ε = 1.0e-14, θ = 0.0)
+    others_dil = (; dt = 1.0e10, τ0 = (0.0,), P0 = (0.0,))
+
+    c_dilatant = SeriesModel(LinearViscosity(1.0e22), elastic, dilatant)
+    x_dil = initial_guess_x(c_dilatant, vars_dil, (; τ = 1.0e6, P = 1.0e6), others_dil)
+
+    c_dilatant_branch = SeriesModel(
+        LinearViscosity(1.0e22), elastic, ParallelModel(viscous1, dilatant)
+    )
+    x_dil_br = initial_guess_x(c_dilatant_branch, vars_dil, (; τ = 1.0e6, P = 1.0e6), others_dil)
+
     cases = (
         (c_flat, vars_flat, others_flat, x_flat),
         (c_single_branch, vars_sb, others_sb, x_sb),
@@ -72,6 +87,8 @@ end
         (c_maxwell, vars_gm, others_gm, x_gm),
         (c_plastic, vars_pl, others_pl, x_pl),
         (c_volumetric, vars_vol, others_vol, x_vol),
+        (c_dilatant, vars_dil, others_dil, x_dil),
+        (c_dilatant_branch, vars_dil, others_dil, x_dil_br),
     )
 
     @testset "RCSolution" begin

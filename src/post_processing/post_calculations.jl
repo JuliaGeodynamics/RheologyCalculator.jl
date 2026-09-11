@@ -353,3 +353,66 @@ function _compute_pressure_elastic1(r::AbstractElasticity, self, fn::F, number, 
 
     return f(fn, r, others, args, number, self, xnew)
 end
+
+"""
+    volumetric_plastic_strain_rate(c::AbstractCompositeModel, x, others)
+
+Return the volumetric plastic strain rate `θ_pl` that composite `c` produces at
+solver vector `x`, which is the plastic contribution a Stokes solver adds to
+mass conservation.
+
+Only dilatant elements contribute, and their contribution is a function of the
+solved plastic multiplier, so it cannot be recovered by calling
+[`compute_volumetric_strain_rate`](@ref) on the composite with a prescribed
+pressure: that call leaves `λ` at its zero default and returns no plastic part.
+
+`x` and `others` must be the solver vector and the auxiliary fields passed to
+[`solve`](@ref).
+
+# Example
+```julia
+c = SeriesModel(LinearViscosity(2.5e3), Elasticity(1e3, 1e3), DruckerPrager(2.0, 30.0, 30.0))
+others = (; dt = 0.1, τ0 = ((0.0, 0.0, 0.0),), P0 = (0.0,))
+sol = solve(c, initial_guess_x(c, (; ε = 1e-2, θ = 0.0), (; τ = 0.0), others), (; ε = (1e-2, -1e-2, 0.0), θ = 0.0), others)
+volumetric_plastic_strain_rate(c, sol, others)
+```
+"""
+function volumetric_plastic_strain_rate(c::AbstractCompositeModel, sol::AbstractVector, others)
+    eqs = generate_equations(c)
+    n = length(eqs)
+    x = SVector{n}(ntuple(i -> sol[i], n))
+    args = generate_args_template(eqs, x, others)
+    return _volumetric_plastic_strain_rate(eqs, args, others)
+end
+
+@generated function _volumetric_plastic_strain_rate(eqs::NTuple{N, CompositeEquation}, args, others) where {N}
+    N == 0 && return :(0.0)
+    return quote
+        @inline
+        sum(Base.@ntuple $N i -> _volumetric_plastic_equation(eqs[i].fn, eqs[i], args[i], others))
+    end
+end
+
+@inline _volumetric_plastic_equation(::F, _eq, _args, _others) where {F} = 0.0
+
+# A plastic element owns a volumetric equation in exactly one of these two
+# forms, series or parallel, so summing over both counts it once.
+@inline function _volumetric_plastic_equation(
+        fn::Union{typeof(compute_volumetric_strain_rate), typeof(compute_volumetric_plastic_strain_rate)},
+        eq, args, others,
+    )
+    values = evaluate_state_function_perleaf(fn, eq.rheology, args, others, eq.el_number)
+    return _sum_plastic(eq.rheology, values)
+end
+
+@inline _sum_plastic(::Tuple{}, ::Tuple{}) = 0.0
+
+@generated function _sum_plastic(rheology::NTuple{N, AbstractRheology}, values) where {N}
+    return quote
+        @inline
+        sum(Base.@ntuple $N i -> _plastic_contribution(rheology_category(rheology[i]), values[i]))
+    end
+end
+
+@inline _plastic_contribution(::Val{:plastic}, v) = v
+@inline _plastic_contribution(::Val, v) = zero(v)

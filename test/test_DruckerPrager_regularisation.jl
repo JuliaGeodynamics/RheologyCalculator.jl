@@ -15,6 +15,13 @@ import RheologyCalculator: compute_lambda, compute_lambda_parallel
 
     @test compute_lambda(regularised; τ, P, λ) == F - λ * regularised.η_vp
     @test compute_lambda_parallel(regularised; τ_pl = τ, P, λ) == F - λ * regularised.η_vp
+
+    dilatant = DruckerPrager(10.0, 30.0, 10.0, 25.0)
+    P_pl = 5.0
+    F_dilatant = τ - dilatant.C * dilatant.cosϕ - P_pl * dilatant.sinϕ
+    @test compute_lambda_parallel(dilatant; τ_pl = τ, P, P_pl, λ) ==
+        F_dilatant - λ * dilatant.η_vp
+
     @test compute_lambda(DruckerPrager(10.0, 0.0, 0.0, 0.0); τ, P, λ) == 10.0
 
     mixed = DruckerPrager(10, 30.0f0, 0, 25.0)

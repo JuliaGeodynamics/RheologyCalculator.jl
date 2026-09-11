@@ -32,6 +32,7 @@ end
     e1 = IncompressibleElasticity(6.0)
     e2 = Elasticity(7.0, 8.0)
     dp = DruckerPrager(9.0, 10.0, 0.0)
+    dp_dilatant = DruckerPrager(9.0, 10.0, 5.0)
 
     cases = (
         SeriesModel(v1, v2) => (
@@ -74,6 +75,15 @@ end
             (; self = 2, parent = 1, child = (3, 4), fn = :compute_stress, ind_input = 0, el_number = (2, 1)),
             (; self = 3, parent = 2, child = (), fn = :compute_lambda_parallel, ind_input = 0, el_number = (2, 1)),
             (; self = 4, parent = 2, child = (), fn = :compute_plastic_strain_rate, ind_input = 0, el_number = (2, 1)),
+        ),
+        SeriesModel(ParallelModel(v1, dp_dilatant)) => (
+            (; self = 1, parent = 0, child = (2,), fn = :compute_strain_rate, ind_input = 1, el_number = ()),
+            (; self = 2, parent = 1, child = (3, 4), fn = :compute_stress, ind_input = 0, el_number = (1, 1)),
+            (; self = 3, parent = 2, child = (), fn = :compute_lambda_parallel, ind_input = 0, el_number = (1, 1)),
+            (; self = 4, parent = 2, child = (), fn = :compute_plastic_strain_rate, ind_input = 0, el_number = (1, 1)),
+            (; self = 5, parent = 0, child = (6,), fn = :compute_volumetric_strain_rate, ind_input = 2, el_number = ()),
+            (; self = 6, parent = 5, child = (7,), fn = :compute_pressure, ind_input = 0, el_number = (1, 1)),
+            (; self = 7, parent = 6, child = (), fn = :compute_volumetric_plastic_strain_rate, ind_input = 0, el_number = (1, 1)),
         ),
         SeriesModel(v1, ParallelModel(v2, v3), ParallelModel(v4, SeriesModel(v5, e1))) => (
             (; self = 1, parent = 0, child = (2, 3), fn = :compute_strain_rate, ind_input = 1, el_number = (1,)),
