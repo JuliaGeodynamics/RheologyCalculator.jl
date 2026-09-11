@@ -1,7 +1,12 @@
 """
-    DruckerPrager{T} <: AbstractPlasticity
+    DruckerPrager(C, ϕ, ψ)
+    DruckerPrager(C, ϕ, ψ, η_vp)
 
 Represents the Drucker-Prager plasticity model for pressure-dependent yielding.
+ϕ and ψ are the friction and dilatancy angles in degrees. The optional
+Duvaut-Lions regularisation viscosity `η_vp` uses the same viscosity units as
+the rest of the model. It defaults to `one(C)` for backwards compatibility;
+set it to zero to recover the unregularised yield condition.
 
 # Fields
 - `C::T`: The cohesion parameter.
