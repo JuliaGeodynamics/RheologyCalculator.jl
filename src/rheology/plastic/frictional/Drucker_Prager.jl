@@ -31,7 +31,7 @@ struct DruckerPrager{T, D} <: AbstractPlasticity
     function DruckerPrager(C::T, ϕ::T, ψ::T, η_vp::T) where {T}
         sinϕ, cosϕ = sincosd(ϕ)
         sinψ, cosψ = sincosd(ψ)
-        return new{T}(C, ϕ, ψ, η_vp, sinϕ, sinψ, cosϕ, cosψ)
+        return new{T, !iszero(sinψ)}(C, ϕ, ψ, η_vp, sinϕ, sinψ, cosϕ, cosψ)
     end
 end
 function DruckerPrager(C, ϕ, ψ)
@@ -63,8 +63,9 @@ end
     return F - λ * r.η_vp
 end
 
-@inline function compute_lambda_parallel(r::DruckerPrager; τ_pl = 0, λ = 0, P = 0, kwargs...)
-    F = compute_F(r, τ_pl, P)
+@inline function compute_lambda_parallel(r::DruckerPrager; τ_pl = 0, λ = 0, P = 0, P_pl = 0, kwargs...)
+    P_yield = _parallel_pressure(r, P, P_pl)
+    F = compute_F(r, τ_pl, P_yield)
     return F - λ * r.η_vp
 end
 
