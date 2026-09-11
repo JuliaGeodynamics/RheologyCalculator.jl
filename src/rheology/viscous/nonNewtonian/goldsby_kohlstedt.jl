@@ -21,7 +21,7 @@ GoldsbyKohlstedtDiffusion(args...) = GoldsbyKohlstedtDiffusion(promote(args...).
 @inline function _gk_diffusion_viscosity(r, T, d)
     (; R, D0v, Qv, D0b, Qb, Vm, δ) = r
     D = D0v * exp(-Qv / (R * T)) + π * δ / d * D0b * exp(-Qb / (R * T))
-    R * T * d^2 / (126 * Vm * D)
+    return R * T * d^2 / (126 * Vm * D)
 end
 
 @inline compute_strain_rate(r::GoldsbyKohlstedtDiffusion; τ = 0, T = 0, d = 1, kwargs...) =
@@ -44,10 +44,10 @@ GoldsbyKohlstedtCreep(n, p, args...) = GoldsbyKohlstedtCreep(n, p, promote(args.
 
 @inline function compute_strain_rate(r::GoldsbyKohlstedtCreep; τ = 0, T = 0, d = 1, kwargs...)
     (; n, p, A, Q, R) = r
-    A * 3^((n + 1) / 2) * τ^n * d^(-p) * exp(-Q / (R * T)) / 2
+    return A * 3^((n + 1) / 2) * τ^n * d^(-p) * exp(-Q / (R * T)) / 2
 end
 
 @inline function compute_stress(r::GoldsbyKohlstedtCreep; ε = 0, T = 0, d = 1, kwargs...)
     (; n, p, A, Q, R) = r
-    (2 * abs(ε) * d^p / (A * 3^((n + 1) / 2)) * exp(Q / (R * T)))^(1 / n) * sign(ε)
+    return (2 * abs(ε) * d^p / (A * 3^((n + 1) / 2)) * exp(Q / (R * T)))^(1 / n) * sign(ε)
 end

@@ -156,10 +156,14 @@ BulkViscosity(χ)
 ### Drucker-Prager
 
 ```julia
-DruckerPrager(C, ϕ, ψ)
+DruckerPrager(C, ϕ, ψ[, η_vp])
 ```
 
-where `C` is the cohesion, and `ϕ` and `ψ` are the friction and dilation angles.
+where `C` is the cohesion, `ϕ` and `ψ` are the friction and dilation angles,
+and the optional `η_vp` is the Duvaut-Lions viscoplastic regularisation
+viscosity, expressed in the same viscosity units as the rest of the model.
+It defaults to `1.0` for backwards compatibility. Set `η_vp = 0` to recover
+the unregularised yield condition.
 
 ## State Functions
 

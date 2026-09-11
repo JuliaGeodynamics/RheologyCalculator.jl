@@ -22,7 +22,7 @@ function flow_curve(ice, rates, T, d)
         stress[i] = sol[1]
         x = sol
     end
-    stress
+    return stress
 end
 
 ice = SeriesModel(ParallelModel(diffusion, dislocation, SeriesModel(gbs, basal)))
@@ -30,9 +30,11 @@ temperatures = (230.0, 240.0, 250.0, 260.0)
 grain_sizes = (1.0e-5, 1.0e-4, 1.0e-3)
 fig = Figure(size = (1200, 900))
 for (j, d) in pairs(grain_sizes), (i, T) in pairs(temperatures)
-    ax = Axis(fig[i, j], xscale = log10, yscale = log10,
+    ax = Axis(
+        fig[i, j], xscale = log10, yscale = log10,
         xlabel = "strain rate [s⁻¹]", ylabel = "stress [Pa]",
-        title = "T = $(T) K, d = $(d) m")
+        title = "T = $(T) K, d = $(d) m"
+    )
     lines!(ax, rates, flow_curve(ice, rates, T, d), linewidth = 2)
 end
 Label(fig[0, :], "Goldsby–Kohlstedt (2001) Figure 7 attempt — native RC solve", fontsize = 24)
