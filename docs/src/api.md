@@ -51,6 +51,7 @@ normalisation_x
 RCSolution
 NonConvergenceError
 solve
+solve_with_jacobian
 solve_batch
 solve_with_retries
 jacobian

@@ -99,7 +99,29 @@ method based on the equation's kernel function (`eq.fn`):
 # Returns
 - `Float64`: scalar initial-guess value for the unknown of `eq`.
 """
-estimate_initial_value(eq::CompositeEquation, vars, args, others) = _estimate_initial_value(eq.fn, eq, vars, args, others)
+function estimate_initial_value(eq::CompositeEquation, vars, args, others)
+    supplied = _supplied_initial_value(eq, args)
+    return supplied === nothing ? _estimate_initial_value(eq.fn, eq, vars, args, others) : supplied
+end
+
+# An explicit `args.x0 = (; τ, P, λ)` seeds the corresponding unknowns. Seeding
+# is opt-in through `x0` rather than read off `args.τ`/`args.P`, which callers
+# fill with placeholder values not meant as starting points. Only τ, P and λ
+# are seedable: a `compute_stress` equation's unknown is a branch strain rate
+# despite its `ε`-named kwarg, and its estimator avoids the singular zero seed.
+@inline _supplied_initial_value(eq::CompositeEquation, args::NamedTuple) =
+    hasfield(typeof(args), :x0) ? _supplied_for(eq.fn, args.x0) : nothing
+@inline _supplied_initial_value(::CompositeEquation, ::Any) = nothing
+
+# Not seedable: anything whose unknown is not one of τ, P, λ.
+@inline _supplied_for(::F, ::Any) where {F} = nothing
+@inline _supplied_for(::typeof(compute_strain_rate), g::NamedTuple) = _maybe_get(g, :τ)
+@inline _supplied_for(::typeof(compute_volumetric_strain_rate), g::NamedTuple) = _maybe_get(g, :P)
+@inline _supplied_for(::typeof(compute_lambda), g::NamedTuple) = _maybe_get(g, :λ)
+@inline _supplied_for(::typeof(compute_lambda_parallel), g::NamedTuple) = _maybe_get(g, :λ)
+
+# An absent key keeps that unknown at the model's own estimate.
+@inline _maybe_get(g::NamedTuple, k::Symbol) = hasfield(typeof(g), k) ? getfield(g, k) : nothing
 # Fallback: unknown equation type → use 0 as the initial guess.
 @inline _estimate_initial_value(::F, eq, vars, args, others) where {F} = 0
 # Strain-rate-like unknowns use a harmonic-mean estimate across the element rheologies.
