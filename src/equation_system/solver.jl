@@ -122,14 +122,14 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0 = no
         J = jacobian(c, x, vars, others)
         Δx = backsolve(J, r)
         α = max_feasible_step(x, Δx, nonneg)
-        α = bt_line_search(
+        # The search already evaluated the residual at the step it accepts, so
+        # take its iterate and residual rather than repeating the evaluation.
+        α, x_next, r = bt_line_search(
             Δx, x, c, vars, others, xnorm, er;
             α = α, ρ = 0.5, lstol = 0.95, α_min = 0.1
         )
-        x_next = x + α .* Δx
 
         # check convergence
-        r = compute_residual(c, x_next, vars, others)
         er = mynorm(r, xnorm)
 
         # Once the update is below floating-point resolution, continuing the
@@ -322,12 +322,44 @@ norm at `x + α * Δx` is at most `lstol` times the current residual norm. The
 initial feasible step is accepted whenever it does not increase the residual;
 backtracked steps require the stricter `lstol` reduction. If no trial passes,
 the best finite trial is returned.
+
+Returns `(α, x_next, r)`: the accepted step length, the iterate it produces,
+and the residual there. The iterate and residual are the ones the search
+actually evaluated at the *returned* `α`, so [`solve`](@ref) can use them
+directly instead of recomputing `compute_residual` at a point the search has
+already visited.
+
+Carrying `x_next` and `r` out rather than only `α` is what makes the reuse
+correct. The accepted `α` is not always the last one tried: when no trial meets
+its target the search returns `best_α`, which may come from any earlier trial,
+so the most recently computed residual can belong to a different step length.
+Keeping the triple together cannot make that mistake.
 """
 function bt_line_search(Δx, x, composite, vars, others, xnorm, rnorm; α = 1.0, ρ = 0.5, lstol = 0.9, α_min = 1.0e-8)
 
     α_initial = α
     best_α = α
     best_rnorm = Inf
+    # The iterate and residual belonging to `best_α`, kept in step with it.
+    #
+    # `best_α` is seeded to `α_initial`, NOT to zero, so when no trial has a
+    # finite residual the search still returns a moving step; the iterate is
+    # seeded to the point that same `α_initial` produces. Seeding `best_x = x`
+    # instead would make the fall-through return the current point unchanged,
+    # `solve` would then see `x_next == x`, and its stagnation guard would abort
+    # a solve that previously made progress — turning the 469-step
+    # yield-crossing accumulation of `test_solver_convergence.jl` from converged
+    # into a stagnation failure at a residual of ~1.
+    #
+    # The residual seed is what the loop's first pass recomputes at the same
+    # point. Keeping it means the fall-through and the `α < α_min` entry case
+    # both report the residual really found there, which is what `solve`'s
+    # NaN/Inf diagnostics read. The line search therefore still performs one
+    # evaluation per trial plus this seed, and what `solve` saves is its own
+    # post-loop `compute_residual`, which used to re-evaluate a point the search
+    # had already visited.
+    best_x = @. x + α * Δx
+    best_r = compute_residual(composite, best_x, vars, others)
 
     while α ≥ α_min
         # Apply scaled update
@@ -339,20 +371,21 @@ function bt_line_search(Δx, x, composite, vars, others, xnorm, rnorm; α = 1.0,
 
         if isfinite(perturbed_rnorm) && perturbed_rnorm < best_rnorm
             best_α, best_rnorm = α, perturbed_rnorm
+            best_x, best_r = perturbed_x, perturbed_r
         end
 
         # The first feasible trial may be limited by non-negativity, so do not
         # demand artificial decrease from a step that merely avoids growth.
         target = α == α_initial ? 1.0 : lstol
         if isfinite(perturbed_rnorm) && perturbed_rnorm ≤ target * rnorm
-            return α
+            return α, perturbed_x, perturbed_r
         end
 
         # Bisect step length
         α *= ρ
     end
 
-    return best_α
+    return best_α, best_x, best_r
 end
 
 """
