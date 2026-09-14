@@ -43,11 +43,12 @@ import RheologyCalculator.RheologyModels: DruckerPragerCap
         @test only_τ[3] == base[3]
     end
 
-    @testset "the returned Jacobian is the one at the converged x" begin
+    @testset "solve_with_jacobian returns the Jacobian at the converged x" begin
         for rate in (1.0e-13, 1.0e-12, 1.0e-11)
             vars = vars_2D(rate, 0.0)
             xnorm = normalisation_x(c, 1.0e6, second_invariant_2D(vars.ε) + abs(vars.θ))
-            sol = solve(c, initial_guess_x(c, vars, (;), others), vars, others; xnorm0 = xnorm)
+            x0 = initial_guess_x(c, vars, (;), others)
+            sol = solve_with_jacobian(c, x0, vars, others; xnorm0 = xnorm)
 
             # `solve` iterates on the corrected invariant of ε
             ε_corr = _direct_leaf_elastic_correction(c, vars.ε, others)
@@ -57,6 +58,16 @@ import RheologyCalculator.RheologyModels: DruckerPragerCap
             @test sol.jacobian !== nothing
             @test size(sol.jacobian) == size(J)
             @test sol.jacobian ≈ J rtol = 1.0e-12
+
+            # Adding the Jacobian must not disturb the iteration itself.
+            plain = solve(c, x0, vars, others; xnorm0 = xnorm)
+            @test plain.jacobian === nothing
+            @test sol.x == plain.x
+            @test sol.iterations == plain.iterations
+            @test sol.residual == plain.residual
+
+            # Accepting an RCSolution as the starting point works too.
+            @test solve_with_jacobian(c, plain, vars, others; xnorm0 = xnorm).x ≈ sol.x
         end
     end
 

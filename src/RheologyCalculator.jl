@@ -53,7 +53,7 @@ include("equation_system/normalize_x.jl")
 export normalisation_x
 
 include("equation_system/solver.jl")
-export solve, solve_batch, solve_with_retries, RCSolution, jacobian, NonConvergenceError
+export solve, solve_with_jacobian, solve_batch, solve_with_retries, RCSolution, jacobian, NonConvergenceError
 
 include("post_processing/component_partition.jl")
 export ComponentPartition, component_partition

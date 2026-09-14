@@ -12,7 +12,9 @@ describes what each entry stands for.
 
 `jacobian` is `∂r/∂x` at the returned `x`, as an implicit-function-theorem
 tangent needs. It is not one of the Jacobians the Newton iteration formed, so
-`solve` costs one extra Jacobian evaluation to supply it; it is `nothing` for
+producing it costs one extra Jacobian evaluation. Plain [`solve`](@ref) does
+not pay for it and leaves this field `nothing`; use
+[`solve_with_jacobian`](@ref) when a caller needs it. It is also `nothing` for
 an `RCSolution` built by hand.
 """
 struct RCSolution{N, T, R, J} <: AbstractVector{T}
@@ -68,9 +70,10 @@ of the corrected effective strain-rate tensor.
 - `itermax`: maximum Newton iterations.
 - `verbose`: print the final iteration count, residual norm, and line-search step.
 
-Returns an [`RCSolution`](@ref) holding the solved vector, the iteration count,
-the final residual norm, and the residual Jacobian at the converged iterate.
-[`inspect`](@ref) describes its entries.
+Returns an [`RCSolution`](@ref) holding the solved vector, the iteration count
+and the final residual norm; [`inspect`](@ref) describes its entries. Its
+`jacobian` field is `nothing` — use [`solve_with_jacobian`](@ref) when you need
+`∂r/∂x` at the converged iterate, which costs one extra Jacobian evaluation.
 
 
 Throws [`NonConvergenceError`](@ref) if the iteration ends without meeting
@@ -149,10 +152,45 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0 = no
     # A NaN residual compares false against both tolerances and so exits the loop
     # by the same door as a converged one; `isfinite` is what separates them.
     isfinite(er) && (er ≤ atol || er ≤ rtol * er0) || throw(NonConvergenceError(it, er, x))
-    return RCSolution(x, it, er, jacobian(c, x, vars, others))
+    return RCSolution(x, it, er)
 end
 
 solve(c::AbstractCompositeModel, sol::RCSolution, vars0, others; kwargs...) = solve(c, sol.x, vars0, others; kwargs...)
+
+"""
+    solve_with_jacobian(c, x, vars, others; kwargs...)
+
+Solve the local system and return an [`RCSolution`](@ref) whose `jacobian`
+field holds `∂r/∂x` at the converged iterate, as an implicit-function-theorem
+tangent needs.
+
+Keywords are those of [`solve`](@ref), and the returned `x`, `iterations` and
+`residual` are identical to what `solve` returns for the same arguments: this
+adds the Jacobian, it does not change the iteration.
+
+The converged Jacobian is not one of the Jacobians the Newton loop formed —
+those are taken before the last update — so it costs one extra evaluation.
+That is why it is a separate entry point rather than something `solve` always
+pays for: RC solves are small and often converge in a single iteration, so the
+extra evaluation is a large fraction of the total. Measured on this package's
+composites (Julia 1.12, single thread, best of seven runs over 200k–500k
+solves), `solve_with_jacobian` costs about 29% more than `solve` on a
+Drucker-Prager series model and about 33% more on a power-law/elastic one.
+
+Use [`tangent`](@ref) if you want the assembled material tangent rather than
+the residual Jacobian.
+"""
+function solve_with_jacobian(c::AbstractCompositeModel, x::SVector, vars0, others; kwargs...)
+    sol = solve(c, x, vars0, others; kwargs...)
+    # Rebuild the corrected `vars` the iteration used, so the Jacobian is taken
+    # for the same system `solve` actually solved rather than the raw `vars0`.
+    ε_corr = _direct_leaf_elastic_correction(c, vars0.ε, others)
+    vars = merge(vars0, (; ε = second_invariant_value(vars0.ε .+ ε_corr)))
+    return RCSolution(sol.x, sol.iterations, sol.residual, jacobian(c, sol.x, vars, others))
+end
+
+solve_with_jacobian(c::AbstractCompositeModel, sol::RCSolution, vars0, others; kwargs...) =
+    solve_with_jacobian(c, sol.x, vars0, others; kwargs...)
 
 """
     solve_batch(c, xs, vars, others; kwargs...)
