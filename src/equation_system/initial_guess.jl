@@ -99,7 +99,46 @@ method based on the equation's kernel function (`eq.fn`):
 # Returns
 - `Float64`: scalar initial-guess value for the unknown of `eq`.
 """
-estimate_initial_value(eq::CompositeEquation, vars, args, others) = _estimate_initial_value(eq.fn, eq, vars, args, others)
+function estimate_initial_value(eq::CompositeEquation, vars, args, others)
+    supplied = _supplied_initial_value(eq, args)
+    return supplied === nothing ? _estimate_initial_value(eq.fn, eq, vars, args, others) : supplied
+end
+
+# A guess the caller supplies for this equation's unknown takes precedence over
+# the model's own estimate, so a caller that already knows roughly where the
+# solution lies — a time loop reusing the previous step's stresses, say — can
+# seed the iteration with it. Before this, `args` was consulted only inside the
+# estimators, where it enters the counterpart state functions; for a
+# `SeriesModel` the τ, P and λ seeds were computed from `vars` and `others`
+# alone and the values in `args` never reached `x0`.
+#
+# Seeding is OPT-IN, through `args.x0 = (; τ, P, λ)`, and NOT through `args`
+# itself. The plain `args.τ` / `args.P` are long-established placeholders that
+# callers fill with a conventional number they have no real opinion about
+# (`(; τ = 0.0)` and `(; τ = 1.0e6)` both appear in this package's own tests
+# with values that are not meant as starting points), so honouring them
+# directly would silently change the iterate of existing code — measurably so:
+# one such placeholder moves a `DruckerPrager` solve onto a start from which it
+# does not converge. An explicit `x0` key cannot be confused with a placeholder,
+# and every call that does not use it produces exactly the previous `x0`.
+#
+# Only τ, P and λ are seedable. A `compute_stress` equation's unknown is a
+# parallel branch's STRAIN RATE even though its differentiable kwarg is named
+# `ε`, and its estimator deliberately avoids the singular zero seed.
+@inline _supplied_initial_value(eq::CompositeEquation, args::NamedTuple) =
+    hasfield(typeof(args), :x0) ? _supplied_for(eq.fn, args.x0) : nothing
+@inline _supplied_initial_value(::CompositeEquation, ::Any) = nothing
+
+# Not seedable: anything whose unknown is not one of τ, P, λ.
+@inline _supplied_for(::F, ::Any) where {F} = nothing
+@inline _supplied_for(::typeof(compute_strain_rate), g::NamedTuple) = _maybe_get(g, :τ)
+@inline _supplied_for(::typeof(compute_volumetric_strain_rate), g::NamedTuple) = _maybe_get(g, :P)
+@inline _supplied_for(::typeof(compute_lambda), g::NamedTuple) = _maybe_get(g, :λ)
+@inline _supplied_for(::typeof(compute_lambda_parallel), g::NamedTuple) = _maybe_get(g, :λ)
+
+# An absent key keeps that unknown at the model's own estimate, so a partial
+# guess — τ only, say — is allowed.
+@inline _maybe_get(g::NamedTuple, k::Symbol) = hasfield(typeof(g), k) ? getfield(g, k) : nothing
 # Fallback: unknown equation type → use 0 as the initial guess.
 @inline _estimate_initial_value(::F, eq, vars, args, others) where {F} = 0
 # Strain-rate-like unknowns use a harmonic-mean estimate across the element rheologies.

@@ -27,7 +27,7 @@
         @test sol.x isa typeof(x0)
         @test collect(sol) == collect(sol.x)
         @test sol[1] == sol.x[1]
-        @test propertynames(sol) == (:x, :iterations, :residual)
+        @test propertynames(sol) == (:x, :iterations, :residual, :jacobian)
         # a solution can seed the next solve
         @test solve(c, sol, vars, others) ≈ sol
     end

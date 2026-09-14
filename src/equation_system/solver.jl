@@ -1,23 +1,38 @@
 """
-    RCSolution(x::SVector, iterations, residual)
+    RCSolution(x::SVector, iterations, residual, jacobian = nothing)
 
 Solution of a local rheological system: the solved values `x`, the number of
-Newton iterations [`solve`](@ref) needed, and the final normalized residual
-norm.
+Newton iterations [`solve`](@ref) needed, the final normalized residual norm,
+and the residual Jacobian at the converged iterate.
 
 An `RCSolution` is an `AbstractVector`, so it supports positional indexing and
 iteration, and it can be passed straight back into `solve`. It holds numbers
 only, and so is `isbits` and usable inside GPU kernels; [`inspect`](@ref)
 describes what each entry stands for.
+
+`jacobian` is `∂r/∂x` evaluated at the returned `x`, which is what an
+implicit-function-theorem tangent needs. `solve` fills it in; it is `nothing`
+for an `RCSolution` built by hand without one.
+
+Note that this is NOT one of the Jacobians the Newton iteration formed: those
+are taken at the iterates *before* the last update, and the tangent needs the
+one at the converged point. Computing it therefore costs exactly one extra
+Jacobian evaluation per `solve`. Measured on a 3-unknown visco-elasto-plastic
+cap composite (`julia -t 1`, one call, via GeoTech.jl's `perf/rc_bench.jl`):
+0.607 µs -> 0.730 µs at a plastic point taking 2 Newton iterations, and
+0.396 µs -> 0.537 µs at an elastic point taking 1, with allocations unchanged
+at 0 bytes. That is cheaper than the caller recomputing the same Jacobian,
+which is what callers building consistent tangents did before.
 """
-struct RCSolution{N, T, R} <: AbstractVector{T}
+struct RCSolution{N, T, R, J} <: AbstractVector{T}
     x::SVector{N, T}
     iterations::Int
     residual::R
+    jacobian::J
 end
 
-@inline RCSolution(x::SVector{N, T}, iterations, residual) where {N, T} =
-    RCSolution{N, T, typeof(residual)}(x, iterations, residual)
+@inline RCSolution(x::SVector{N, T}, iterations, residual, jacobian = nothing) where {N, T} =
+    RCSolution{N, T, typeof(residual), typeof(jacobian)}(x, iterations, residual, jacobian)
 
 Base.size(::RCSolution{N}) where {N} = (N,)
 Base.IndexStyle(::Type{<:RCSolution}) = IndexLinear()
@@ -63,7 +78,11 @@ of the corrected effective strain-rate tensor.
 - `verbose`: print the final iteration count, residual norm, and line-search step.
 
 Returns an [`RCSolution`](@ref) holding the solved vector, the iteration count,
-and the final residual norm. [`inspect`](@ref) describes its entries.
+the final residual norm, and the residual Jacobian at the converged iterate.
+[`inspect`](@ref) describes its entries.
+
+The initial guess `x` can be seeded through `initial_guess_x`'s `args.x0`; see
+[`initial_guess_x`](@ref).
 
 Throws [`NonConvergenceError`](@ref) if the iteration ends without meeting
 either tolerance, which includes the case of a residual that became `NaN`.
@@ -143,7 +162,12 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0 = no
     # A NaN residual compares false against both tolerances and so exits the loop
     # by the same door as a converged one; `isfinite` is what separates them.
     isfinite(er) && (er ≤ atol || er ≤ rtol * er0) || throw(NonConvergenceError(it, er, x))
-    return RCSolution(x, it, er)
+    # The Jacobian at the CONVERGED x, which is one step beyond every Jacobian
+    # the loop formed (those are taken before the update that produced `x`).
+    # Callers building implicit-function-theorem tangents need exactly this one,
+    # so returning it here saves them a recomputation; it costs one extra
+    # Jacobian evaluation per solve.
+    return RCSolution(x, it, er, jacobian(c, x, vars, others))
 end
 
 solve(c::AbstractCompositeModel, sol::RCSolution, vars0, others; kwargs...) = solve(c, sol.x, vars0, others; kwargs...)
