@@ -7,8 +7,33 @@ Return `a` for a scalar invariant, or the second invariant of a 2D or 3D
 symmetric deviatoric tensor stored in Voigt-like component order.
 """
 @inline second_invariant(a::Number) = a
-@inline second_invariant(xx, yy, xy) = √((xx^2 + yy^2 + (-xx - yy)^2) / 2 + xy^2)
-@inline second_invariant(xx, yy, zz, yz, xz, xy) = √(0.5 * (xx^2 + yy^2 + zz^2) + xy^2 + yz^2 + xz^2)
+@inline second_invariant(xx, yy, xy) = _invariant_sqrt((xx^2 + yy^2 + (-xx - yy)^2) / 2 + xy^2)
+@inline second_invariant(xx, yy, zz, yz, xz, xy) = _invariant_sqrt(0.5 * (xx^2 + yy^2 + zz^2) + xy^2 + yz^2 + xz^2)
+
+"""
+    _invariant_sqrt(s)
+
+`√s` for the sum of squares `s ≥ 0` of a second invariant, with a derivative
+that stays finite at `s = 0`.
+
+The second invariant is a norm, so it is genuinely non-smooth at the zero
+tensor: `d√s/ds = 1/(2√s) → ∞`. The *value* was already guarded (`√0 == 0`),
+but `ForwardDiff` propagates `1/(2·0) = Inf` into the dual part and every
+component derivative comes back `NaN` — so a whole run started from rest
+produced `NaN` tangents at every quadrature point, not just at the one
+undefined point.
+
+At exactly `s = 0` this returns a derivative of zero. That is the analytic
+elastic limit for the way the invariant is used here: the stress a composite
+carries at a zero effective strain rate is set by its elastic backstress
+history alone, and depends on the strain rate only through terms that vanish
+with it, so a vanishing sensitivity — not an infinite one — is what the
+surrounding expressions want. It also makes `stress_tensor_from_invariant`
+consistent with its own `iszero` guard, which already returns a zero stress
+tensor there. Away from zero nothing changes: the ordinary `√` and its
+ordinary derivative are used.
+"""
+@inline _invariant_sqrt(s) = iszero(s) ? zero(s) : √s
 # Convenience wrappers: accept either a bare scalar or a Voigt-ordered NTuple.
 @inline second_invariant_value(a::Number) = second_invariant(a)
 @inline second_invariant_value(a::NTuple) = second_invariant(a...)
