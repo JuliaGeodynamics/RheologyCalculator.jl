@@ -1,0 +1,1053 @@
+     Testing RheologyCalculator
+      Status `C:\Users\Albert\AppData\Local\Temp\jl_MsMzij\Project.toml`
+  [4c88cf16] Aqua v0.8.16
+  [f6369f11] ForwardDiff v1.4.6
+⌅ [c3a54625] JET v0.11.6
+  [62cdc9a2] RheologyCalculator v0.2.1 `C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl`
+  [9f842d2f] SparseConnectivityTracer v1.2.3
+  [90137ffa] StaticArrays v1.9.20
+  [10745b16] Statistics v1.11.5
+  [37e2e46d] LinearAlgebra v1.13.0
+  [8dfed614] Test v1.11.0
+      Status `C:\Users\Albert\AppData\Local\Temp\jl_MsMzij\Manifest.toml`
+  [47edcb42] ADTypes v1.24.0
+  [4c88cf16] Aqua v0.8.16
+  [da1fd8a2] CodeTracking v3.0.2
+  [bbf7d656] CommonSubexpressions v0.3.1
+  [34da2185] Compat v4.18.1
+  [807dbc54] Compiler v0.1.1
+  [163ba53b] DiffResults v1.1.0
+  [b552c78f] DiffRules v1.16.0
+  [ffbed154] DocStringExtensions v0.9.5
+  [1a297f60] FillArrays v1.17.0
+  [f6369f11] ForwardDiff v1.4.6
+  [92d709cd] IrrationalConstants v0.2.6
+⌅ [c3a54625] JET v0.11.6
+  [692b3bcd] JLLWrappers v1.8.0
+  [aa1ae85d] JuliaInterpreter v0.11.4
+  [70703baa] JuliaSyntax v1.0.2
+  [2ab3a3ac] LogExpFunctions v1.0.1
+  [6f1432cf] LoweredCodeUtils v3.8.0
+  [1914dd2f] MacroTools v0.5.16
+  [77ba4419] NaNMath v1.1.4
+  [bac558e1] OrderedCollections v2.0.1
+  [aea7be01] PrecompileTools v1.3.4
+  [21216c6a] Preferences v1.6.0
+  [295af30f] Revise v3.17.0
+  [62cdc9a2] RheologyCalculator v0.2.1 `C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl`
+  [9f842d2f] SparseConnectivityTracer v1.2.3
+  [276daf66] SpecialFunctions v2.9.0
+  [90137ffa] StaticArrays v1.9.20
+  [1e83bf80] StaticArraysCore v1.4.4
+  [10745b16] Statistics v1.11.5
+  [efe28fd5] OpenSpecFun_jll v0.5.6+0
+  [0dad84c5] ArgTools v1.1.2
+  [56f22d72] Artifacts v1.11.0
+  [2a0f44e3] Base64 v1.11.0
+  [8bf52ea8] CRC32c v1.11.0
+  [ade2ca70] Dates v1.11.0
+  [f43a241f] Downloads v1.7.0
+  [7b1f6079] FileWatching v1.11.0
+  [b77e0a4c] InteractiveUtils v1.11.0
+  [ac6e5ff7] JuliaSyntaxHighlighting v1.12.0
+  [b27032c2] LibCURL v1.0.0
+  [76f85450] LibGit2 v1.11.0
+  [8f399da3] Libdl v1.11.0
+  [37e2e46d] LinearAlgebra v1.13.0
+  [56ddb016] Logging v1.11.0
+  [d6f4376e] Markdown v1.11.0
+  [ca575930] NetworkOptions v1.3.0
+  [44cfe95a] Pkg v1.13.0
+  [de0858da] Printf v1.11.0
+  [3fa0cd96] REPL v1.11.0
+  [9a3f8284] Random v1.11.0
+  [ea8e919c] SHA v1.0.0
+  [9e88b42a] Serialization v1.11.0
+  [6462fe0b] Sockets v1.11.0
+  [2f01184e] SparseArrays v1.13.0
+  [f489334b] StyledStrings v1.11.0
+  [fa267f1f] TOML v1.0.3
+  [a4e569a6] Tar v1.10.0
+  [8dfed614] Test v1.11.0
+  [cf7118a7] UUIDs v1.11.0
+  [4ec0a83e] Unicode v1.11.0
+  [e66e0078] CompilerSupportLibraries_jll v1.5.5+2
+  [deac9b47] LibCURL_jll v8.18.0+1
+  [e37daf67] LibGit2_jll v1.9.1+0
+  [29816b5a] LibSSH2_jll v1.11.103+0
+  [14a3606d] MozillaCACerts_jll v2026.8.13
+  [4536629a] OpenBLAS_jll v0.3.30+0
+  [05823500] OpenLibm_jll v0.8.7+0
+  [458c3c95] OpenSSL_jll v3.5.6+0
+  [efcefdf7] PCRE2_jll v10.46.0+0
+  [bea87d4a] SuiteSparse_jll v7.10.1+0
+  [83775a58] Zlib_jll v1.3.1+2
+  [3161d3a3] Zstd_jll v1.5.7+1
+  [8e850b90] libblastrampoline_jll v5.15.0+0
+  [8e850ede] nghttp2_jll v1.67.1+0
+  [3f19e933] p7zip_jll v17.8.2+0
+        Info Packages marked with ⌅ have new versions available but compatibility constraints restrict them from upgrading.
+Precompiling for configuration --code-coverage=none --color=auto --warn-overwrite=yes --depwarn=yes --inline=yes --startup-file=no --track-allocation=none
+   0.8 s  ✓ RheologyCalculator → RheologyCalculatorSparseConnectivityTracerExt
+  1 dependency successfully precompiled in 1 seconds. 78 already precompiled.
+     Testing Running tests...
+Test Summary:  | Pass  Total  Time
+Project extras |    2      2  0.4s
+Test Summary:     | Pass  Total  Time
+Undefined exports |    4      4  0.1s
+Test Summary: | Pass  Total  Time
+Compats       |    4      4  0.5s
+Test Summary:      | Pass  Total  Time
+Stale dependencies |    1      1  1.1s
+Test Summary:    | Pass  Total  Time
+Persistent tasks |    1      1  6.4s
+Test Summary: | Pass  Total  Time
+Ambiguities   |    2      2  1.5s
+Test Summary: | Pass  Total  Time
+Piracy        |    2      2  0.3s
+Test Summary:                 | Pass  Total  Time
+Drucker-Prager regularisation |    9      9  0.2s
+Test Summary: | Pass  Total  Time
+Mod. Cam-Clay |   12     12  0.3s
+Test Summary: | Pass  Total  Time
+VE Model      |    2      2  0.5s
+Test Summary: | Pass  Total  Time
+VEP Model     |    2      2  0.3s
+Test Summary: | Pass  Total  Time
+VEPCap Model  |   12     12  0.5s
+Test Summary: | Pass  Total  Time
+VEVP Model    |    2      2  1.6s
+Test Summary: | Pass  Total  Time
+allocations   |   37     37  3.0s
+Test Summary:          | Pass  Total  Time
+analytical regressions |    3      3  0.1s
+Test Summary:      | Pass  Total  Time
+static batch solve |    3      3  0.0s
+Test Summary:                  | Pass  Total  Time
+Bulk viscosity sign convention |    2      2  0.0s
+Test Summary:                                 | Pass  Total  Time
+component partition reports series components |   11     11  0.2s
+Test Summary:                                           | Pass  Total  Time
+component partition reports parallel component stresses |    4      4  0.1s
+Test Summary: | Pass  Total  Time
+display       |   69     69  3.8s
+Test Summary:                                      | Pass  Total  Time
+rheology_category classifies every bundled element |    6      6  0.0s
+Test Summary:                             | Pass  Total  Time
+flat viscoelastic: analytical dissipation |    3      3  0.1s
+Test Summary:                               | Pass  Total  Time
+parallel branch uses per-element conjugates |    3      3  0.0s
+Test Summary:                   | Pass  Total  Time
+VEP splits viscous from plastic |    2      2  0.0s
+Test Summary:                                          | Pass  Total  Time
+dissipation is nonnegative across the bundled elements |   12     12  0.1s
+Test Summary:                               | Pass  Total  Time
+shear_heating and the Taylor-Quinney factor |    6      6  0.0s
+Test Summary:              | Pass  Total  Time
+partition reads no history |    2      2  0.0s
+Test Summary:                         | Pass  Total  Time
+type stability, duals and allocations |    4      4  0.2s
+Test Summary:                      | Pass  Total  Time
+dilatancy is a type-level property |   10     10  0.1s
+Test Summary:        | Pass  Total  Time
+volumetric flow rule |    4      4  0.0s
+Test Summary:              | Pass  Total  Time
+dilatancy enters the solve |   10     10  0.4s
+Test Summary:     | Pass  Total  Time
+dilatancy hardens |    3      3  0.3s
+Test Summary:                           | Pass  Total  Time
+the branch carries the plastic dilation |    2      2  0.0s
+Test Summary:                                          | Pass  Total  Time
+zero dilatancy leaves the volumetric balance untouched |    4      4  0.3s
+Test Summary:                   | Pass  Total  Time
+the solved dilation is readable |    7      7  0.2s
+Test Summary:                                  | Pass  Total  Time
+parallel linear viscosity acts as lower cutoff |    1      1  0.1s
+Test Summary:                         | Pass  Total  Time
+equation graphs for composite layouts |   11     11  0.4s
+Test Summary:                | Pass  Total  Time
+Goldsby–Kohlstedt mechanisms |    3      3  0.1s
+Test Summary:         | Pass  Total  Time
+GPU-facing invariants |    6      6  0.1s
+Test Summary:                                  | Pass  Total  Time
+initial guess for parallel branch strain rates |    9      9  0.3s
+Test Summary:                 | Pass  Total  Time
+solve reports non-convergence |   10     10  0.2s
+Test Summary:       | Pass  Total  Time
+inspection metadata |    6      6  0.0s
+Test Summary:    | Pass  Total  Time
+Jacobian backend |    2      2  0.0s
+Test Summary: | Pass  Total  Time
+Jacobian 1    |    1      1  0.1s
+Test Summary: | Pass  Total  Time
+Jacobian 2    |    1      1  0.1s
+Test Summary: | Pass  Total  Time
+Jacobian 3    |    1      1  0.0s
+Test Summary: | Pass  Total  Time
+Jacobian      |    1      1  0.0s
+Test Summary: | Pass  Total  Time
+Jacobian      |    1      1  0.0s
+Test Summary: | Pass  Total  Time
+Jacobian      |    1      1  0.0s
+Test Summary: | Pass  Total  Time
+Jacobian      |    1      1  0.1s
+Test Summary:                                    | Pass  Total  Time
+Residual reuse preserves numeric and AD behavior |    6      6  0.9s
+Test Summary:              | Pass  Total  Time
+Line-search residual reuse |   42     42  0.2s
+Test Summary:                           | Pass  Total  Time
+non-negative branch strain-rate iterate |   18     18  0.0s
+Test Summary:     | Pass  Total  Time
+max_feasible_step |    6      6  0.0s
+Test Summary:           | Pass  Total  Time
+branch_strain_rate_mask |    4      4  0.0s
+Test Summary:     | Pass  Total  Time
+host-side retries |    3      3  0.0s
+Test Summary:                   | Pass  Total  Time
+simplification-plan regressions |   33     33  0.1s
+Test Summary: | Pass  Total  Time
+RCSolution    |   25     25  0.5s
+Test Summary:                 | Pass  Total  Time
+solver convergence regression |    6      6  0.4s
+Test Summary:                            | Pass  Total  Time
+tracer guards preserve Float64 semantics |   10     10  0.1s
+Test Summary:                      | Pass  Total  Time
+SparseConnectivityTracer extension |    8      8  1.6s
+Test Summary: | Pass  Total  Time
+count_elastic |    8      8  0.0s
+Test Summary:          | Pass  Total  Time
+_n_elastic_in_parallel |    5      5  0.1s
+Test Summary:               | Pass  Total  Time
+_iselastic composite tuples |    6      6  0.0s
+Test Summary:  | Pass  Total  Time
+_η_eff_maxwell |    3      3  0.0s
+Test Summary:  | Pass  Total  Time
+_η_eff_elastic |    3      3  0.0s
+Test Summary: | Pass  Total  Time
+_η_KV         |    4      4  0.0s
+Test Summary:        | Pass  Total  Time
+_weighted_backstress |    5      5  0.0s
+Test Summary:                                   | Pass  Total  Time
+effective_strain_rate_correction — Maxwell leaf |    2      2  0.0s
+Test Summary:                                                      | Pass  Total  Time
+effective_strain_rate_correction — KV branch (direct elastic leaf) |    1      1  0.0s
+Test Summary:                                                               | Pass  Total  Time
+effective_strain_rate_correction — generalized Maxwell (Maxwell sub-branch) |    1      1  0.0s
+Test Summary:                                                                | Pass  Total  Time
+effective_strain_rate_correction — Maxwell leaf + generalized Maxwell branch |    1      1  0.0s
+Test Summary:                                            | Pass  Total  Time
+effective_strain_rate_correction — two parallel branches |    1      1  0.0s
+Test Summary:                                                        | Pass  Total  Time
+effective_strain_rate_correction — two elastic sources in one branch |    1      1  0.0s
+Test Summary:                                                            | Pass  Total  Time
+effective_strain_rate_correction — zero backstress gives zero correction |    1      1  0.0s
+Test Summary:                                               | Pass  Total  Time
+effective_strain_rate_correction — purely viscous composite |    4      4  0.0s
+Test Summary: | Pass  Total  Time
+tangent       |   11     11  0.5s
+Test Summary:                       | Pass  Total  Time
+deviatoric/volumetric tangent block |    3      3  0.1s
+Test Summary:                       | Pass  Total  Time
+isotropic deviatoric tensor tangent |    6      6  0.5s
+series elastic-viscous: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:77
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:77 =# JET.@test_opt target_modules = (RheologyCalculator,) initial_guess_x(c, vars, args, others)
+[ Info: tracking RheologyCalculator
+  ═════ 1 possible error found ═════
+  ┌ initial_guess_x(c::SeriesModel{…}, vars::@NamedTuple{…}, args::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\initial_guess.jl:25
+  │ runtime dispatch detected: initial_guess_x(%1::Tuple, vars::@NamedTuple{ε::Float64, θ::Float64}, args::@NamedTuple{τ::Float64, P::Float64}, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64}, P0::Tuple{Float64}})::Any
+  └────────────────────
+  
+series elastic-viscous: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:78
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:78 =# JET.@test_opt target_modules = (RheologyCalculator,) normalisation_x(c, 1.0e6, 1.0e-15)
+  ═════ 1 possible error found ═════
+  ┌ normalisation_x(c::SeriesModel{Tuple{Elasticity{…}, LinearViscosity{…}}, Tuple{}}, char_τ::Float64, char_ε::Float64) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\normalize_x.jl:15
+  │ runtime dispatch detected: normalisation_x(%1::Tuple, char_τ::Float64, char_ε::Float64)::Tuple
+  └────────────────────
+  
+series elastic-viscous: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:79
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:79 =# JET.@test_opt target_modules = (RheologyCalculator,) compute_residual(c, x, vars, others)
+  ═════ 6 possible errors found ═════
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:475
+  │ runtime dispatch detected: RheologyCalculator.generate_args_template(%1::Tuple, x::SVector{2, Float64}, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64}, P0::Tuple{Float64}})::Any
+  └────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:477
+  │ runtime dispatch detected: RheologyCalculator.evaluate_state_functions(%1::Tuple, %6::Any, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64}, P0::Tuple{Float64}})::Tuple
+  └────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:478
+  │ runtime dispatch detected: RheologyCalculator.add_children(%7::Tuple, x::SVector{2, Float64}, %1::Tuple)::Tuple{Any, Any}
+  └────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:479
+  │ runtime dispatch detected: RheologyCalculator.subtract_parent(%8::Tuple{Any, Any}, x::SVector{2, Float64}, %1::Tuple, vars::@NamedTuple{ε::Float64, θ::Float64})::Tuple{Any, Any}
+  └────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:480
+  │ runtime dispatch detected: RheologyCalculator.subtract_elastic_correction(c::SeriesModel{Tuple{Elasticity{Float64}, LinearViscosity{Float64}}, Tuple{}}, %1::Tuple, %9::Tuple{Any, Any}, x::SVector{2, Float64}, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64}, P0::Tuple{Float64}})::Tuple{Any, Any}
+  └────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:482
+  │ runtime dispatch detected: (::SA)[%11::Any, %12::Any]::Any
+  └────────────────────
+  
+series elastic-viscous: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:80
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:80 =# JET.@test_opt target_modules = (RheologyCalculator,) compute_stress_elastic(c, x, others)
+  ═════ 4 possible errors found ═════
+  ┌ compute_stress_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:97
+  │ runtime dispatch detected: RheologyCalculator.compute_stress_elastic(%1::Tuple, xnew::SVector{2, Float64}, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64}, P0::Tuple{Float64}})::Tuple
+  └────────────────────
+  ┌ compute_stress_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:104
+  │ runtime dispatch detected: RheologyCalculator.findfirst(#compute_stress_elastic##2, %1::Tuple)::Union{Nothing, Int64}
+  └────────────────────
+  ┌ compute_stress_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:105
+  │ runtime dispatch detected: (%7::Any).self::Any
+  └────────────────────
+  ┌ compute_stress_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:105
+  │ runtime dispatch detected: (xnew::SVector{2, Float64})[%11::Any]::Any
+  └────────────────────
+  
+series elastic-viscous: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:81
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:81 =# JET.@test_opt target_modules = (RheologyCalculator,) compute_pressure_elastic(c, x, others)
+  ═════ 1 possible error found ═════
+  ┌ compute_pressure_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:335
+  │ runtime dispatch detected: RheologyCalculator.compute_pressure_elastic(%1::Tuple, xnew::SVector{2, Float64}, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64}, P0::Tuple{Float64}})::Tuple
+  └────────────────────
+  
+Kelvin-Voigt branch: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:76
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:76 =# JET.@test_opt target_modules = (RheologyCalculator,) generate_equations(c)
+┌ Warning: Tuple{RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1", Any} was not found
+└ @ Revise C:\Users\Albert\.julia\packages\Revise\0LsA7\src\packagedef.jl:2612
+  ═════ 4 possible errors found ═════
+  ┌ generate_equations(c::SeriesModel{Tuple{IncompressibleElasticity{Float64}}, Tuple{ParallelModel{Tuple{…}, Tuple{}}}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  │┌ generate_equations(c::SeriesModel{Tuple{…}, Tuple{…}}, fns::Tuple{typeof(compute_strain_rate)}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:36
+  ││┌ global_eltype_numbering(c::SeriesModel{Tuple{IncompressibleElasticity{…}}, Tuple{ParallelModel{…}}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:226
+  │││┌ global_eltype_numbering(c::SeriesModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:230
+  ││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  │││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  ││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::ParallelModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  │││││││┌ global_eltype_numbering(c::ParallelModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:229
+  ││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  │││││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  ││││││││││ failed to optimize due to recursion: RheologyCalculator.maptuple(::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, ::Tuple{…})
+  │││││││││└────────────────────
+  ││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  │││││││││ failed to optimize due to recursion: RheologyCalculator.global_eltype_numbering(::Tuple{…}, ::Base.RefValue{…}, ::Base.RefValue{…}, ::Base.RefValue{…})
+  ││││││││└────────────────────
+  │││││││┌ global_eltype_numbering(c::ParallelModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:228
+  ││││││││ failed to optimize due to recursion: RheologyCalculator.global_eltype_numbering(::ParallelModel{…}, ::Base.RefValue{…}, ::Base.RefValue{…}, ::Base.RefValue{…})
+  │││││││└────────────────────
+  ││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::ParallelModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  │││││││ failed to optimize due to recursion: (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(::ParallelModel{…})
+  ││││││└────────────────────
+  
+Kelvin-Voigt branch: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:77
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:77 =# JET.@test_opt target_modules = (RheologyCalculator,) initial_guess_x(c, vars, args, others)
+  ═════ 5 possible errors found ═════
+  ┌ initial_guess_x(c::SeriesModel{…}, vars::@NamedTuple{…}, args::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\initial_guess.jl:24
+  │┌ generate_equations(c::SeriesModel{Tuple{IncompressibleElasticity{Float64}}, Tuple{ParallelModel{Tuple{…}, Tuple{}}}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  ││┌ generate_equations(c::SeriesModel{Tuple{…}, Tuple{…}}, fns::Tuple{typeof(compute_strain_rate)}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:36
+  │││┌ global_eltype_numbering(c::SeriesModel{Tuple{IncompressibleElasticity{…}}, Tuple{ParallelModel{…}}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:226
+  ││││┌ global_eltype_numbering(c::SeriesModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:230
+  │││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  │││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::ParallelModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  ││││││││┌ global_eltype_numbering(c::ParallelModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:229
+  │││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  │││││││││││ failed to optimize due to recursion: RheologyCalculator.maptuple(::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, ::Tuple{…})
+  ││││││││││└────────────────────
+  │││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││││││ failed to optimize due to recursion: RheologyCalculator.global_eltype_numbering(::Tuple{…}, ::Base.RefValue{…}, ::Base.RefValue{…}, ::Base.RefValue{…})
+  │││││││││└────────────────────
+  ││││││││┌ global_eltype_numbering(c::ParallelModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:228
+  │││││││││ failed to optimize due to recursion: RheologyCalculator.global_eltype_numbering(::ParallelModel{…}, ::Base.RefValue{…}, ::Base.RefValue{…}, ::Base.RefValue{…})
+  ││││││││└────────────────────
+  │││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::ParallelModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  ││││││││ failed to optimize due to recursion: (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(::ParallelModel{…})
+  │││││││└────────────────────
+  ┌ initial_guess_x(c::SeriesModel{…}, vars::@NamedTuple{…}, args::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\initial_guess.jl:25
+  │ runtime dispatch detected: initial_guess_x(%1::Tuple, vars::@NamedTuple{ε::Float64}, args::@NamedTuple{τ::Float64}, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64, Float64}, P0::Tuple{Float64, Float64}})::Any
+  └────────────────────
+  
+Kelvin-Voigt branch: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:78
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:78 =# JET.@test_opt target_modules = (RheologyCalculator,) normalisation_x(c, 1.0e6, 1.0e-15)
+  ═════ 5 possible errors found ═════
+  ┌ normalisation_x(c::SeriesModel{Tuple{…}, Tuple{…}}, char_τ::Float64, char_ε::Float64) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\normalize_x.jl:14
+  │┌ generate_equations(c::SeriesModel{Tuple{IncompressibleElasticity{Float64}}, Tuple{ParallelModel{Tuple{…}, Tuple{}}}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  ││┌ generate_equations(c::SeriesModel{Tuple{…}, Tuple{…}}, fns::Tuple{typeof(compute_strain_rate)}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:36
+  │││┌ global_eltype_numbering(c::SeriesModel{Tuple{IncompressibleElasticity{…}}, Tuple{ParallelModel{…}}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:226
+  ││││┌ global_eltype_numbering(c::SeriesModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:230
+  │││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  │││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::ParallelModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  ││││││││┌ global_eltype_numbering(c::ParallelModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:229
+  │││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  │││││││││││ failed to optimize due to recursion: RheologyCalculator.maptuple(::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, ::Tuple{…})
+  ││││││││││└────────────────────
+  │││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││││││ failed to optimize due to recursion: RheologyCalculator.global_eltype_numbering(::Tuple{…}, ::Base.RefValue{…}, ::Base.RefValue{…}, ::Base.RefValue{…})
+  │││││││││└────────────────────
+  ││││││││┌ global_eltype_numbering(c::ParallelModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:228
+  │││││││││ failed to optimize due to recursion: RheologyCalculator.global_eltype_numbering(::ParallelModel{…}, ::Base.RefValue{…}, ::Base.RefValue{…}, ::Base.RefValue{…})
+  ││││││││└────────────────────
+  │││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::ParallelModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  ││││││││ failed to optimize due to recursion: (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(::ParallelModel{…})
+  │││││││└────────────────────
+  ┌ normalisation_x(c::SeriesModel{Tuple{…}, Tuple{…}}, char_τ::Float64, char_ε::Float64) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\normalize_x.jl:15
+  │ runtime dispatch detected: normalisation_x(%1::Tuple, char_τ::Float64, char_ε::Float64)::Tuple
+  └────────────────────
+  
+Kelvin-Voigt branch: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:79
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:79 =# JET.@test_opt target_modules = (RheologyCalculator,) compute_residual(c, x, vars, others)
+  ═════ 10 possible errors found ═════
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:473
+  │┌ generate_equations(c::SeriesModel{Tuple{IncompressibleElasticity{Float64}}, Tuple{ParallelModel{Tuple{…}, Tuple{}}}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  ││┌ generate_equations(c::SeriesModel{Tuple{…}, Tuple{…}}, fns::Tuple{typeof(compute_strain_rate)}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:36
+  │││┌ global_eltype_numbering(c::SeriesModel{Tuple{IncompressibleElasticity{…}}, Tuple{ParallelModel{…}}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:226
+  ││││┌ global_eltype_numbering(c::SeriesModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:230
+  │││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  │││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::ParallelModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  ││││││││┌ global_eltype_numbering(c::ParallelModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:229
+  │││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  │││││││││││ failed to optimize due to recursion: RheologyCalculator.maptuple(::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, ::Tuple{…})
+  ││││││││││└────────────────────
+  │││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││││││ failed to optimize due to recursion: RheologyCalculator.global_eltype_numbering(::Tuple{…}, ::Base.RefValue{…}, ::Base.RefValue{…}, ::Base.RefValue{…})
+  │││││││││└────────────────────
+  ││││││││┌ global_eltype_numbering(c::ParallelModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:228
+  │││││││││ failed to optimize due to recursion: RheologyCalculator.global_eltype_numbering(::ParallelModel{…}, ::Base.RefValue{…}, ::Base.RefValue{…}, ::Base.RefValue{…})
+  ││││││││└────────────────────
+  │││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::ParallelModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  ││││││││ failed to optimize due to recursion: (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(::ParallelModel{…})
+  │││││││└────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:475
+  │ runtime dispatch detected: RheologyCalculator.generate_args_template(%1::Tuple, x::SVector{2, Float64}, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64, Float64}, P0::Tuple{Float64, Float64}})::Any
+  └────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:477
+  │ runtime dispatch detected: RheologyCalculator.evaluate_state_functions(%1::Tuple, %6::Any, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64, Float64}, P0::Tuple{Float64, Float64}})::Tuple
+  └────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:478
+  │ runtime dispatch detected: RheologyCalculator.add_children(%7::Tuple, x::SVector{2, Float64}, %1::Tuple)::Tuple{Any, Any}
+  └────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:479
+  │ runtime dispatch detected: RheologyCalculator.subtract_parent(%8::Tuple{Any, Any}, x::SVector{2, Float64}, %1::Tuple, vars::@NamedTuple{ε::Float64})::Tuple{Any, Any}
+  └────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:480
+  │ runtime dispatch detected: RheologyCalculator.subtract_elastic_correction(c::SeriesModel{Tuple{IncompressibleElasticity{Float64}}, Tuple{ParallelModel{Tuple{…}, Tuple{}}}}, %1::Tuple, %9::Tuple{Any, Any}, x::SVector{2, Float64}, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64, Float64}, P0::Tuple{Float64, Float64}})::Tuple{Any, Any}
+  └────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:482
+  │ runtime dispatch detected: (::SA)[%11::Any, %12::Any]::Any
+  └────────────────────
+  
+Kelvin-Voigt branch: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:80
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:80 =# JET.@test_opt target_modules = (RheologyCalculator,) compute_stress_elastic(c, x, others)
+  ═════ 9 possible errors found ═════
+  ┌ compute_stress_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:88
+  │┌ generate_equations(c::SeriesModel{Tuple{IncompressibleElasticity{Float64}}, Tuple{ParallelModel{Tuple{…}, Tuple{}}}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  ││┌ generate_equations(c::SeriesModel{Tuple{…}, Tuple{…}}, fns::Tuple{typeof(compute_strain_rate)}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:36
+  │││┌ global_eltype_numbering(c::SeriesModel{Tuple{IncompressibleElasticity{…}}, Tuple{ParallelModel{…}}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:226
+  ││││┌ global_eltype_numbering(c::SeriesModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:230
+  │││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  │││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::ParallelModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  ││││││││┌ global_eltype_numbering(c::ParallelModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:229
+  │││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  │││││││││││ failed to optimize due to recursion: RheologyCalculator.maptuple(::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, ::Tuple{…})
+  ││││││││││└────────────────────
+  │││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││││││ failed to optimize due to recursion: RheologyCalculator.global_eltype_numbering(::Tuple{…}, ::Base.RefValue{…}, ::Base.RefValue{…}, ::Base.RefValue{…})
+  │││││││││└────────────────────
+  ││││││││┌ global_eltype_numbering(c::ParallelModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:228
+  │││││││││ failed to optimize due to recursion: RheologyCalculator.global_eltype_numbering(::ParallelModel{…}, ::Base.RefValue{…}, ::Base.RefValue{…}, ::Base.RefValue{…})
+  ││││││││└────────────────────
+  │││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::ParallelModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  ││││││││ failed to optimize due to recursion: (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(::ParallelModel{…})
+  │││││││└────────────────────
+  ┌ compute_stress_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:97
+  │ runtime dispatch detected: RheologyCalculator.compute_stress_elastic(%1::Tuple, xnew::SVector{2, Float64}, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64, Float64}, P0::Tuple{Float64, Float64}})::Tuple
+  └────────────────────
+  ┌ compute_stress_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:104
+  │ runtime dispatch detected: RheologyCalculator.findfirst(#compute_stress_elastic##2, %1::Tuple)::Union{Nothing, Int64}
+  └────────────────────
+  ┌ compute_stress_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:105
+  │ runtime dispatch detected: (%7::Any).self::Any
+  └────────────────────
+  ┌ compute_stress_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:105
+  │ runtime dispatch detected: (xnew::SVector{2, Float64})[%11::Any]::Any
+  └────────────────────
+  ┌ compute_stress_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:116
+  │ runtime dispatch detected: RheologyCalculator._kv_corrections_elastic_stress(%13::Tuple{ParallelModel{Tuple{IncompressibleElasticity{Float64}, LinearViscosity{Float64}}, Tuple{}}}, %12::Any, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64, Float64}, P0::Tuple{Float64, Float64}}, 1)::Union{Tuple{}, Tuple{Any}}
+  └────────────────────
+  
+Kelvin-Voigt branch: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:81
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:81 =# JET.@test_opt target_modules = (RheologyCalculator,) compute_pressure_elastic(c, x, others)
+  ═════ 5 possible errors found ═════
+  ┌ compute_pressure_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:335
+  │┌ generate_equations(c::SeriesModel{Tuple{IncompressibleElasticity{Float64}}, Tuple{ParallelModel{Tuple{…}, Tuple{}}}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  ││┌ generate_equations(c::SeriesModel{Tuple{…}, Tuple{…}}, fns::Tuple{typeof(compute_strain_rate)}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:36
+  │││┌ global_eltype_numbering(c::SeriesModel{Tuple{IncompressibleElasticity{…}}, Tuple{ParallelModel{…}}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:226
+  ││││┌ global_eltype_numbering(c::SeriesModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:230
+  │││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  │││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::ParallelModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  ││││││││┌ global_eltype_numbering(c::ParallelModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:229
+  │││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  │││││││││││ failed to optimize due to recursion: RheologyCalculator.maptuple(::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, ::Tuple{…})
+  ││││││││││└────────────────────
+  │││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││││││ failed to optimize due to recursion: RheologyCalculator.global_eltype_numbering(::Tuple{…}, ::Base.RefValue{…}, ::Base.RefValue{…}, ::Base.RefValue{…})
+  │││││││││└────────────────────
+  ││││││││┌ global_eltype_numbering(c::ParallelModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:228
+  │││││││││ failed to optimize due to recursion: RheologyCalculator.global_eltype_numbering(::ParallelModel{…}, ::Base.RefValue{…}, ::Base.RefValue{…}, ::Base.RefValue{…})
+  ││││││││└────────────────────
+  │││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::ParallelModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  ││││││││ failed to optimize due to recursion: (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(::ParallelModel{…})
+  │││││││└────────────────────
+  ┌ compute_pressure_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:335
+  │ runtime dispatch detected: RheologyCalculator.compute_pressure_elastic(%1::Tuple, xnew::SVector{2, Float64}, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64, Float64}, P0::Tuple{Float64, Float64}})::Tuple
+  └────────────────────
+  
+generalized Maxwell branch: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:76
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:76 =# JET.@test_opt target_modules = (RheologyCalculator,) generate_equations(c)
+  ═════ 4 possible errors found ═════
+  ┌ generate_equations(c::SeriesModel{Tuple{LinearViscosity{Float64}}, Tuple{ParallelModel{Tuple{…}, Tuple{…}}}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  │┌ generate_equations(c::SeriesModel{Tuple{…}, Tuple{…}}, fns::Tuple{typeof(compute_strain_rate)}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:36
+  ││┌ global_eltype_numbering(c::SeriesModel{Tuple{LinearViscosity{Float64}}, Tuple{ParallelModel{Tuple{…}, Tuple{…}}}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:226
+  │││┌ global_eltype_numbering(c::SeriesModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:230
+  ││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  │││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  ││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::ParallelModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  │││││││┌ global_eltype_numbering(c::ParallelModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:230
+  ││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  │││││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  ││││││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::SeriesModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  │││││││││││┌ global_eltype_numbering(c::SeriesModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:229
+  ││││││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  │││││││││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  ││││││││││││││ failed to optimize due to recursion: RheologyCalculator.maptuple(::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, ::Tuple{…})
+  │││││││││││││└────────────────────
+  ││││││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  │││││││││││││ failed to optimize due to recursion: RheologyCalculator.global_eltype_numbering(::Tuple{…}, ::Base.RefValue{…}, ::Base.RefValue{…}, ::Base.RefValue{…})
+  ││││││││││││└────────────────────
+  │││││││││││┌ global_eltype_numbering(c::SeriesModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:228
+  ││││││││││││ failed to optimize due to recursion: RheologyCalculator.global_eltype_numbering(::SeriesModel{…}, ::Base.RefValue{…}, ::Base.RefValue{…}, ::Base.RefValue{…})
+  │││││││││││└────────────────────
+  ││││││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::SeriesModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  │││││││││││ failed to optimize due to recursion: (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(::SeriesModel{…})
+  ││││││││││└────────────────────
+  
+generalized Maxwell branch: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:77
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:77 =# JET.@test_opt target_modules = (RheologyCalculator,) initial_guess_x(c, vars, args, others)
+  ═════ 5 possible errors found ═════
+  ┌ initial_guess_x(c::SeriesModel{…}, vars::@NamedTuple{…}, args::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\initial_guess.jl:24
+  │┌ generate_equations(c::SeriesModel{Tuple{LinearViscosity{Float64}}, Tuple{ParallelModel{Tuple{…}, Tuple{…}}}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  ││┌ generate_equations(c::SeriesModel{Tuple{…}, Tuple{…}}, fns::Tuple{typeof(compute_strain_rate)}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:36
+  │││┌ global_eltype_numbering(c::SeriesModel{Tuple{LinearViscosity{Float64}}, Tuple{ParallelModel{Tuple{…}, Tuple{…}}}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:226
+  ││││┌ global_eltype_numbering(c::SeriesModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:230
+  │││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  │││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::ParallelModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  ││││││││┌ global_eltype_numbering(c::ParallelModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:230
+  │││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  │││││││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::SeriesModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  ││││││││││││┌ global_eltype_numbering(c::SeriesModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:229
+  │││││││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││││││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  │││││││││││││││ failed to optimize due to recursion: RheologyCalculator.maptuple(::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, ::Tuple{…})
+  ││││││││││││││└────────────────────
+  │││││││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││││││││││ failed to optimize due to recursion: RheologyCalculator.global_eltype_numbering(::Tuple{…}, ::Base.RefValue{…}, ::Base.RefValue{…}, ::Base.RefValue{…})
+  │││││││││││││└────────────────────
+  ││││││││││││┌ global_eltype_numbering(c::SeriesModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:228
+  │││││││││││││ failed to optimize due to recursion: RheologyCalculator.global_eltype_numbering(::SeriesModel{…}, ::Base.RefValue{…}, ::Base.RefValue{…}, ::Base.RefValue{…})
+  ││││││││││││└────────────────────
+  │││││││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::SeriesModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  ││││││││││││ failed to optimize due to recursion: (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(::SeriesModel{…})
+  │││││││││││└────────────────────
+  ┌ initial_guess_x(c::SeriesModel{…}, vars::@NamedTuple{…}, args::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\initial_guess.jl:25
+  │ runtime dispatch detected: initial_guess_x(%1::Tuple, vars::@NamedTuple{ε::Float64}, args::@NamedTuple{τ::Float64}, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64}, P0::Tuple{Float64}})::Any
+  └────────────────────
+  
+generalized Maxwell branch: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:78
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:78 =# JET.@test_opt target_modules = (RheologyCalculator,) normalisation_x(c, 1.0e6, 1.0e-15)
+  ═════ 5 possible errors found ═════
+  ┌ normalisation_x(c::SeriesModel{Tuple{LinearViscosity{…}}, Tuple{ParallelModel{…}}}, char_τ::Float64, char_ε::Float64) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\normalize_x.jl:14
+  │┌ generate_equations(c::SeriesModel{Tuple{LinearViscosity{Float64}}, Tuple{ParallelModel{Tuple{…}, Tuple{…}}}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  ││┌ generate_equations(c::SeriesModel{Tuple{…}, Tuple{…}}, fns::Tuple{typeof(compute_strain_rate)}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:36
+  │││┌ global_eltype_numbering(c::SeriesModel{Tuple{LinearViscosity{Float64}}, Tuple{ParallelModel{Tuple{…}, Tuple{…}}}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:226
+  ││││┌ global_eltype_numbering(c::SeriesModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:230
+  │││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  │││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::ParallelModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  ││││││││┌ global_eltype_numbering(c::ParallelModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:230
+  │││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  │││││││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::SeriesModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  ││││││││││││┌ global_eltype_numbering(c::SeriesModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:229
+  │││││││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││││││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  │││││││││││││││ failed to optimize due to recursion: RheologyCalculator.maptuple(::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, ::Tuple{…})
+  ││││││││││││││└────────────────────
+  │││││││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││││││││││ failed to optimize due to recursion: RheologyCalculator.global_eltype_numbering(::Tuple{…}, ::Base.RefValue{…}, ::Base.RefValue{…}, ::Base.RefValue{…})
+  │││││││││││││└────────────────────
+  ││││││││││││┌ global_eltype_numbering(c::SeriesModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:228
+  │││││││││││││ failed to optimize due to recursion: RheologyCalculator.global_eltype_numbering(::SeriesModel{…}, ::Base.RefValue{…}, ::Base.RefValue{…}, ::Base.RefValue{…})
+  ││││││││││││└────────────────────
+  │││││││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::SeriesModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  ││││││││││││ failed to optimize due to recursion: (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(::SeriesModel{…})
+  │││││││││││└────────────────────
+  ┌ normalisation_x(c::SeriesModel{Tuple{LinearViscosity{…}}, Tuple{ParallelModel{…}}}, char_τ::Float64, char_ε::Float64) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\normalize_x.jl:15
+  │ runtime dispatch detected: normalisation_x(%1::Tuple, char_τ::Float64, char_ε::Float64)::Tuple
+  └────────────────────
+  
+generalized Maxwell branch: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:79
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:79 =# JET.@test_opt target_modules = (RheologyCalculator,) compute_residual(c, x, vars, others)
+  ═════ 10 possible errors found ═════
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:473
+  │┌ generate_equations(c::SeriesModel{Tuple{LinearViscosity{Float64}}, Tuple{ParallelModel{Tuple{…}, Tuple{…}}}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  ││┌ generate_equations(c::SeriesModel{Tuple{…}, Tuple{…}}, fns::Tuple{typeof(compute_strain_rate)}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:36
+  │││┌ global_eltype_numbering(c::SeriesModel{Tuple{LinearViscosity{Float64}}, Tuple{ParallelModel{Tuple{…}, Tuple{…}}}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:226
+  ││││┌ global_eltype_numbering(c::SeriesModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:230
+  │││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  │││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::ParallelModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  ││││││││┌ global_eltype_numbering(c::ParallelModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:230
+  │││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  │││││││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::SeriesModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  ││││││││││││┌ global_eltype_numbering(c::SeriesModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:229
+  │││││││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││││││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  │││││││││││││││ failed to optimize due to recursion: RheologyCalculator.maptuple(::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, ::Tuple{…})
+  ││││││││││││││└────────────────────
+  │││││││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││││││││││ failed to optimize due to recursion: RheologyCalculator.global_eltype_numbering(::Tuple{…}, ::Base.RefValue{…}, ::Base.RefValue{…}, ::Base.RefValue{…})
+  │││││││││││││└────────────────────
+  ││││││││││││┌ global_eltype_numbering(c::SeriesModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:228
+  │││││││││││││ failed to optimize due to recursion: RheologyCalculator.global_eltype_numbering(::SeriesModel{…}, ::Base.RefValue{…}, ::Base.RefValue{…}, ::Base.RefValue{…})
+  ││││││││││││└────────────────────
+  │││││││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::SeriesModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  ││││││││││││ failed to optimize due to recursion: (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(::SeriesModel{…})
+  │││││││││││└────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:475
+  │ runtime dispatch detected: RheologyCalculator.generate_args_template(%1::Tuple, x::SVector{3, Float64}, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64}, P0::Tuple{Float64}})::Any
+  └────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:477
+  │ runtime dispatch detected: RheologyCalculator.evaluate_state_functions(%1::Tuple, %6::Any, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64}, P0::Tuple{Float64}})::Tuple
+  └────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:478
+  │ runtime dispatch detected: RheologyCalculator.add_children(%7::Tuple, x::SVector{3, Float64}, %1::Tuple)::Tuple{Any, Any, Any}
+  └────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:479
+  │ runtime dispatch detected: RheologyCalculator.subtract_parent(%8::Tuple{Any, Any, Any}, x::SVector{3, Float64}, %1::Tuple, vars::@NamedTuple{ε::Float64})::Tuple{Any, Any, Any}
+  └────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:480
+  │ runtime dispatch detected: RheologyCalculator.subtract_elastic_correction(c::SeriesModel{Tuple{LinearViscosity{Float64}}, Tuple{ParallelModel{Tuple{LinearViscosity{…}}, Tuple{SeriesModel{…}}}}}, %1::Tuple, %9::Tuple{Any, Any, Any}, x::SVector{3, Float64}, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64}, P0::Tuple{Float64}})::Tuple{Any, Any, Any}
+  └────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:482
+  │ runtime dispatch detected: (::SA)[%11::Any, %12::Any, %13::Any]::Any
+  └────────────────────
+  
+generalized Maxwell branch: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:80
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:80 =# JET.@test_opt target_modules = (RheologyCalculator,) compute_stress_elastic(c, x, others)
+  ═════ 9 possible errors found ═════
+  ┌ compute_stress_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:88
+  │┌ generate_equations(c::SeriesModel{Tuple{LinearViscosity{Float64}}, Tuple{ParallelModel{Tuple{…}, Tuple{…}}}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  ││┌ generate_equations(c::SeriesModel{Tuple{…}, Tuple{…}}, fns::Tuple{typeof(compute_strain_rate)}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:36
+  │││┌ global_eltype_numbering(c::SeriesModel{Tuple{LinearViscosity{Float64}}, Tuple{ParallelModel{Tuple{…}, Tuple{…}}}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:226
+  ││││┌ global_eltype_numbering(c::SeriesModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:230
+  │││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  │││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::ParallelModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  ││││││││┌ global_eltype_numbering(c::ParallelModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:230
+  │││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  │││││││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::SeriesModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  ││││││││││││┌ global_eltype_numbering(c::SeriesModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:229
+  │││││││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││││││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  │││││││││││││││ failed to optimize due to recursion: RheologyCalculator.maptuple(::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, ::Tuple{…})
+  ││││││││││││││└────────────────────
+  │││││││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││││││││││ failed to optimize due to recursion: RheologyCalculator.global_eltype_numbering(::Tuple{…}, ::Base.RefValue{…}, ::Base.RefValue{…}, ::Base.RefValue{…})
+  │││││││││││││└────────────────────
+  ││││││││││││┌ global_eltype_numbering(c::SeriesModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:228
+  │││││││││││││ failed to optimize due to recursion: RheologyCalculator.global_eltype_numbering(::SeriesModel{…}, ::Base.RefValue{…}, ::Base.RefValue{…}, ::Base.RefValue{…})
+  ││││││││││││└────────────────────
+  │││││││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::SeriesModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  ││││││││││││ failed to optimize due to recursion: (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(::SeriesModel{…})
+  │││││││││││└────────────────────
+  ┌ compute_stress_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:97
+  │ runtime dispatch detected: RheologyCalculator.compute_stress_elastic(%1::Tuple, xnew::SVector{3, Float64}, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64}, P0::Tuple{Float64}})::Tuple
+  └────────────────────
+  ┌ compute_stress_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:104
+  │ runtime dispatch detected: RheologyCalculator.findfirst(#compute_stress_elastic##2, %1::Tuple)::Union{Nothing, Int64}
+  └────────────────────
+  ┌ compute_stress_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:105
+  │ runtime dispatch detected: (%7::Any).self::Any
+  └────────────────────
+  ┌ compute_stress_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:105
+  │ runtime dispatch detected: (xnew::SVector{3, Float64})[%11::Any]::Any
+  └────────────────────
+  ┌ compute_stress_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:116
+  │ runtime dispatch detected: RheologyCalculator._kv_corrections_elastic_stress(%13::Tuple{ParallelModel{Tuple{LinearViscosity{Float64}}, Tuple{SeriesModel{Tuple{…}, Tuple{}}}}}, %12::Any, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64}, P0::Tuple{Float64}}, 0)::Union{Tuple{}, Tuple{Any}}
+  └────────────────────
+  
+generalized Maxwell branch: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:81
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:81 =# JET.@test_opt target_modules = (RheologyCalculator,) compute_pressure_elastic(c, x, others)
+  ═════ 5 possible errors found ═════
+  ┌ compute_pressure_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:335
+  │┌ generate_equations(c::SeriesModel{Tuple{LinearViscosity{Float64}}, Tuple{ParallelModel{Tuple{…}, Tuple{…}}}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  ││┌ generate_equations(c::SeriesModel{Tuple{…}, Tuple{…}}, fns::Tuple{typeof(compute_strain_rate)}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:36
+  │││┌ global_eltype_numbering(c::SeriesModel{Tuple{LinearViscosity{Float64}}, Tuple{ParallelModel{Tuple{…}, Tuple{…}}}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:226
+  ││││┌ global_eltype_numbering(c::SeriesModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:230
+  │││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  │││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::ParallelModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  ││││││││┌ global_eltype_numbering(c::ParallelModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:230
+  │││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  │││││││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::SeriesModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  ││││││││││││┌ global_eltype_numbering(c::SeriesModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:229
+  │││││││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││││││││││┌ maptuple(f::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, t::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\tuple_utils.jl:15
+  │││││││││││││││ failed to optimize due to recursion: RheologyCalculator.maptuple(::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…}, ::Tuple{…})
+  ││││││││││││││└────────────────────
+  │││││││││││││┌ global_eltype_numbering(c::Tuple{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:236
+  ││││││││││││││ failed to optimize due to recursion: RheologyCalculator.global_eltype_numbering(::Tuple{…}, ::Base.RefValue{…}, ::Base.RefValue{…}, ::Base.RefValue{…})
+  │││││││││││││└────────────────────
+  ││││││││││││┌ global_eltype_numbering(c::SeriesModel{…}, counter_v::Base.RefValue{…}, counter_el::Base.RefValue{…}, counter_pl::Base.RefValue{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:228
+  │││││││││││││ failed to optimize due to recursion: RheologyCalculator.global_eltype_numbering(::SeriesModel{…}, ::Base.RefValue{…}, ::Base.RefValue{…}, ::Base.RefValue{…})
+  ││││││││││││└────────────────────
+  │││││││││││┌ (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(ci::SeriesModel{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:237
+  ││││││││││││ failed to optimize due to recursion: (::RheologyCalculator.var"#global_eltype_numbering##0#global_eltype_numbering##1"{…})(::SeriesModel{…})
+  │││││││││││└────────────────────
+  ┌ compute_pressure_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:335
+  │ runtime dispatch detected: RheologyCalculator.compute_pressure_elastic(%1::Tuple, xnew::SVector{3, Float64}, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64}, P0::Tuple{Float64}})::Tuple
+  └────────────────────
+  
+plastic series: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:76
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:76 =# JET.@test_opt target_modules = (RheologyCalculator,) generate_equations(c)
+  ═════ 4 possible errors found ═════
+  ┌ generate_equations(c::SeriesModel{Tuple{LinearViscosity{…}, IncompressibleElasticity{…}, DruckerPrager{…}}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  │┌ global_series_functions(c::SeriesModel{Tuple{…}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\composite.jl:125
+  ││ runtime dispatch detected: (%2::Tuple RheologyCalculator.:|> RheologyCalculator.flatten_repeated_functions)::Any
+  │└────────────────────
+  │┌ global_series_functions(c::SeriesModel{Tuple{…}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\composite.jl:125
+  ││ runtime dispatch detected: (%3::Any RheologyCalculator.:|> RheologyCalculator.global_series_state_functions)::Tuple
+  │└────────────────────
+  │┌ global_series_functions(c::SeriesModel{Tuple{…}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\composite.jl:127
+  ││ runtime dispatch detected: (%7::Tuple RheologyCalculator.:|> RheologyCalculator.flatten_repeated_functions)::Any
+  │└────────────────────
+  ┌ generate_equations(c::SeriesModel{Tuple{LinearViscosity{…}, IncompressibleElasticity{…}, DruckerPrager{…}}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  │ runtime dispatch detected: generate_equations(c::SeriesModel{Tuple{LinearViscosity{…}, IncompressibleElasticity{…}, DruckerPrager{…}}, Tuple{}}, %1::Any)::Any
+  └────────────────────
+  
+plastic series: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:77
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:77 =# JET.@test_opt target_modules = (RheologyCalculator,) initial_guess_x(c, vars, args, others)
+  ═════ 5 possible errors found ═════
+  ┌ initial_guess_x(c::SeriesModel{…}, vars::@NamedTuple{…}, args::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\initial_guess.jl:24
+  │┌ generate_equations(c::SeriesModel{Tuple{LinearViscosity{…}, IncompressibleElasticity{…}, DruckerPrager{…}}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  ││┌ global_series_functions(c::SeriesModel{Tuple{…}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\composite.jl:125
+  │││ runtime dispatch detected: (%2::Tuple RheologyCalculator.:|> RheologyCalculator.flatten_repeated_functions)::Any
+  ││└────────────────────
+  ││┌ global_series_functions(c::SeriesModel{Tuple{…}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\composite.jl:125
+  │││ runtime dispatch detected: (%3::Any RheologyCalculator.:|> RheologyCalculator.global_series_state_functions)::Tuple
+  ││└────────────────────
+  ││┌ global_series_functions(c::SeriesModel{Tuple{…}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\composite.jl:127
+  │││ runtime dispatch detected: (%7::Tuple RheologyCalculator.:|> RheologyCalculator.flatten_repeated_functions)::Any
+  ││└────────────────────
+  │┌ generate_equations(c::SeriesModel{Tuple{LinearViscosity{…}, IncompressibleElasticity{…}, DruckerPrager{…}}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  ││ runtime dispatch detected: generate_equations(c::SeriesModel{Tuple{LinearViscosity{…}, IncompressibleElasticity{…}, DruckerPrager{…}}, Tuple{}}, %1::Any)::Any
+  │└────────────────────
+  ┌ initial_guess_x(c::SeriesModel{…}, vars::@NamedTuple{…}, args::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\initial_guess.jl:25
+  │ runtime dispatch detected: initial_guess_x(%1::Any, vars::@NamedTuple{ε::Float64}, args::@NamedTuple{τ::Float64}, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64}, P::Float64, P0::Tuple{Float64}})::Any
+  └────────────────────
+  
+plastic series: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:78
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:78 =# JET.@test_opt target_modules = (RheologyCalculator,) normalisation_x(c, 1.0e6, 1.0e-15)
+  ═════ 5 possible errors found ═════
+  ┌ normalisation_x(c::SeriesModel{Tuple{…}, Tuple{}}, char_τ::Float64, char_ε::Float64) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\normalize_x.jl:14
+  │┌ generate_equations(c::SeriesModel{Tuple{LinearViscosity{…}, IncompressibleElasticity{…}, DruckerPrager{…}}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  ││┌ global_series_functions(c::SeriesModel{Tuple{…}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\composite.jl:125
+  │││ runtime dispatch detected: (%2::Tuple RheologyCalculator.:|> RheologyCalculator.flatten_repeated_functions)::Any
+  ││└────────────────────
+  ││┌ global_series_functions(c::SeriesModel{Tuple{…}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\composite.jl:125
+  │││ runtime dispatch detected: (%3::Any RheologyCalculator.:|> RheologyCalculator.global_series_state_functions)::Tuple
+  ││└────────────────────
+  ││┌ global_series_functions(c::SeriesModel{Tuple{…}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\composite.jl:127
+  │││ runtime dispatch detected: (%7::Tuple RheologyCalculator.:|> RheologyCalculator.flatten_repeated_functions)::Any
+  ││└────────────────────
+  │┌ generate_equations(c::SeriesModel{Tuple{LinearViscosity{…}, IncompressibleElasticity{…}, DruckerPrager{…}}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  ││ runtime dispatch detected: generate_equations(c::SeriesModel{Tuple{LinearViscosity{…}, IncompressibleElasticity{…}, DruckerPrager{…}}, Tuple{}}, %1::Any)::Any
+  │└────────────────────
+  ┌ normalisation_x(c::SeriesModel{Tuple{…}, Tuple{}}, char_τ::Float64, char_ε::Float64) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\normalize_x.jl:15
+  │ runtime dispatch detected: normalisation_x(%1::Any, char_τ::Float64, char_ε::Float64)::Any
+  └────────────────────
+  
+plastic series: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:79
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:79 =# JET.@test_opt target_modules = (RheologyCalculator,) compute_residual(c, x, vars, others)
+  ═════ 12 possible errors found ═════
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:473
+  │┌ generate_equations(c::SeriesModel{Tuple{LinearViscosity{…}, IncompressibleElasticity{…}, DruckerPrager{…}}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  ││┌ global_series_functions(c::SeriesModel{Tuple{…}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\composite.jl:125
+  │││ runtime dispatch detected: (%2::Tuple RheologyCalculator.:|> RheologyCalculator.flatten_repeated_functions)::Any
+  ││└────────────────────
+  ││┌ global_series_functions(c::SeriesModel{Tuple{…}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\composite.jl:125
+  │││ runtime dispatch detected: (%3::Any RheologyCalculator.:|> RheologyCalculator.global_series_state_functions)::Tuple
+  ││└────────────────────
+  ││┌ global_series_functions(c::SeriesModel{Tuple{…}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\composite.jl:127
+  │││ runtime dispatch detected: (%7::Tuple RheologyCalculator.:|> RheologyCalculator.flatten_repeated_functions)::Any
+  ││└────────────────────
+  │┌ generate_equations(c::SeriesModel{Tuple{LinearViscosity{…}, IncompressibleElasticity{…}, DruckerPrager{…}}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  ││ runtime dispatch detected: generate_equations(c::SeriesModel{Tuple{LinearViscosity{…}, IncompressibleElasticity{…}, DruckerPrager{…}}, Tuple{}}, %1::Any)::Any
+  │└────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:474
+  │ runtime dispatch detected: RheologyCalculator.length(%1::Any)::Any
+  └────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:474
+  │ runtime dispatch detected: (%2::Any RheologyCalculator.:(==) 2)::Any
+  └────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:475
+  │ runtime dispatch detected: RheologyCalculator.generate_args_template(%1::Any, x::SVector{2, Float64}, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64}, P::Float64, P0::Tuple{Float64}})::Any
+  └────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:477
+  │ runtime dispatch detected: RheologyCalculator.evaluate_state_functions(%1::Any, %6::Any, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64}, P::Float64, P0::Tuple{Float64}})::Tuple
+  └────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:478
+  │ runtime dispatch detected: RheologyCalculator.add_children(%7::Tuple, x::SVector{2, Float64}, %1::Any)::Tuple{Any, Any}
+  └────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:479
+  │ runtime dispatch detected: RheologyCalculator.subtract_parent(%8::Tuple{Any, Any}, x::SVector{2, Float64}, %1::Any, vars::@NamedTuple{ε::Float64})::Tuple{Any, Any}
+  └────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:480
+  │ runtime dispatch detected: RheologyCalculator.subtract_elastic_correction(c::SeriesModel{Tuple{LinearViscosity{…}, IncompressibleElasticity{…}, DruckerPrager{…}}, Tuple{}}, %1::Any, %9::Tuple{Any, Any}, x::SVector{2, Float64}, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64}, P::Float64, P0::Tuple{Float64}})::Tuple{Any, Any}
+  └────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:482
+  │ runtime dispatch detected: (::SA)[%11::Any, %12::Any]::Any
+  └────────────────────
+  
+plastic series: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:80
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:80 =# JET.@test_opt target_modules = (RheologyCalculator,) compute_stress_elastic(c, x, others)
+  ═════ 9 possible errors found ═════
+  ┌ compute_stress_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:88
+  │┌ generate_equations(c::SeriesModel{Tuple{LinearViscosity{…}, IncompressibleElasticity{…}, DruckerPrager{…}}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  ││┌ global_series_functions(c::SeriesModel{Tuple{…}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\composite.jl:125
+  │││ runtime dispatch detected: (%2::Tuple RheologyCalculator.:|> RheologyCalculator.flatten_repeated_functions)::Any
+  ││└────────────────────
+  ││┌ global_series_functions(c::SeriesModel{Tuple{…}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\composite.jl:125
+  │││ runtime dispatch detected: (%3::Any RheologyCalculator.:|> RheologyCalculator.global_series_state_functions)::Tuple
+  ││└────────────────────
+  ││┌ global_series_functions(c::SeriesModel{Tuple{…}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\composite.jl:127
+  │││ runtime dispatch detected: (%7::Tuple RheologyCalculator.:|> RheologyCalculator.flatten_repeated_functions)::Any
+  ││└────────────────────
+  │┌ generate_equations(c::SeriesModel{Tuple{LinearViscosity{…}, IncompressibleElasticity{…}, DruckerPrager{…}}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  ││ runtime dispatch detected: generate_equations(c::SeriesModel{Tuple{LinearViscosity{…}, IncompressibleElasticity{…}, DruckerPrager{…}}, Tuple{}}, %1::Any)::Any
+  │└────────────────────
+  ┌ compute_stress_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:97
+  │ runtime dispatch detected: RheologyCalculator.compute_stress_elastic(%1::Any, xnew::SVector{2, Float64}, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64}, P::Float64, P0::Tuple{Float64}})::Tuple
+  └────────────────────
+  ┌ compute_stress_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:104
+  │ runtime dispatch detected: RheologyCalculator.findfirst(#compute_stress_elastic##2, %1::Any)::Any
+  └────────────────────
+  ┌ compute_stress_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:105
+  │ runtime dispatch detected: (%1::Any)[%3::Any]::Any
+  └────────────────────
+  ┌ compute_stress_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:105
+  │ runtime dispatch detected: (%4::Any).self::Any
+  └────────────────────
+  ┌ compute_stress_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:105
+  │ runtime dispatch detected: (xnew::SVector{2, Float64})[%5::Any]::Any
+  └────────────────────
+  
+plastic series: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:81
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:81 =# JET.@test_opt target_modules = (RheologyCalculator,) compute_pressure_elastic(c, x, others)
+  ═════ 5 possible errors found ═════
+  ┌ compute_pressure_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:335
+  │┌ generate_equations(c::SeriesModel{Tuple{LinearViscosity{…}, IncompressibleElasticity{…}, DruckerPrager{…}}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  ││┌ global_series_functions(c::SeriesModel{Tuple{…}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\composite.jl:125
+  │││ runtime dispatch detected: (%2::Tuple RheologyCalculator.:|> RheologyCalculator.flatten_repeated_functions)::Any
+  ││└────────────────────
+  ││┌ global_series_functions(c::SeriesModel{Tuple{…}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\composite.jl:125
+  │││ runtime dispatch detected: (%3::Any RheologyCalculator.:|> RheologyCalculator.global_series_state_functions)::Tuple
+  ││└────────────────────
+  ││┌ global_series_functions(c::SeriesModel{Tuple{…}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\core\composite.jl:127
+  │││ runtime dispatch detected: (%7::Tuple RheologyCalculator.:|> RheologyCalculator.flatten_repeated_functions)::Any
+  ││└────────────────────
+  │┌ generate_equations(c::SeriesModel{Tuple{LinearViscosity{…}, IncompressibleElasticity{…}, DruckerPrager{…}}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  ││ runtime dispatch detected: generate_equations(c::SeriesModel{Tuple{LinearViscosity{…}, IncompressibleElasticity{…}, DruckerPrager{…}}, Tuple{}}, %1::Any)::Any
+  │└────────────────────
+  ┌ compute_pressure_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:335
+  │ runtime dispatch detected: RheologyCalculator.compute_pressure_elastic(%1::Any, xnew::SVector{2, Float64}, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64}, P::Float64, P0::Tuple{Float64}})::Tuple
+  └────────────────────
+  
+volumetric series: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:76
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:76 =# JET.@test_opt target_modules = (RheologyCalculator,) generate_equations(c)
+  ═════ 2 possible errors found ═════
+  ┌ generate_equations(c::SeriesModel{Tuple{Elasticity{Float64}, BulkViscosity{Float64}}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  │┌ generate_equations(c::SeriesModel{…}, fns::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:36
+  ││┌ kwcall(::@NamedTuple{…}, ::typeof(generate_equations), c::SeriesModel{…}, fns_own_global::typeof(compute_strain_rate), ind_input::Int64, ::Val{…}, ::Val{…}, el_num::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:54
+  │││┌ generate_equations(c::SeriesModel{…}, fns_own_global::typeof(compute_strain_rate), ind_input::Int64, ::Val{…}, ::Val{…}, el_num::Tuple{…}; iparent::Int64, iself::Int64) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:88
+  ││││ runtime dispatch detected: (%26::Tuple{Union{RheologyCalculator.CompositeEquation{…}, RheologyCalculator.CompositeEquation{…}}} RheologyCalculator.:|> RheologyCalculator.superflatten)::Union{Tuple{RheologyCalculator.CompositeEquation{…}}, Tuple{RheologyCalculator.CompositeEquation{…}}}
+  │││└────────────────────
+  ││┌ kwcall(::@NamedTuple{…}, ::typeof(generate_equations), c::SeriesModel{…}, fns_own_global::typeof(compute_volumetric_strain_rate), ind_input::Int64, ::Val{…}, ::Val{…}, el_num::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:54
+  │││┌ generate_equations(c::SeriesModel{…}, fns_own_global::typeof(compute_volumetric_strain_rate), ind_input::Int64, ::Val{…}, ::Val{…}, el_num::Tuple{…}; iparent::Int64, iself::Int64) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:88
+  ││││ runtime dispatch detected: (%26::Tuple{Union{RheologyCalculator.CompositeEquation{…}, RheologyCalculator.CompositeEquation{…}}} RheologyCalculator.:|> RheologyCalculator.superflatten)::Union{Tuple{RheologyCalculator.CompositeEquation{…}}, Tuple{RheologyCalculator.CompositeEquation{…}}}
+  │││└────────────────────
+  
+volumetric series: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:77
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:77 =# JET.@test_opt target_modules = (RheologyCalculator,) initial_guess_x(c, vars, args, others)
+  ═════ 3 possible errors found ═════
+  ┌ initial_guess_x(c::SeriesModel{…}, vars::@NamedTuple{…}, args::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\initial_guess.jl:24
+  │┌ generate_equations(c::SeriesModel{Tuple{Elasticity{Float64}, BulkViscosity{Float64}}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  ││┌ generate_equations(c::SeriesModel{…}, fns::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:36
+  │││┌ kwcall(::@NamedTuple{…}, ::typeof(generate_equations), c::SeriesModel{…}, fns_own_global::typeof(compute_strain_rate), ind_input::Int64, ::Val{…}, ::Val{…}, el_num::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:54
+  ││││┌ generate_equations(c::SeriesModel{…}, fns_own_global::typeof(compute_strain_rate), ind_input::Int64, ::Val{…}, ::Val{…}, el_num::Tuple{…}; iparent::Int64, iself::Int64) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:88
+  │││││ runtime dispatch detected: (%26::Tuple{Union{RheologyCalculator.CompositeEquation{…}, RheologyCalculator.CompositeEquation{…}}} RheologyCalculator.:|> RheologyCalculator.superflatten)::Union{Tuple{RheologyCalculator.CompositeEquation{…}}, Tuple{RheologyCalculator.CompositeEquation{…}}}
+  ││││└────────────────────
+  │││┌ kwcall(::@NamedTuple{…}, ::typeof(generate_equations), c::SeriesModel{…}, fns_own_global::typeof(compute_volumetric_strain_rate), ind_input::Int64, ::Val{…}, ::Val{…}, el_num::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:54
+  ││││┌ generate_equations(c::SeriesModel{…}, fns_own_global::typeof(compute_volumetric_strain_rate), ind_input::Int64, ::Val{…}, ::Val{…}, el_num::Tuple{…}; iparent::Int64, iself::Int64) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:88
+  │││││ runtime dispatch detected: (%26::Tuple{Union{RheologyCalculator.CompositeEquation{…}, RheologyCalculator.CompositeEquation{…}}} RheologyCalculator.:|> RheologyCalculator.superflatten)::Union{Tuple{RheologyCalculator.CompositeEquation{…}}, Tuple{RheologyCalculator.CompositeEquation{…}}}
+  ││││└────────────────────
+  ┌ initial_guess_x(c::SeriesModel{…}, vars::@NamedTuple{…}, args::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\initial_guess.jl:25
+  │ runtime dispatch detected: initial_guess_x(%1::Tuple, vars::@NamedTuple{ε::Float64, θ::Float64}, args::@NamedTuple{τ::Float64, P::Float64}, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64}, P0::Tuple{Float64}})::Any
+  └────────────────────
+  
+volumetric series: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:78
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:78 =# JET.@test_opt target_modules = (RheologyCalculator,) normalisation_x(c, 1.0e6, 1.0e-15)
+  ═════ 3 possible errors found ═════
+  ┌ normalisation_x(c::SeriesModel{Tuple{Elasticity{…}, BulkViscosity{…}}, Tuple{}}, char_τ::Float64, char_ε::Float64) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\normalize_x.jl:14
+  │┌ generate_equations(c::SeriesModel{Tuple{Elasticity{Float64}, BulkViscosity{Float64}}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  ││┌ generate_equations(c::SeriesModel{…}, fns::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:36
+  │││┌ kwcall(::@NamedTuple{…}, ::typeof(generate_equations), c::SeriesModel{…}, fns_own_global::typeof(compute_strain_rate), ind_input::Int64, ::Val{…}, ::Val{…}, el_num::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:54
+  ││││┌ generate_equations(c::SeriesModel{…}, fns_own_global::typeof(compute_strain_rate), ind_input::Int64, ::Val{…}, ::Val{…}, el_num::Tuple{…}; iparent::Int64, iself::Int64) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:88
+  │││││ runtime dispatch detected: (%26::Tuple{Union{RheologyCalculator.CompositeEquation{…}, RheologyCalculator.CompositeEquation{…}}} RheologyCalculator.:|> RheologyCalculator.superflatten)::Union{Tuple{RheologyCalculator.CompositeEquation{…}}, Tuple{RheologyCalculator.CompositeEquation{…}}}
+  ││││└────────────────────
+  │││┌ kwcall(::@NamedTuple{…}, ::typeof(generate_equations), c::SeriesModel{…}, fns_own_global::typeof(compute_volumetric_strain_rate), ind_input::Int64, ::Val{…}, ::Val{…}, el_num::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:54
+  ││││┌ generate_equations(c::SeriesModel{…}, fns_own_global::typeof(compute_volumetric_strain_rate), ind_input::Int64, ::Val{…}, ::Val{…}, el_num::Tuple{…}; iparent::Int64, iself::Int64) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:88
+  │││││ runtime dispatch detected: (%26::Tuple{Union{RheologyCalculator.CompositeEquation{…}, RheologyCalculator.CompositeEquation{…}}} RheologyCalculator.:|> RheologyCalculator.superflatten)::Union{Tuple{RheologyCalculator.CompositeEquation{…}}, Tuple{RheologyCalculator.CompositeEquation{…}}}
+  ││││└────────────────────
+  ┌ normalisation_x(c::SeriesModel{Tuple{Elasticity{…}, BulkViscosity{…}}, Tuple{}}, char_τ::Float64, char_ε::Float64) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\normalize_x.jl:15
+  │ runtime dispatch detected: normalisation_x(%1::Tuple, char_τ::Float64, char_ε::Float64)::Tuple
+  └────────────────────
+  
+volumetric series: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:79
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:79 =# JET.@test_opt target_modules = (RheologyCalculator,) compute_residual(c, x, vars, others)
+  ═════ 8 possible errors found ═════
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:473
+  │┌ generate_equations(c::SeriesModel{Tuple{Elasticity{Float64}, BulkViscosity{Float64}}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  ││┌ generate_equations(c::SeriesModel{…}, fns::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:36
+  │││┌ kwcall(::@NamedTuple{…}, ::typeof(generate_equations), c::SeriesModel{…}, fns_own_global::typeof(compute_strain_rate), ind_input::Int64, ::Val{…}, ::Val{…}, el_num::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:54
+  ││││┌ generate_equations(c::SeriesModel{…}, fns_own_global::typeof(compute_strain_rate), ind_input::Int64, ::Val{…}, ::Val{…}, el_num::Tuple{…}; iparent::Int64, iself::Int64) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:88
+  │││││ runtime dispatch detected: (%26::Tuple{Union{RheologyCalculator.CompositeEquation{…}, RheologyCalculator.CompositeEquation{…}}} RheologyCalculator.:|> RheologyCalculator.superflatten)::Union{Tuple{RheologyCalculator.CompositeEquation{…}}, Tuple{RheologyCalculator.CompositeEquation{…}}}
+  ││││└────────────────────
+  │││┌ kwcall(::@NamedTuple{…}, ::typeof(generate_equations), c::SeriesModel{…}, fns_own_global::typeof(compute_volumetric_strain_rate), ind_input::Int64, ::Val{…}, ::Val{…}, el_num::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:54
+  ││││┌ generate_equations(c::SeriesModel{…}, fns_own_global::typeof(compute_volumetric_strain_rate), ind_input::Int64, ::Val{…}, ::Val{…}, el_num::Tuple{…}; iparent::Int64, iself::Int64) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:88
+  │││││ runtime dispatch detected: (%26::Tuple{Union{RheologyCalculator.CompositeEquation{…}, RheologyCalculator.CompositeEquation{…}}} RheologyCalculator.:|> RheologyCalculator.superflatten)::Union{Tuple{RheologyCalculator.CompositeEquation{…}}, Tuple{RheologyCalculator.CompositeEquation{…}}}
+  ││││└────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:475
+  │ runtime dispatch detected: RheologyCalculator.generate_args_template(%1::Tuple, x::SVector{2, Float64}, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64}, P0::Tuple{Float64}})::Any
+  └────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:477
+  │ runtime dispatch detected: RheologyCalculator.evaluate_state_functions(%1::Tuple, %6::Any, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64}, P0::Tuple{Float64}})::Tuple
+  └────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:478
+  │ runtime dispatch detected: RheologyCalculator.add_children(%7::Tuple, x::SVector{2, Float64}, %1::Tuple)::Tuple{Any, Any}
+  └────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:479
+  │ runtime dispatch detected: RheologyCalculator.subtract_parent(%8::Tuple{Any, Any}, x::SVector{2, Float64}, %1::Tuple, vars::@NamedTuple{ε::Float64, θ::Float64})::Tuple{Any, Any}
+  └────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:480
+  │ runtime dispatch detected: RheologyCalculator.subtract_elastic_correction(c::SeriesModel{Tuple{Elasticity{Float64}, BulkViscosity{Float64}}, Tuple{}}, %1::Tuple, %9::Tuple{Any, Any}, x::SVector{2, Float64}, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64}, P0::Tuple{Float64}})::Tuple{Any, Any}
+  └────────────────────
+  ┌ compute_residual(c::SeriesModel{…}, x::SVector{…}, vars::@NamedTuple{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:482
+  │ runtime dispatch detected: (::SA)[%11::Any, %12::Any]::Any
+  └────────────────────
+  
+volumetric series: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:80
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:80 =# JET.@test_opt target_modules = (RheologyCalculator,) compute_stress_elastic(c, x, others)
+  ═════ 6 possible errors found ═════
+  ┌ compute_stress_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:88
+  │┌ generate_equations(c::SeriesModel{Tuple{Elasticity{Float64}, BulkViscosity{Float64}}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  ││┌ generate_equations(c::SeriesModel{…}, fns::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:36
+  │││┌ kwcall(::@NamedTuple{…}, ::typeof(generate_equations), c::SeriesModel{…}, fns_own_global::typeof(compute_strain_rate), ind_input::Int64, ::Val{…}, ::Val{…}, el_num::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:54
+  ││││┌ generate_equations(c::SeriesModel{…}, fns_own_global::typeof(compute_strain_rate), ind_input::Int64, ::Val{…}, ::Val{…}, el_num::Tuple{…}; iparent::Int64, iself::Int64) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:88
+  │││││ runtime dispatch detected: (%26::Tuple{Union{RheologyCalculator.CompositeEquation{…}, RheologyCalculator.CompositeEquation{…}}} RheologyCalculator.:|> RheologyCalculator.superflatten)::Union{Tuple{RheologyCalculator.CompositeEquation{…}}, Tuple{RheologyCalculator.CompositeEquation{…}}}
+  ││││└────────────────────
+  │││┌ kwcall(::@NamedTuple{…}, ::typeof(generate_equations), c::SeriesModel{…}, fns_own_global::typeof(compute_volumetric_strain_rate), ind_input::Int64, ::Val{…}, ::Val{…}, el_num::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:54
+  ││││┌ generate_equations(c::SeriesModel{…}, fns_own_global::typeof(compute_volumetric_strain_rate), ind_input::Int64, ::Val{…}, ::Val{…}, el_num::Tuple{…}; iparent::Int64, iself::Int64) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:88
+  │││││ runtime dispatch detected: (%26::Tuple{Union{RheologyCalculator.CompositeEquation{…}, RheologyCalculator.CompositeEquation{…}}} RheologyCalculator.:|> RheologyCalculator.superflatten)::Union{Tuple{RheologyCalculator.CompositeEquation{…}}, Tuple{RheologyCalculator.CompositeEquation{…}}}
+  ││││└────────────────────
+  ┌ compute_stress_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:97
+  │ runtime dispatch detected: RheologyCalculator.compute_stress_elastic(%1::Tuple, xnew::SVector{2, Float64}, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64}, P0::Tuple{Float64}})::Tuple
+  └────────────────────
+  ┌ compute_stress_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:104
+  │ runtime dispatch detected: RheologyCalculator.findfirst(#compute_stress_elastic##2, %1::Tuple)::Union{Nothing, Int64}
+  └────────────────────
+  ┌ compute_stress_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:105
+  │ runtime dispatch detected: (%7::Any).self::Any
+  └────────────────────
+  ┌ compute_stress_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:105
+  │ runtime dispatch detected: (xnew::SVector{2, Float64})[%11::Any]::Any
+  └────────────────────
+  
+volumetric series: JET-test failed at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:81
+  Expression: #= C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:81 =# JET.@test_opt target_modules = (RheologyCalculator,) compute_pressure_elastic(c, x, others)
+  ═════ 3 possible errors found ═════
+  ┌ compute_pressure_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:335
+  │┌ generate_equations(c::SeriesModel{Tuple{Elasticity{Float64}, BulkViscosity{Float64}}, Tuple{}}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:34
+  ││┌ generate_equations(c::SeriesModel{…}, fns::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:36
+  │││┌ kwcall(::@NamedTuple{…}, ::typeof(generate_equations), c::SeriesModel{…}, fns_own_global::typeof(compute_strain_rate), ind_input::Int64, ::Val{…}, ::Val{…}, el_num::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:54
+  ││││┌ generate_equations(c::SeriesModel{…}, fns_own_global::typeof(compute_strain_rate), ind_input::Int64, ::Val{…}, ::Val{…}, el_num::Tuple{…}; iparent::Int64, iself::Int64) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:88
+  │││││ runtime dispatch detected: (%26::Tuple{Union{RheologyCalculator.CompositeEquation{…}, RheologyCalculator.CompositeEquation{…}}} RheologyCalculator.:|> RheologyCalculator.superflatten)::Union{Tuple{RheologyCalculator.CompositeEquation{…}}, Tuple{RheologyCalculator.CompositeEquation{…}}}
+  ││││└────────────────────
+  │││┌ kwcall(::@NamedTuple{…}, ::typeof(generate_equations), c::SeriesModel{…}, fns_own_global::typeof(compute_volumetric_strain_rate), ind_input::Int64, ::Val{…}, ::Val{…}, el_num::Tuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:54
+  ││││┌ generate_equations(c::SeriesModel{…}, fns_own_global::typeof(compute_volumetric_strain_rate), ind_input::Int64, ::Val{…}, ::Val{…}, el_num::Tuple{…}; iparent::Int64, iself::Int64) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\equation_system\equations.jl:88
+  │││││ runtime dispatch detected: (%26::Tuple{Union{RheologyCalculator.CompositeEquation{…}, RheologyCalculator.CompositeEquation{…}}} RheologyCalculator.:|> RheologyCalculator.superflatten)::Union{Tuple{RheologyCalculator.CompositeEquation{…}}, Tuple{RheologyCalculator.CompositeEquation{…}}}
+  ││││└────────────────────
+  ┌ compute_pressure_elastic(c::SeriesModel{…}, xnew::SVector{…}, others::@NamedTuple{…}) @ RheologyCalculator C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\src\post_processing\post_calculations.jl:335
+  │ runtime dispatch detected: RheologyCalculator.compute_pressure_elastic(%1::Tuple, xnew::SVector{2, Float64}, others::@NamedTuple{dt::Float64, τ0::Tuple{Float64}, P0::Tuple{Float64}})::Tuple
+  └────────────────────
+  
+Test Summary:                | Pass  Fail  Total  Time
+Type stability               |    6    29     35  8.9s
+  series elastic-viscous     |    2     5      7  6.8s
+  Kelvin-Voigt branch        |    1     6      7  1.2s
+  generalized Maxwell branch |    1     6      7  0.4s
+  plastic series             |    1     6      7  0.2s
+  volumetric series          |    1     6      7  0.3s
+RNG of the outermost testset: Random.Xoshiro(0xf2cadb0c4c474a0e, 0xf189c07afa1c1e0d, 0x575742ef4814baea, 0x5c6c18b853fbd655, 0x03111833eee6271a)
+ERROR: LoadError: Some tests did not pass: 6 passed, 29 failed, 0 errored, 0 broken.
+in expression starting at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\test_type_stability.jl:54
+in expression starting at C:\Users\Albert\Documents\DevPkgs\RheologyCalculator.jl\test\runtests.jl:24
+ERROR: Package RheologyCalculator errored during testing
+Stacktrace:
+  [1] pkgerror(msg::String)
+    @ Pkg.Types C:\Users\Albert\.julia\juliaup\julia-1.13.0+0.x64.w64.mingw32\share\julia\stdlib\v1.13\Pkg\src\Types.jl:68
+  [2] test(ctx::Pkg.Types.Context, pkgs::Vector{PackageSpec}; coverage::Bool, julia_args::Cmd, test_args::Cmd, test_fn::Nothing, force_latest_compatible_version::Bool, allow_earlier_backwards_compatible_versions::Bool, allow_reresolve::Bool)
+    @ Pkg.Operations C:\Users\Albert\.julia\juliaup\julia-1.13.0+0.x64.w64.mingw32\share\julia\stdlib\v1.13\Pkg\src\Operations.jl:3148
+  [3] test
+    @ C:\Users\Albert\.julia\juliaup\julia-1.13.0+0.x64.w64.mingw32\share\julia\stdlib\v1.13\Pkg\src\Operations.jl:3026 [inlined]
+  [4] test(ctx::Pkg.Types.Context, pkgs::Vector{PackageSpec}; coverage::Bool, test_fn::Nothing, julia_args::Cmd, test_args::Cmd, force_latest_compatible_version::Bool, allow_earlier_backwards_compatible_versions::Bool, allow_reresolve::Bool, kwargs::@Kwargs{io::IOContext{IO}})
+    @ Pkg.API C:\Users\Albert\.julia\juliaup\julia-1.13.0+0.x64.w64.mingw32\share\julia\stdlib\v1.13\Pkg\src\API.jl:586
+  [5] kwcall(::@NamedTuple{io::IOContext{IO}}, ::typeof(Pkg.API.test), ctx::Pkg.Types.Context, pkgs::Vector{PackageSpec})
+    @ Pkg.API C:\Users\Albert\.julia\juliaup\julia-1.13.0+0.x64.w64.mingw32\share\julia\stdlib\v1.13\Pkg\src\API.jl:562
+  [6] test(pkgs::Vector{PackageSpec}; io::IOContext{IO}, kwargs::@Kwargs{})
+    @ Pkg.API C:\Users\Albert\.julia\juliaup\julia-1.13.0+0.x64.w64.mingw32\share\julia\stdlib\v1.13\Pkg\src\API.jl:172
+  [7] test(pkgs::Vector{PackageSpec})
+    @ Pkg.API C:\Users\Albert\.julia\juliaup\julia-1.13.0+0.x64.w64.mingw32\share\julia\stdlib\v1.13\Pkg\src\API.jl:161
+  [8] test(; name::Nothing, uuid::Nothing, version::Nothing, url::Nothing, rev::Nothing, path::Nothing, mode::PackageMode, subdir::Nothing, kwargs::@Kwargs{})
+    @ Pkg.API C:\Users\Albert\.julia\juliaup\julia-1.13.0+0.x64.w64.mingw32\share\julia\stdlib\v1.13\Pkg\src\API.jl:189
+  [9] test()
+    @ Pkg.API C:\Users\Albert\.julia\juliaup\julia-1.13.0+0.x64.w64.mingw32\share\julia\stdlib\v1.13\Pkg\src\API.jl:178
+ [10] top-level scope
+    @ none:1
+ [11] eval(m::Module, e::Any)
+    @ Core .\boot.jl:489
+ [12] exec_options(opts::Base.JLOptions)
+    @ Base .\client.jl:310
+ [13] _start()
+    @ Base .\client.jl:577
