@@ -334,8 +334,16 @@ end
 """
     mynorm(x, y)
 
-Return a normalized L1-like norm `sum(abs(x[i] / y[i]))`, skipping entries whose
-normalization factor is zero.
+Return a normalized L1-like norm `sum(abs(x[i] / y[i]))`.
+
+A zero normalization factor measures its row unscaled (`abs(x[i])`) instead of
+dropping it. Dropping was the previous behaviour and made the norm blind: a row
+with a zero factor contributed nothing however large its residual, so a state
+whose characteristic scale vanishes — an undeformed point, where
+`char_ε = εII + |θ| = 0` — could report a residual of exactly `0.0` while the
+true residual was far above `atol`. [`normalisation_x`](@ref) now floors the
+characteristic scales, so zero factors should no longer arise from that path;
+this keeps a hand-built `xnorm0` containing zeros honest as well.
 """
 @generated function mynorm(x::SVector{N, T}, y::SVector{N}) where {N, T}
     return quote
@@ -344,7 +352,7 @@ normalization factor is zero.
         Base.@nexprs $N i -> begin
             xi = @inbounds x[i]
             yi = @inbounds y[i]
-            v += !iszero(yi) * abs(xi / yi)
+            v += iszero(yi) ? abs(xi) : abs(xi / yi)
         end
         return v
     end
