@@ -36,7 +36,14 @@ ordinary derivative are used.
 @inline _invariant_sqrt(s) = iszero(s) ? zero(s) : √s
 # Convenience wrappers: accept either a bare scalar or a Voigt-ordered NTuple.
 @inline second_invariant_value(a::Number) = second_invariant(a)
-@inline second_invariant_value(a::NTuple) = second_invariant(a...)
+# The signature is a heterogeneous tuple of numbers, not `NTuple{N,T}`. The
+# latter requires every component to share one type, which rules out a
+# partial-width ForwardDiff pass: seeding only some components of a tensor
+# leaves the others plain `Float64`, so the tuple mixes `Dual` and `Float64`
+# and no method matched. `promote` brings the components to a common type, so
+# the arithmetic still sees a single one and a homogeneous tuple behaves
+# exactly as before.
+@inline second_invariant_value(a::Tuple{Vararg{Number}}) = second_invariant(promote(a...)...)
 
 # -----------------------------------------------------------------------
 # effective_strain_rate_correction — public entry points
