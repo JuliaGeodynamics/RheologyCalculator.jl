@@ -1,8 +1,4 @@
-# The cap's consistency (Kuhn-Tucker) residual used to be
-#     -F*(F > -1e-8) + λ*η_vp + λ
-# whose last term adds a RATE to two STRESSES. The equation therefore changed
-# its root when the time unit changed, and its converged state satisfied F = λ
-# instead of the rate-independent condition F = 0.
+# The cap's consistency residual must be dimensionally homogeneous.
 using Test, StaticArrays
 using RheologyCalculator.RheologyModels
 import RheologyCalculator.RheologyModels: DruckerPragerCap, compute_F, compute_lambda
@@ -11,15 +7,9 @@ import RheologyCalculator: SeriesModel, initial_guess_x, normalisation_x, solve
 @testset "cap consistency residual" begin
 
     @testset "residual is dimensionally homogeneous" begin
-        # Every term must be a stress, so scaling the rate λ and the viscosity
-        # η_vp by the same factor s (a change of time unit) must leave the
-        # residual unchanged. The bare `+ λ` of the old form broke this.
-        #
-        # The unregularized (η_vp = 0) below-yield branch is excluded: a cap
-        # with no viscosity carries no stress-per-rate scale at all, so that
-        # branch keeps a `oneunit` factor purely to pin λ. It is the one place
-        # the residual is not homogeneous, and λ = 0 there at the solution, so
-        # nothing unit-dependent reaches a converged state.
+        # Scaling λ and η_vp by a common factor (a change of time unit) must
+        # leave the residual unchanged. The unregularized below-yield branch is
+        # excluded: it keeps a `oneunit` factor purely to pin λ at zero.
         for ηvp in (1.0e18, 1.0e19, 1.0e20)
             pl = DruckerPragerCap(; C = 1.0e6, ϕ = 30.0, ψ = 10.0, η_vp = ηvp, Pt = -5.0e5)
             for (τ, P) in ((8.0e5, 1.0e5), (2.0e6, -1.0e5), (1.0e5, -4.0e5))
@@ -35,8 +25,6 @@ import RheologyCalculator: SeriesModel, initial_guess_x, normalisation_x, solve
     end
 
     @testset "the yielding branch is exactly Duvaut-Lions" begin
-        # F = λ·η_vp, with no stray additive term. The old form solved
-        # F = λ·(η_vp + 1) instead.
         for ηvp in (0.0, 1.0e19)
             pl = DruckerPragerCap(; C = 1.0e6, ϕ = 30.0, ψ = 10.0, η_vp = ηvp, Pt = -5.0e5)
             τ, P = 2.0e6, -1.0e5
@@ -62,8 +50,7 @@ import RheologyCalculator: SeriesModel, initial_guess_x, normalisation_x, solve
             sol = solve(c, x0, vars, others; xnorm0 = xn, itermax = 200)
             τ, λ, P = sol.x[1], sol.x[2], sol.x[3]
             @test λ > 0                                  # this state really is yielding
-            # rate-independent consistency: F vanishes on the scale of the
-            # model's own stress (the cohesion), not on the scale of λ
+            # F vanishes on the scale of the cohesion, not of λ
             @test abs(compute_F(pl, τ, P)) / pl.C ≤ 1.0e-12
         end
     end
@@ -72,7 +59,6 @@ import RheologyCalculator: SeriesModel, initial_guess_x, normalisation_x, solve
         pl = DruckerPragerCap(; C = 1.0e6, ϕ = 30.0, ψ = 10.0, η_vp = 0.0, Pt = -5.0e5)
         τ, P = 1.0e5, 1.0e5
         @test compute_F(pl, τ, P) < -1.0e-8              # safely below yield
-        # the residual vanishes only at λ = 0, and is strictly monotone in λ
         @test compute_lambda(pl; τ = τ, λ = 0.0, P = P) == 0.0
         @test compute_lambda(pl; τ = τ, λ = 1.0e-11, P = P) > 0
         @test compute_lambda(pl; τ = τ, λ = -1.0e-11, P = P) < 0

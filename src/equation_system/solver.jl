@@ -10,19 +10,10 @@ iteration, and it can be passed straight back into `solve`. It holds numbers
 only, and so is `isbits` and usable inside GPU kernels; [`inspect`](@ref)
 describes what each entry stands for.
 
-`jacobian` is `∂r/∂x` evaluated at the returned `x`, which is what an
-implicit-function-theorem tangent needs. `solve` fills it in; it is `nothing`
-for an `RCSolution` built by hand without one.
-
-Note that this is NOT one of the Jacobians the Newton iteration formed: those
-are taken at the iterates *before* the last update, and the tangent needs the
-one at the converged point. Computing it therefore costs exactly one extra
-Jacobian evaluation per `solve`. Measured on a 3-unknown visco-elasto-plastic
-cap composite at a plastic point taking 2 Newton iterations (`julia -t 1`, via
-GeoTech.jl's `perf/rc_bench.jl`, median of five runs): about 0.60 µs -> 0.72 µs
-per call, with allocations unchanged at 0 bytes. That is cheaper than the
-caller recomputing the same Jacobian, which is what callers building consistent
-tangents did before.
+`jacobian` is `∂r/∂x` at the returned `x`, as an implicit-function-theorem
+tangent needs. It is not one of the Jacobians the Newton iteration formed, so
+`solve` costs one extra Jacobian evaluation to supply it; it is `nothing` for
+an `RCSolution` built by hand.
 """
 struct RCSolution{N, T, R, J} <: AbstractVector{T}
     x::SVector{N, T}
@@ -81,8 +72,6 @@ Returns an [`RCSolution`](@ref) holding the solved vector, the iteration count,
 the final residual norm, and the residual Jacobian at the converged iterate.
 [`inspect`](@ref) describes its entries.
 
-The initial guess `x` can be seeded through `initial_guess_x`'s `args.x0`; see
-[`initial_guess_x`](@ref).
 
 Throws [`NonConvergenceError`](@ref) if the iteration ends without meeting
 either tolerance, which includes the case of a residual that became `NaN`.
@@ -122,8 +111,6 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0 = no
         J = jacobian(c, x, vars, others)
         Δx = backsolve(J, r)
         α = max_feasible_step(x, Δx, nonneg)
-        # The search already evaluated the residual at the step it accepts, so
-        # take its iterate and residual rather than repeating the evaluation.
         α, x_next, r = bt_line_search(
             Δx, x, c, vars, others, xnorm, er;
             α = α, ρ = 0.5, lstol = 0.95, α_min = 0.1
@@ -162,11 +149,6 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0 = no
     # A NaN residual compares false against both tolerances and so exits the loop
     # by the same door as a converged one; `isfinite` is what separates them.
     isfinite(er) && (er ≤ atol || er ≤ rtol * er0) || throw(NonConvergenceError(it, er, x))
-    # The Jacobian at the CONVERGED x, which is one step beyond every Jacobian
-    # the loop formed (those are taken before the update that produced `x`).
-    # Callers building implicit-function-theorem tangents need exactly this one,
-    # so returning it here saves them a recomputation; it costs one extra
-    # Jacobian evaluation per solve.
     return RCSolution(x, it, er, jacobian(c, x, vars, others))
 end
 
@@ -323,41 +305,17 @@ initial feasible step is accepted whenever it does not increase the residual;
 backtracked steps require the stricter `lstol` reduction. If no trial passes,
 the best finite trial is returned.
 
-Returns `(α, x_next, r)`: the accepted step length, the iterate it produces,
-and the residual there. The iterate and residual are the ones the search
-actually evaluated at the *returned* `α`, so [`solve`](@ref) can use them
-directly instead of recomputing `compute_residual` at a point the search has
-already visited.
-
-Carrying `x_next` and `r` out rather than only `α` is what makes the reuse
-correct. The accepted `α` is not always the last one tried: when no trial meets
-its target the search returns `best_α`, which may come from any earlier trial,
-so the most recently computed residual can belong to a different step length.
-Keeping the triple together cannot make that mistake.
+Returns `(α, x_next, r)`, the iterate and residual belonging to the returned
+`α`, so [`solve`](@ref) need not re-evaluate the residual there.
 """
 function bt_line_search(Δx, x, composite, vars, others, xnorm, rnorm; α = 1.0, ρ = 0.5, lstol = 0.9, α_min = 1.0e-8)
 
     α_initial = α
     best_α = α
     best_rnorm = Inf
-    # The iterate and residual belonging to `best_α`, kept in step with it.
-    #
-    # `best_α` is seeded to `α_initial`, NOT to zero, so when no trial has a
-    # finite residual the search still returns a moving step; the iterate is
-    # seeded to the point that same `α_initial` produces. Seeding `best_x = x`
-    # instead would make the fall-through return the current point unchanged,
-    # `solve` would then see `x_next == x`, and its stagnation guard would abort
-    # a solve that previously made progress — turning the 469-step
-    # yield-crossing accumulation of `test_solver_convergence.jl` from converged
-    # into a stagnation failure at a residual of ~1.
-    #
-    # The residual seed is what the loop's first pass recomputes at the same
-    # point. Keeping it means the fall-through and the `α < α_min` entry case
-    # both report the residual really found there, which is what `solve`'s
-    # NaN/Inf diagnostics read. The line search therefore still performs one
-    # evaluation per trial plus this seed, and what `solve` saves is its own
-    # post-loop `compute_residual`, which used to re-evaluate a point the search
-    # had already visited.
+    # Seeded to `α_initial`'s point, matching `best_α`: seeding `x` instead
+    # would let the fall-through return an unmoved iterate and trip `solve`'s
+    # stagnation guard.
     best_x = @. x + α * Δx
     best_r = compute_residual(composite, best_x, vars, others)
 
@@ -393,14 +351,8 @@ end
 
 Return a normalized L1-like norm `sum(abs(x[i] / y[i]))`.
 
-A zero normalization factor measures its row unscaled (`abs(x[i])`) instead of
-dropping it. Dropping was the previous behaviour and made the norm blind: a row
-with a zero factor contributed nothing however large its residual, so a state
-whose characteristic scale vanishes — an undeformed point, where
-`char_ε = εII + |θ| = 0` — could report a residual of exactly `0.0` while the
-true residual was far above `atol`. [`normalisation_x`](@ref) now floors the
-characteristic scales, so zero factors should no longer arise from that path;
-this keeps a hand-built `xnorm0` containing zeros honest as well.
+A zero normalization factor measures its row unscaled rather than dropping it,
+which would make the norm blind to that row.
 """
 @generated function mynorm(x::SVector{N, T}, y::SVector{N}) where {N, T}
     return quote

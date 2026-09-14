@@ -1,9 +1,4 @@
-# A point that is not being deformed has a vanishing characteristic strain rate
-# (char_ε = εII + |θ| = 0). The normalization factors of every strain-rate row
-# are then zero, and `mynorm` used to drop such rows from the residual norm.
-# For a composite without a plasticity element that is every row, so `solve`
-# measured a residual of exactly 0.0 and stopped after one iteration regardless
-# of the true residual.
+# A zero characteristic strain rate must not make residual rows unmeasurable.
 using Test, StaticArrays
 using RheologyCalculator.RheologyModels
 import RheologyCalculator: SeriesModel, initial_guess_x, normalisation_x, solve, mynorm,
@@ -15,10 +10,8 @@ import RheologyCalculator: SeriesModel, initial_guess_x, normalisation_x, solve,
 
     @testset "mynorm measures rows with a zero factor" begin
         r = SA[1.0e-3, 2.0]
-        # previously 2.0/1.0 only; the first row was dropped
         @test mynorm(r, SA[0.0, 1.0]) == 1.0e-3 + 2.0
         @test mynorm(r, SA[0.0, 0.0]) == 1.0e-3 + 2.0
-        # a nonzero factor still scales as before
         @test mynorm(r, SA[1.0e-3, 2.0]) == 2.0
     end
 
@@ -26,7 +19,6 @@ import RheologyCalculator: SeriesModel, initial_guess_x, normalisation_x, solve,
         c = SeriesModel(viscous, elastic)
         xn = normalisation_x(c, 1.0e6, 0.0)
         @test all(!iszero, xn)
-        # a nonzero scale is untouched
         @test normalisation_x(c, 1.0e6, 3.0) == normalisation_x(c, 1.0e6, 3.0)
         @test any(==(3.0), normalisation_x(c, 1.0e6, 3.0))
     end
@@ -34,7 +26,6 @@ import RheologyCalculator: SeriesModel, initial_guess_x, normalisation_x, solve,
     @testset "undeformed point converges to a true root" begin
         c = SeriesModel(viscous, elastic)
         vars = vars_2D(0.0, 0.0)                       # zero strain rate
-        # a point that carries stress history but is not being deformed
         others = (; dt = 1.0e5, τ0 = ((5.0e5, -5.0e5, 0.0),), P0 = (0.3e6,))
         char_ε = second_invariant_2D(vars.ε) + abs(vars.θ)
         @test iszero(char_ε)
@@ -44,11 +35,9 @@ import RheologyCalculator: SeriesModel, initial_guess_x, normalisation_x, solve,
         sol = solve(c, x0, vars, others; xnorm0 = xnorm, itermax = 50)
         @test sol.residual ≤ 1.0e-12
 
-        # and the answer really is a root, measured with an unscaled norm
         r = compute_residual(c, sol.x, (; ε = 0.0, θ = vars.θ), others)
         @test mynorm(r, SA[1.0, 1.0]) ≤ 1.0e-9
 
-        # starting far away must not be accepted after a single blind step
         sol2 = solve(c, SA[1.0e9, 1.0e9], vars, others; xnorm0 = xnorm, itermax = 50)
         r2 = compute_residual(c, sol2.x, (; ε = 0.0, θ = vars.θ), others)
         @test mynorm(r2, SA[1.0, 1.0]) ≤ 1.0e-9

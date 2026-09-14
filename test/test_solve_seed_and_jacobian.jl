@@ -1,9 +1,4 @@
-# `solve` gained two things a caller building consistent tangents needs:
-#   (a) a real initial guess, through `initial_guess_x`'s `args.x0`, which the
-#       τ/P/λ entries of `args` never reached before;
-#   (b) the residual Jacobian at the CONVERGED iterate, in `RCSolution.jacobian`
-#       — not one of the Jacobians the Newton loop formed, which are all taken
-#       before the last update.
+# `initial_guess_x` seeding via `args.x0`, and `RCSolution.jacobian`.
 using Test, ForwardDiff, StaticArrays
 using RheologyCalculator.RheologyModels
 import RheologyCalculator: SeriesModel, initial_guess_x, normalisation_x, solve,
@@ -12,8 +7,6 @@ import RheologyCalculator.RheologyModels: DruckerPragerCap
 
 @testset "solve: seeding and the converged Jacobian" begin
 
-    # a power-law composite is genuinely nonlinear, so the seed changes the
-    # iteration count rather than only the first step
     c = SeriesModel(
         PowerLawViscosity(1.0e23, 3.0), Elasticity(1.0e10, 2.0e11),
         DruckerPragerCap(; C = 1.0e6, ϕ = 30.0, ψ = 10.0, η_vp = 1.0e19, Pt = -5.0e5),
@@ -22,7 +15,6 @@ import RheologyCalculator.RheologyModels: DruckerPragerCap
 
     @testset "an unseeded call is unchanged" begin
         vars = vars_2D(1.0e-12, 0.0)
-        # the τ/P/λ of `args` are placeholders and must still be inert
         base = initial_guess_x(c, vars, (;), others)
         @test initial_guess_x(c, vars, (; τ = 0.0, P = 0.0, λ = 0.0), others) == base
         @test initial_guess_x(c, vars, (; τ = 7.7e5, P = 3.3e5), others) == base
@@ -47,7 +39,6 @@ import RheologyCalculator.RheologyModels: DruckerPragerCap
         base = initial_guess_x(c, vars, (;), others)
         only_τ = initial_guess_x(c, vars, (; x0 = (; τ = 5.0e5)), others)
         @test only_τ[1] == 5.0e5
-        # every other unknown keeps the model's own estimate
         @test only_τ[2] == base[2]
         @test only_τ[3] == base[3]
     end
@@ -58,8 +49,7 @@ import RheologyCalculator.RheologyModels: DruckerPragerCap
             xnorm = normalisation_x(c, 1.0e6, second_invariant_2D(vars.ε) + abs(vars.θ))
             sol = solve(c, initial_guess_x(c, vars, (;), others), vars, others; xnorm0 = xnorm)
 
-            # `solve` reduces the tensor ε to the corrected invariant before
-            # iterating, so the residual must be rebuilt the same way
+            # `solve` iterates on the corrected invariant of ε
             ε_corr = _direct_leaf_elastic_correction(c, vars.ε, others)
             v = (; ε = second_invariant_value(vars.ε .+ ε_corr), θ = vars.θ)
             J = ForwardDiff.jacobian(y -> compute_residual(c, y, v, others), sol.x)
@@ -78,7 +68,6 @@ import RheologyCalculator.RheologyModels: DruckerPragerCap
         @test collect(sol) == collect(sol.x)
         @test sol[1] == sol.x[1]
         @test sol.iterations isa Int
-        # and a solution still seeds the next solve
         @test solve(c, sol, vars, others; xnorm0 = xnorm) ≈ sol
     end
 end

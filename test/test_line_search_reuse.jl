@@ -1,9 +1,4 @@
-# `bt_line_search` returns `(α, x_next, r)` so `solve` can reuse the residual it
-# already evaluated at the accepted step instead of recomputing it. The triple
-# must stay internally consistent: `r` has to be the residual AT `x_next`, and
-# `x_next` the point the returned `α` produces — the accepted `α` is not always
-# the last one tried, since a search where no trial meets its target returns the
-# best earlier one.
+# `bt_line_search`'s `(α, x_next, r)` must stay internally consistent.
 using Test, StaticArrays
 using RheologyCalculator.RheologyModels
 import RheologyCalculator: SeriesModel, ParallelModel, initial_guess_x,
@@ -21,7 +16,7 @@ import RheologyCalculator: SeriesModel, ParallelModel, initial_guess_x,
     xnorm = normalisation_x(c, 1.0e6, second_invariant_2D(vars.ε))
     x0 = initial_guess_x(c, vars, (; τ = 2.0e3, λ = 0.0), others)
 
-    # `solve` reduces the tensor ε to the corrected invariant before iterating
+    # `solve` iterates on the corrected invariant of ε
     ε_corr = _direct_leaf_elastic_correction(c, vars.ε, others)
     v = (; ε = second_invariant_value(vars.ε .+ ε_corr), θ = vars.θ)
 
@@ -36,14 +31,10 @@ import RheologyCalculator: SeriesModel, ParallelModel, initial_guess_x,
                 Δx, x, c, v, others, xnorm, er; α = 1.0, ρ = 0.5, lstol = 0.95, α_min = 0.1
             )
 
-            # x_next is the point that α produces ...
             @test x_next ≈ x .+ α .* Δx rtol = 1.0e-14
-            # ... and r_next is the residual there, not at some other trial
             @test r_next ≈ compute_residual(c, x_next, v, others) rtol = 1.0e-14
-            # while the update is still significant the step must move: a
-            # returned x_next == x there would trip solve's stagnation guard
-            # and abort a converging solve. (Once converged, Δx ≈ 0 and
-            # x_next == x legitimately, which is the guard doing its job.)
+            # while the update is significant the step must move; once
+            # converged, Δx ≈ 0 and x_next == x legitimately
             if maximum(abs, Δx) > 8 * eps() * maximum(abs, x)
                 @test x_next != x
             end
@@ -52,7 +43,6 @@ import RheologyCalculator: SeriesModel, ParallelModel, initial_guess_x,
     end
 
     @testset "the solve still converges on the hard step" begin
-        # the 469-step yield-crossing accumulation this reuse previously broke
         x = x0
         τ_e, P_e = (zero_stress_tensor_2D(),), (0.0,)
         x_hard, o_hard = x, others

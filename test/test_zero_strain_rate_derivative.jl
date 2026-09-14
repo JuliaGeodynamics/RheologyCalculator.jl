@@ -1,8 +1,4 @@
-# The second invariant is a norm and so is non-smooth at the zero tensor. Its
-# VALUE at zero was already correct (√0 == 0), but the ForwardDiff derivative
-# came back NaN, because `d√s/ds = 1/(2√s)` is Inf at s = 0 and Inf·0 = NaN in
-# the dual part. A run started from rest is exactly at that point, so every
-# quadrature point produced NaN tangents.
+# The second invariant's derivative at the zero tensor must be finite, not NaN.
 using Test, ForwardDiff, StaticArrays
 using RheologyCalculator.RheologyModels
 import RheologyCalculator: second_invariant, second_invariant_value
@@ -31,8 +27,7 @@ import RheologyCalculator: second_invariant, second_invariant_value
     end
 
     @testset "away from zero the derivative is untouched" begin
-        # the 2D form reconstructs zz = -xx - yy, so at pure shear (1, -1, 0)
-        # the invariant is 1 and its gradient is (0.5, -0.5, 0)
+        # the 2D form reconstructs zz = -xx - yy
         g = ForwardDiff.gradient(v -> second_invariant(v[1], v[2], v[3]), [1.0, -1.0, 0.0])
         @test all(isfinite, g)
         @test g ≈ [0.5, -0.5, 0.0] atol = 1.0e-12
@@ -40,7 +35,6 @@ import RheologyCalculator: second_invariant, second_invariant_value
         d = ForwardDiff.derivative(x -> second_invariant_value((x, -x, zero(x))), 2.0)
         @test d ≈ 1.0 atol = 1.0e-12
 
-        # and a tiny but nonzero argument is still the ordinary derivative
         @test all(isfinite, ForwardDiff.gradient(v -> second_invariant(v[1], v[2], v[3]), [1.0e-30, 0.0, 0.0]))
     end
 
