@@ -18,11 +18,11 @@ Note that this is NOT one of the Jacobians the Newton iteration formed: those
 are taken at the iterates *before* the last update, and the tangent needs the
 one at the converged point. Computing it therefore costs exactly one extra
 Jacobian evaluation per `solve`. Measured on a 3-unknown visco-elasto-plastic
-cap composite (`julia -t 1`, one call, via GeoTech.jl's `perf/rc_bench.jl`):
-0.607 µs -> 0.730 µs at a plastic point taking 2 Newton iterations, and
-0.396 µs -> 0.537 µs at an elastic point taking 1, with allocations unchanged
-at 0 bytes. That is cheaper than the caller recomputing the same Jacobian,
-which is what callers building consistent tangents did before.
+cap composite at a plastic point taking 2 Newton iterations (`julia -t 1`, via
+GeoTech.jl's `perf/rc_bench.jl`, median of five runs): about 0.60 µs -> 0.72 µs
+per call, with allocations unchanged at 0 bytes. That is cheaper than the
+caller recomputing the same Jacobian, which is what callers building consistent
+tangents did before.
 """
 struct RCSolution{N, T, R, J} <: AbstractVector{T}
     x::SVector{N, T}
