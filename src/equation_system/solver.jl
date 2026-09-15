@@ -60,12 +60,21 @@ package's static local-system representation.
 # both typed from the residual's inferred output type `T`, which is what
 # carries any outer dual layer through the Jacobian entries too. `T` is
 # obtained by type inference (`Base.promote_op`), not by evaluating the
-# residual, so this remains a single evaluation overall.
+# residual, so this remains a single evaluation overall for the common case.
+#
+# `Base.promote_op` is a best-effort inference query, not a guarantee: for
+# some composite models (e.g. multi-level Series/Parallel nesting) inference
+# gives up and returns a non-concrete `T`, and whether it does so is not even
+# stable across Julia versions/platforms for the same model, since it depends
+# on inference's internal effort heuristics. `zero(T)` on such a `T` throws,
+# so when `T` isn't concrete this falls back to evaluating the residual once
+# to get a concrete prototype directly, paying for the extra primal
+# evaluation only on that (rare, inference-dependent) path.
 @inline function residual_and_jacobian(c::AbstractCompositeModel, x::SVector, vars, others)
     f = y -> compute_residual(c, y, vars, others)
     T = Base.promote_op(f, typeof(x))
-    y_proto = zero(T)
-    jacobian_proto = zeros(similar_type(T, Size(length(y_proto), length(x))))
+    y_proto = isconcretetype(T) ? zero(T) : f(x)
+    jacobian_proto = zeros(similar_type(typeof(y_proto), Size(length(y_proto), length(x))))
     result = ForwardDiff.jacobian!(DiffResults.DiffResult(y_proto, (jacobian_proto,)), f, x)
     return DiffResults.value(result), DiffResults.jacobian(result)
 end
