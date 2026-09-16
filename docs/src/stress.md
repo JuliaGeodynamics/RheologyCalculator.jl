@@ -54,7 +54,7 @@ x   = initial_guess_x(c, vars, args, others)
 ```
 
 The entries of `x` differ by twenty orders of magnitude — stresses of order
-$10^5$ Pa alongside strain rates of order $10^{-15}$ s$^{-1}$ — so the residual
+``10^5~\mathrm{Pa}`` alongside strain rates of order ``10^{-15}~\mathrm{s}^{-1}`` — so the residual
 norm has to be scaled entry by entry before the requested tolerance means
 anything. [`normalisation_x`](@ref) builds that scaling from a characteristic
 stress and strain rate, and it is passed to [`solve`](@ref) as `xnorm0`. Without
