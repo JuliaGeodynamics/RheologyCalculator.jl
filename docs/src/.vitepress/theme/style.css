@@ -165,7 +165,7 @@ font-feature-settings: "calt" off;
   text-align: center;
 }
 
-mjx-container {
+mjx-container[display="true"] {
   display: inline-block;
   padding: 0.5rem 0;
   margin: auto 2px -2px;
@@ -173,9 +173,21 @@ mjx-container {
   text-align: left;
 }
 
-mjx-container > svg {
+mjx-container[display="true"] > svg {
   display: inline-block;
   height: auto;
+}
+
+/* Inline math must not add padding or change the line box, so that
+   paragraphs keep uniform line spacing. */
+mjx-container:not([display="true"]) {
+  display: inline;
+  padding: 0;
+  margin: 0 1px;
+}
+
+mjx-container:not([display="true"]) > svg {
+  display: inline;
 }
 
 mjx-container > svg[data-labels="true"] {
