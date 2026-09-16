@@ -81,7 +81,7 @@ converged(c, vars, others, xnorm) =
 
     @testset "residual differentiates with respect to vars.ε" begin
         # The residual is heterogeneous when only one equation carries a Dual;
-        # subtract_elastic_correction must still accept it.
+        # the global equation must still accept it.
         c = SeriesModel(
             LinearViscosity(1.0e22),
             ParallelModel(LinearViscosity(1.0e21), IncompressibleElasticity(1.0e10)),

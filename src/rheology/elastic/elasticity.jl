@@ -14,6 +14,7 @@ end
 @inline _isvolumetric(::Elasticity) = true
 @inline series_state_functions(::Elasticity) = (compute_strain_rate, compute_volumetric_strain_rate)
 @inline parallel_state_functions(::Elasticity) = (compute_stress, compute_pressure)
+@inline viscosity_depends_on_state(::Elasticity) = false
 
 @inline compute_strain_rate(r::Elasticity; τ = 0, τ0 = 0, dt = 0, kwargs...) = τ / (2 * r.G * dt)
 @inline compute_volumetric_strain_rate(r::Elasticity; P = 0, P0 = 0, dt = 0, kwargs...) = -(P - P0) / (r.K * dt)

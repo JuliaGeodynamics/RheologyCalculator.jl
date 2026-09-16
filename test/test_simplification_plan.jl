@@ -11,6 +11,7 @@ compute_viscosity(::SimplificationTestRheology; kwargs...) = 3.0
 # 0.0, so a branch containing only this and a spring has no stiffness once `dt`
 # is absent.
 struct NoViscosityRheology <: AbstractRheology end
+RheologyCalculator.viscosity_depends_on_state(::NoViscosityRheology) = false
 
 @testset "simplification-plan regressions" begin
     @test compute_viscosity_series(SimplificationTestRheology()) == 3.0
@@ -41,12 +42,47 @@ struct NoViscosityRheology <: AbstractRheology end
     # without `dt` makes the spring's G*dt vanish, and the branch's only other
     # element contributes nothing.
     c_no_stiffness = SeriesModel(LinearViscosity(1.0e22), ParallelModel(elastic, NoViscosityRheology()))
-    @test_throws ArgumentError effective_strain_rate_correction(
+    @test_throws "must supply a nonzero `dt`" effective_strain_rate_correction(
         c_no_stiffness, 1.0e-14, (2.0e6,), (; P0 = (0.0,))
+    )
+    # Without the trait declaration the viscosity is taken as state-dependent,
+    # and the history tensor then needs the solver vector.
+    c_state_dependent = SeriesModel(LinearViscosity(1.0e22), ParallelModel(elastic, PowerLawViscosity(1.0e20, 3)))
+    @test_throws "with the solver vector `x`" effective_strain_rate_correction(
+        c_state_dependent, 1.0e-14, (2.0e6,), (; dt = 1.0e10)
     )
     @test effective_strain_rate_correction(
         c_no_stiffness, 1.0e-14, (2.0e6,), (; dt = 1.0e10, P0 = (0.0,))
     ) ≈ 2.0e6 / (2 * 1.0e10 * 1.0e10)
+
+    # Sub-branches of a parallel block that carries elastic history may hold
+    # rheology elements only; a nested composite, elastic or not, would be left
+    # out of the block's effective viscosity.
+    nested_msg = "Sub-branches of such a ParallelModel may contain rheology elements only"
+    c_nested_viscous = SeriesModel(
+        viscous, ParallelModel(viscous, SeriesModel(viscous, elastic, ParallelModel(viscous, viscous)))
+    )
+    @test_throws nested_msg effective_strain_rate_correction(c_nested_viscous, (1.0e-14, -1.0e-14, 0.0), ((0.0, 0.0, 0.0),), (; dt = 1.0e10))
+    c_nested_elastic = SeriesModel(
+        viscous, ParallelModel(viscous, SeriesModel(viscous, ParallelModel(viscous, elastic)))
+    )
+    @test_throws nested_msg effective_strain_rate_correction(c_nested_elastic, (1.0e-14, -1.0e-14, 0.0), ((0.0, 0.0, 0.0),), (; dt = 1.0e10))
+    # A block without elastic history takes no correction and is not restricted.
+    c_nested_no_history = SeriesModel(
+        elastic, ParallelModel(viscous, SeriesModel(viscous, ParallelModel(viscous, viscous)))
+    )
+    @test all(
+        isapprox.(
+            effective_strain_rate_correction(c_nested_no_history, (1.0e-14, -1.0e-14, 0.0), ((2.0e6, -2.0e6, 0.0),), (; dt = 1.0e10)),
+            (2.0e6, -2.0e6, 0.0) ./ (2 * 1.0e10 * 1.0e10)
+        )
+    )
+
+    @test viscosity_depends_on_state(SimplificationTestRheology())
+    @test viscosity_depends_on_state(PowerLawViscosity(1.0e20, 3))
+    for r in (viscous, elastic, Elasticity(1.0e10, 3.0e10), BulkElasticity(3.0e10), BulkViscosity(1.0e20))
+        @test !viscosity_depends_on_state(r)
+    end
 
     # A history field must carry one entry per element claiming it; an element
     # index past the end is a malformed `others`, not a value to be guessed.

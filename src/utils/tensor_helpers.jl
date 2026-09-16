@@ -123,7 +123,7 @@ function _elastic_stress_history(to_tensor::F, c, τII, ε, τ0, others) where {
 end
 
 function _elastic_stress_history(to_tensor::F, c, x::AbstractVector, ε, τ0, others) where {F}
-    ε_eff = ε .+ effective_strain_rate_correction(c, ε, τ0, others)
+    ε_eff = ε .+ effective_strain_rate_correction(c, x, ε, merge(others, (; τ0)))
     τII_elastic = compute_stress_elastic(c, x, others)
     return ntuple(i -> to_tensor(τII_elastic[i], ε_eff), length(τII_elastic))
 end

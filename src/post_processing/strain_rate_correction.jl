@@ -13,44 +13,77 @@ symmetric deviatoric tensor stored in Voigt-like component order.
 @inline second_invariant_value(a::Number) = second_invariant(a)
 @inline second_invariant_value(a::NTuple) = second_invariant(a...)
 
-# -----------------------------------------------------------------------
-# effective_strain_rate_correction — public entry points
-# -----------------------------------------------------------------------
-#
-# Called once per solve step (in solve(), before the Newton loop) to convert
-# the backstress histories τ0 into an additive correction on the prescribed
-# strain-rate tensor, moving the elastic memory to the left-hand side:
-#
-#   ε_eff = ε + correction(τ0)
-#
-# The corrected scalar invariant εII = second_invariant(ε_eff) is then what
-# the Newton solver actually sees; the elastic state functions themselves
-# are τ0-free (see docs/derivations/tensor_reduction.typ).
-# -----------------------------------------------------------------------
-
-# Pre-solve helper for solve(): correct ONLY the direct elastic leafs of the
-# outer composite using full tensor arithmetic.  ParallelModel branch corrections
-# are handled implicitly inside compute_residual and must NOT be included here.
-# Returns a zero correction when τ0 is absent from `others` or when the composite
-# has no direct elastic leafs.
-@inline function _direct_leaf_elastic_correction(c::SeriesModel, ε, others)
-    hasfield(typeof(others), :τ0) || return ε .* 0
-    return effective_strain_rate_correction(c.leafs, (), ε, others.τ0, others)
-end
-@inline _direct_leaf_elastic_correction(::AbstractCompositeModel, ε, others) = ε .* 0
+# Squared second invariant of a Voigt tuple; the `/ 2` keeps the element type.
+@inline _second_invariant_squared(xx, yy, xy) = (xx^2 + yy^2 + (-xx - yy)^2) / 2 + xy^2
+@inline _second_invariant_squared(xx, yy, zz, yz, xz, xy) = (xx^2 + yy^2 + zz^2) / 2 + xy^2 + yz^2 + xz^2
 
 """
+    differentiable_second_invariant(a)
+
+`second_invariant_value` with a derivative that stays finite at a zero tensor.
+
+The invariant is not differentiable where the tensor vanishes, which a load
+reversal can pass through. There it returns zero with zero derivative instead of
+the `NaN` that `√` produces. A scalar or a one-component tuple is returned as a
+signed scalar, as `second_invariant_value` does.
+"""
+@inline differentiable_second_invariant(a::Number) = a
+@inline differentiable_second_invariant(a::NTuple{1}) = a[1]
+@inline differentiable_second_invariant(a::NTuple) = safe_sqrt(_second_invariant_squared(a...))
+
+# -----------------------------------------------------------------------
+# History tensor H
+# -----------------------------------------------------------------------
+#
+# The elastic state functions are τ0-free, so the backstress histories enter the
+# solve only through the global deviatoric equation, which is posed on the
+# invariant of the assembled tensor
+#
+#   E = ε + H,   H = Σ_{springs k of the outer series} τ0_k / (2 G_k Δt)
+#                  + Σ_{parallel blocks b} Σ_{springs i of b} η*_i τ0_i / (2 η_KV,b)
+#
+# (see docs/derivations/tensor_reduction.typ and noncoaxial_reduction.typ).
+# H has the shape of ε: a Voigt tuple, or a signed scalar for scalar ε.
+# -----------------------------------------------------------------------
+
+"""
+    effective_strain_rate_correction(c, x, ε, others)
     effective_strain_rate_correction(c, ε, τ0, others)
 
-Compute the effective strain-rate correction induced by previous elastic stress
-history in composite `c`. Elastic elements contribute `τ0 / (2η)` using their
-current effective viscosity; non-elastic elements contribute zero.
-"""
-effective_strain_rate_correction(c::SeriesModel, ε::NTuple, τ0::NTuple, others) = effective_strain_rate_correction(iselastic(c), c, ε, τ0, others)
+Return the history tensor `H` of composite `c`, the strain-rate correction that
+carries the elastic backstresses into the solve: the global deviatoric equation
+of [`solve`](@ref) is posed on the second invariant of `ε + H`.
 
-# At least one elastic element exists: delegate to the (leafs, branches) decomposition.
-function effective_strain_rate_correction(::Val{true}, c::SeriesModel, ε::NTuple, τ0::NTuple, others)
-    return effective_strain_rate_correction(c.leafs, c.branches, ε, τ0, others)
+```
+H = Σ_k τ0_k / (2 G_k Δt) + Σ_b Σ_{i ∈ b} η*_i τ0_i / (2 η_KV,b)
+```
+
+The first sum runs over the springs of the outer `SeriesModel`, the second over
+the springs of each `ParallelModel` block `b`. In a block, `η_KV,b` is the sum of
+the effective viscosities of its elements (a sub-branch counts with the inverse
+sum of its own), `η*_i = 1` for a direct spring and `η*_i = η_M / (G_i Δt)` for a
+spring of a sub-branch with effective viscosity `η_M`. `H` has the shape of `ε`:
+a Voigt tuple, or a signed scalar.
+
+The first form reads `τ0` from `others` and evaluates block viscosities at the
+block strain-rate unknowns of the solver vector `x`; it applies to every
+composite. The second form takes `τ0` explicitly and needs no solver vector, so
+it applies only when every element of every block carrying elastic history has
+a viscosity that does not depend on the state (see
+[`viscosity_depends_on_state`](@ref)); otherwise it throws.
+"""
+effective_strain_rate_correction(c::SeriesModel, x::AbstractVector, ε, others) =
+    _history_tensor(c, generate_equations(c), x, ε, others)
+
+effective_strain_rate_correction(c::SeriesModel, ε, τ0, others) =
+    effective_strain_rate_correction(iselastic(c), c, ε, τ0, others)
+
+function effective_strain_rate_correction(::Val{true}, c::SeriesModel, ε, τ0, others)
+    _history_coefficients_constant(c) || _throw_history_needs_x()
+    # The block viscosities are state-independent, so any strain rate serves.
+    εII = second_invariant_value(ε)
+    εb = map(_ -> εII, c.branches)
+    return _history_tensor(c.leafs, c.branches, ε, τ0, others, εb)
 end
 
 # No elastic element anywhere in the composite: return a scalar zero of ε's element
@@ -59,25 +92,74 @@ end
 # lengths are independent: a purely viscous composite has τ0 = () alongside a
 # 3-component ε. Nothing here reads τ0, so it carries no annotation beyond `Tuple`.
 @inline effective_strain_rate_correction(::Val{false}, ::SeriesModel, ::NTuple{N, T}, ::Tuple, ::Any) where {N, T} = zero(T)
+@inline effective_strain_rate_correction(::Val{false}, ::SeriesModel, ε::Number, ::Tuple, ::Any) = zero(ε)
 
-# Scalar / non-NTuple ε overload used when ε is already a scalar invariant
-# (e.g. called recursively from inside the branch correction path).
-@inline effective_strain_rate_correction(c::SeriesModel, ε, τ0, others) = effective_strain_rate_correction(c.leafs, c.branches, ε, τ0, others)
+@noinline function _throw_history_needs_x()
+    throw(
+        ArgumentError(
+            "a parallel block carrying elastic history has an element whose viscosity depends " *
+                "on the state, so its history tensor depends on the solution; use " *
+                "`effective_strain_rate_correction(c, x, ε, others)` with the solver vector `x`"
+        )
+    )
+end
+
+# True when no block that carries elastic history holds an element whose
+# viscosity depends on the state.
+@inline _history_coefficients_constant(c::SeriesModel) =
+    !foldtuple(|, false, _block_depends_on_state, c.branches)
+
+@inline _block_depends_on_state(b::ParallelModel) =
+    _iselastic(b) && (_any_depends_on_state(b.leafs) || foldtuple(|, false, sub -> _any_depends_on_state(sub.leafs), b.branches))
+
+@inline _any_depends_on_state(leafs::Tuple) = foldtuple(|, false, viscosity_depends_on_state, leafs)
+
+# H at solver vector x. Block viscosities are evaluated at the block strain-rate
+# unknowns of x.
+@inline _history_tensor(c::SeriesModel, eqs, x, ε, others) = _history_tensor(iselastic(c), c, eqs, x, ε, others)
+@inline _history_tensor(::Val{false}, ::SeriesModel, eqs, x, ε, others) = ε .* zero(eltype(x))
+
+@inline function _history_tensor(::Val{true}, c::SeriesModel, eqs, x, ε, others)
+    # An absent `τ0` is a zero history, as for the element state functions,
+    # whose `τ0` and `P0` keywords default to zero.
+    hasfield(typeof(others), :τ0) || return ε .* zero(eltype(x))
+    εb = _block_strain_rates(eqs, x, c.branches)
+    return _history_tensor(c.leafs, c.branches, ε, others.τ0, others, εb)
+end
 
 # Split into two independent contributions and add them:
 #   1. Direct elastic leafs of the outer SeriesModel (simple Maxwell case).
 #   2. Elastic elements inside ParallelModel branches (KV / generalized Maxwell).
 # The τ0 tuple is ordered: leafs first (indexed 1 … n_el_leafs), then branches
-# (indexed n_el_leafs+1 … end), matching global_eltype_numbering.
-@inline function effective_strain_rate_correction(leafs::NTuple{N, Any}, branches::NTuple{Nb, Any}, ε, τ0::NTuple{Nτ}, others) where {N, Nb, Nτ}
+# (indexed n_el_leafs+1 … end), matching global_eltype_numbering. `εb` holds, per
+# branch, the strain rate at which its viscosities are evaluated.
+@inline function _history_tensor(leafs::NTuple{N, Any}, branches::NTuple{Nb, Any}, ε, τ0::NTuple{Nτ}, others, εb) where {N, Nb, Nτ}
     n_el_leafs = count_elastic(leafs)
     cor_leafs = if iszero(n_el_leafs)
         ε .* 0
     else
         effective_strain_rate_correction(leafs, (), ε, τ0, others)
     end
-    cor_branch = _kv_corrections(branches, ε, τ0, others, n_el_leafs)
+    cor_branch = _kv_corrections(branches, ε, τ0, others, n_el_leafs, εb)
     return cor_leafs .+ cor_branch
+end
+
+"""
+    _block_strain_rates(eqs, x, branches)
+
+The block strain-rate unknowns of `x`, one per branch of the outer
+`SeriesModel`. They are the children of its global `compute_strain_rate`
+equation that follow its local children, in branch order.
+"""
+@generated function _block_strain_rates(eqs::NTuple{N, Any}, x, branches::NTuple{Nb, Any}) where {N, Nb}
+    k = findfirst(E -> E.parameters[1] === true && E.parameters[3] === typeof(compute_strain_rate), collect(eqs.parameters))
+    k === nothing && return :(error("composite has no global deviatoric equation"))
+    entries = [:(x[child[end - $Nb + $i]]) for i in 1:Nb]
+    return quote
+        @inline
+        child = eqs[$k].child
+        return ($(entries...),)
+    end
 end
 
 # Scan the leaf tuple for elastic elements and accumulate their corrections.
@@ -94,7 +176,6 @@ end
         Base.@nexprs $N j -> begin
             i = update_correction_index(leafs[j], i)
             if i > 0
-                # η = compute_viscosity(leafs[j], merge((; ε), others))
                 ε_elastic_cor = ε_elastic_cor .+ effective_strain_rate_correction(leafs[j], ε, τ0[i], others, i)
             end
         end
@@ -222,28 +303,26 @@ end
     _assert_kv_nesting_supported(::Type{ParallelModel{L, B}})
 
 The `_η_KV`/`_η_eff_maxwell`/`_weighted_backstress`/`_n_elastic_in_parallel`
-formulas (see `docs/derivations/tensor_reduction.typ`) are derived for a `ParallelModel` branch
-whose `SeriesModel` sub-branches contain plain rheology leafs only -- i.e. at
-most one level of Series/Parallel alternation. They do not account for a
-`SeriesModel` sub-branch that itself contains a further nested `ParallelModel`.
+formulas (see `docs/derivations/tensor_reduction.typ`) are derived for a
+`ParallelModel` branch whose `SeriesModel` sub-branches contain plain rheology
+leafs only, i.e. at most one level of Series/Parallel alternation. `_η_eff_maxwell`
+reads only a sub-branch's leafs, so any composite nested inside a sub-branch
+would be left out of η_KV and of the backstress weights.
 
-Raise a clear error at specialisation time if such nesting contains an
-elastic element, rather than silently under-counting or omitting its
-backstress contribution (that element's `iselastic` still returns `true`, so
-the correction would otherwise be silently incomplete instead of zero/absent).
+Throw at specialisation time when a branch that carries elastic history has such
+a nested composite, whether or not the nested composite is itself elastic.
+Branches without elastic elements take no correction and are not restricted.
 """
 function _assert_kv_nesting_supported(::Type{ParallelModel{L, B}}) where {L, B}
+    _type_has_elastic(ParallelModel{L, B}) || return nothing
     for S in B.parameters
         sub_branches = S.parameters[2]  # SeriesModel sub-branch's own `branches` field type
-        for nested in sub_branches.parameters
-            _type_has_elastic(nested) && error(
-                "Generalized Maxwell / Kelvin-Voigt correction: an elastic element is nested " *
-                    "inside a ParallelModel more than one level deep inside a branch ($nested). " *
-                    "This is not supported by the current _η_KV / _weighted_backstress formulas, " *
-                    "which are only derived for a branch whose SeriesModel sub-branches contain " *
-                    "plain rheology leafs (see docs/derivations/tensor_reduction.typ)."
-            )
-        end
+        isempty(sub_branches.parameters) || error(
+            "elastic strain-rate correction: a ParallelModel that carries elastic history has a " *
+                "SeriesModel sub-branch with a nested composite ($(first(sub_branches.parameters))). " *
+                "Sub-branches of such a ParallelModel may contain rheology elements only " *
+                "(see docs/derivations/tensor_reduction.typ)."
+        )
     end
     return nothing
 end
@@ -269,21 +348,21 @@ function _branch_tau0_offsets(branches::Type)
 end
 
 """
-    _kv_corrections(branches, ε, τ0, others, offset)
+    _kv_corrections(branches, ε, τ0, others, offset, εb)
 
 Accumulate the generalized Maxwell / KV effective strain-rate corrections from
 all `ParallelModel` branches of a `SeriesModel`.
 
 `offset` is the number of elastic elements already consumed by the series
 leafs, so `τ0[offset + k]` is the backstress for the k-th elastic element
-inside the branches.
+inside the branches. Branch `i` evaluates its viscosities at strain rate `εb[i]`.
 
 The τ0 index for each branch is pre-computed at specialisation time (via
 `_n_elastic_in_parallel`) and baked in as a literal integer, yielding
 allocation-free, branch-free runtime code.
 """
 @generated function _kv_corrections(
-        branches::NTuple{Nb, Any}, ε, τ0, others, offset
+        branches::NTuple{Nb, Any}, ε, τ0, others, offset, εb
     ) where {Nb}
     offsets = _branch_tau0_offsets(branches)
 
@@ -291,7 +370,7 @@ allocation-free, branch-free runtime code.
     # index baked in as a literal integer — no runtime bookkeeping needed.
     stmts = Any[:(cor = ε .* 0)]
     for i in 1:Nb
-        push!(stmts, :(cor = cor .+ _kv_branch_correction(branches[$i], ε, τ0, others, offset + $(offsets[i]))))
+        push!(stmts, :(cor = cor .+ _kv_branch_correction(branches[$i], ε, τ0, others, offset + $(offsets[i]), εb[$i])))
     end
     push!(stmts, :(cor))
 
@@ -302,7 +381,7 @@ allocation-free, branch-free runtime code.
 end
 
 """
-    _kv_branch_correction(branch::ParallelModel, ε, τ0, others, el_idx_start)
+    _kv_branch_correction(branch::ParallelModel, ε, τ0, others, el_idx_start, εb)
 
 Compute the generalized Maxwell / Kelvin-Voigt effective strain-rate correction
 for a single `ParallelModel` branch.  Returns zero immediately when the branch
@@ -314,15 +393,13 @@ The correction follows equation (*) in `docs/derivations/tensor_reduction.typ`:
 
 `el_idx_start` is the 1-based index of the elastic element immediately before
 the first elastic element owned by this branch (i.e. `τ0[el_idx_start + 1]`
-is this branch's first backstress entry).
+is this branch's first backstress entry). The branch viscosities are evaluated
+at the scalar strain rate `εb`.
 """
-@inline function _kv_branch_correction(branch::ParallelModel, ε, τ0, others, el_idx_start)
+@inline function _kv_branch_correction(branch::ParallelModel, ε, τ0, others, el_idx_start, εb)
     # Short-circuit: no elastic elements anywhere in this parallel block.
     iselastic(branch) == Val(false) && return ε .* 0
-    # Reduce ε to its scalar second invariant for viscosity queries.
-    # All viscosity functions operate on the invariant, not the full tensor.
-    εII = second_invariant_value(ε)
-    args = merge((; ε = εII), others)
+    args = merge((; ε = εb), others)
     # η_KV: arithmetic sum of effective viscosities of all sub-elements
     # (viscous leafs + Maxwell sub-branches).  This is the denominator of (*).
     η_KV = _checked_η_KV(branch.leafs, branch.branches, args)
@@ -345,8 +422,9 @@ viscosity of each Maxwell `SeriesModel` sub-branch.
 """
 @inline function _η_KV(leafs::NTuple{N, AbstractRheology}, subs::Tuple, args) where {N}
     # Arithmetic sum over the direct leafs of the ParallelModel: a viscous leaf
-    # contributes η, an elastic one G*dt.
-    η = foldtuple(+, 0.0, l -> compute_viscosity_series(l, args), leafs)
+    # contributes η, an elastic one G*dt. The `false` seed is an additive zero
+    # that takes the viscosities' type, so Float32 and dual numbers are preserved.
+    η = foldtuple(+, false, l -> compute_viscosity_series(l, args), leafs)
     # Each Maxwell SeriesModel sub-branch contributes its harmonic-mean
     # effective viscosity η_eff_M = (η_v * G*dt)/(η_v + G*dt).
     return foldtuple(+, η, sub -> _η_eff_maxwell(sub.leafs, args), subs)
@@ -394,27 +472,7 @@ Maxwell formula `η_v * G * dt / (η_v + G * dt)`.
 # The harmonic mean -- the inverse of the sum of inverses -- is the effective
 # viscosity of elements in series.
 @inline _η_eff_maxwell(leafs::NTuple{N, AbstractRheology}, args) where {N} =
-    inv(foldtuple(+, 0.0, l -> inv(compute_viscosity_series(l, args)), leafs))
-
-"""
-    _η_eff_elastic(leafs, args)
-
-Return the effective viscosity of the elastic element inside a Maxwell
-sub-branch leaf tuple (= `G * dt`).  The elastic element is identified at
-*compile time* by type inspection, so the generated code is a single
-`compute_viscosity` call with a literal index.
-
-Returns `0.0` if no elastic element is found (should not happen for a Maxwell
-branch, but is safe for non-elastic tuples).
-"""
-@generated function _η_eff_elastic(leafs::T, args) where {T}
-    # Resolve the elastic element's position at specialisation time by scanning
-    # the concrete leaf types. The emitted code is a single compute_viscosity
-    # call with a literal index — no runtime search.
-    idx = findfirst(Ti -> Ti <: AbstractElasticity, collect(T.parameters))
-    idx === nothing && return :(0.0)  # safe fallback; should not occur for a Maxwell branch
-    return :(compute_viscosity(leafs[$idx], args))
-end
+    inv(foldtuple(+, false, l -> inv(compute_viscosity_series(l, args)), leafs))
 
 # Compile-time positions of the elastic sources inside a `ParallelModel` branch:
 # the elastic direct leafs, and per sub-branch the elastic leafs within it.
@@ -433,21 +491,19 @@ end
 
 """
     _weighted_backstress(leafs, subs, ε, τ0, args, el_idx_start)
-    _weighted_backstress_scalar(leafs, subs, τ0, args, el_idx_start)
 
 Compute the weighted backstress numerator `Σ_i η_star_i * τ0_i` for a
-`ParallelModel` branch, as a tensor and as a scalar respectively. The scalar
-form reduces each `τ0` entry to its second invariant; the weighting is the
-same.
+`ParallelModel` branch, with the shape of `ε`.
 
 Two classes of elastic sources contribute:
 - **Direct elastic leafs** of the `ParallelModel`: `η_star = 1`.  These
   correspond to the simple Kelvin-Voigt case where the elastic element is a
   direct parallel element (backstress enters undiluted).
-- **Maxwell `SeriesModel` sub-branches**: `η_star = η_eff_M / η_el`, where
-  `η_eff_M` is the harmonic-mean effective viscosity of the sub-branch and
-  `η_el = G * dt`.  This is the generalized Maxwell weighting: a softer spring
-  (small G) makes `η_star → 1`; a very stiff spring makes `η_star → 0`.
+- **Springs of a `SeriesModel` sub-branch**: `η_star = η_eff_M / η_el`, where
+  `η_eff_M` is the effective viscosity of the whole sub-branch and
+  `η_el = G * dt` uses that spring's own `G`. This is the generalized Maxwell
+  weighting: a softer spring (small G) makes `η_star → 1`; a very stiff spring
+  makes `η_star → 0`.
 
 All τ0 index literals and η_star computations are resolved at *compile time*
 (via `@generated`), so the emitted code is a flat sequence of multiply-adds.
@@ -456,12 +512,6 @@ leaf count.
 """
 @inline _weighted_backstress(leafs, subs, ε, τ0, args, el_idx_start) =
     _accumulate_weighted_backstress(identity, ε .* 0, leafs, subs, τ0, args, el_idx_start)
-
-# Scalar counterpart: the same weighting applied to the second invariant of each
-# backstress. Sharing one body is what keeps the pre-solve tensor correction and
-# the implicit residual correction computing the same quantity.
-@inline _weighted_backstress_scalar(leafs, subs, τ0, args, el_idx_start) =
-    _accumulate_weighted_backstress(second_invariant_value, 0.0, leafs, subs, τ0, args, el_idx_start)
 
 # Σ_i η_star_i * entry(τ0_i), accumulated from `seed`. Every τ0 index and every
 # η_star expression is resolved here at specialisation time, so the emitted code
@@ -481,17 +531,17 @@ leaf count.
         push!(stmts, :(ws = ws .+ entry(τ0[el_idx_start + $el_count])))
     end
 
-    # Maxwell SeriesModel sub-branches: η_star = η_eff_M / η_el = η_v / (η_v + G*dt),
-    # so a soft spring gives η_star → 1 and a stiff one η_star → 0.
+    # Springs of a SeriesModel sub-branch: η_star = η_eff_M / (G*dt), with η_eff_M
+    # shared by the sub-branch and G the spring's own modulus.
     for j in 1:Ns
-        for _ in per_sub[j]
+        isempty(per_sub[j]) && continue
+        η_eff_M = Symbol(:η_eff_M_, j)
+        push!(stmts, :($η_eff_M = _η_eff_maxwell(subs[$j].leafs, args)))
+        for pos in per_sub[j]
             el_count += 1
             push!(
-                stmts, quote
-                    η_eff_M = _η_eff_maxwell(subs[$j].leafs, args)
-                    η_el = _η_eff_elastic(subs[$j].leafs, args)
-                    ws = ws .+ (η_eff_M / η_el) .* entry(τ0[el_idx_start + $el_count])
-                end
+                stmts,
+                :(ws = ws .+ ($η_eff_M / compute_viscosity(subs[$j].leafs[$pos], args)) .* entry(τ0[el_idx_start + $el_count]))
             )
         end
     end
@@ -501,137 +551,4 @@ leaf count.
         @inline
         $(stmts...)
     end
-end
-
-# -----------------------------------------------------------------------
-# Implicit elastic correction — added to the Newton residual (Option 3)
-# -----------------------------------------------------------------------
-#
-# Rather than pre-correcting the input strain rate before the Newton loop,
-# these functions subtract the elastic backstress correction directly from
-# the global-equation residual at each Newton iteration:
-#
-#   R[1]  -=  correction(x)
-#
-# where  correction(x) = Σ direct-leaf τ0/(2η)
-#                       + Σ_branches ws(x[branch_eq]) / (2 η_KV(x[branch_eq]))
-#
-# Because the branch terms depend on x (through x[branch_eq_idx], the branch
-# strain rate), ForwardDiff automatically differentiates through them, giving
-# an exact Jacobian for any viscosity law.
-#
-# For LINEAR viscosities η = const and results are numerically identical to
-# the old pre-correction approach.  For nonlinear viscosities in branches
-# the Newton iterations now converge to the true fully-implicit solution.
-# -----------------------------------------------------------------------
-
-"""
-    _implicit_elastic_correction(c::SeriesModel, eqs, x, others)
-
-Scalar elastic backstress correction to subtract from the global residual.
-Combines the constant direct-leaf contribution and the x-dependent branch
-contribution (which is differentiated through by ForwardDiff).
-"""
-function _implicit_elastic_correction(c::SeriesModel, eqs, x::SVector{N, T}, others) where {N, T}
-    # τ0 may be absent when compute_residual is called directly without elastic
-    # history (e.g. test code or initialisation).  No correction in that case.
-    hasfield(typeof(others), :τ0) || return zero(T)
-    τ0 = others.τ0
-    n_el_leafs = count_elastic(c.leafs)
-    # Direct leaf (Maxwell) corrections are pre-applied in solve() with full tensor
-    # arithmetic.  Only the x-dependent branch corrections belong here.
-    return _kv_implicit_corrections_scalar(c.branches, eqs, x, τ0, others, n_el_leafs)
-end
-
-# Constant correction from elastic elements that are direct leafs of the outer
-# SeriesModel (simple Maxwell: each contributes τ0_II / (2G·dt)).
-# Elastic leaf positions and τ0 indices are resolved at specialisation time.
-@generated function _direct_leaf_correction_scalar(leafs::NTuple{N, Any}, τ0, others) where {N}
-    elastic_positions, _ = _elastic_source_positions(leafs, Tuple{})
-    stmts = Any[:(cor = 0.0)]
-    for (count, pos) in enumerate(elastic_positions)
-        push!(
-            stmts, quote
-                η = compute_viscosity(leafs[$pos], others)
-                cor += second_invariant_value(τ0[$count]) / (2 * η)
-            end
-        )
-    end
-    push!(stmts, :(cor))
-    return quote
-        @inline; $(stmts...)
-    end
-end
-
-# Return the position within `positions` (in order) of the i-th entry whose
-# `mask` is true. `positions`/`mask` are small homogeneous tuples (Int/Bool),
-# so this is fully type-stable regardless of how heterogeneous the underlying
-# `eqs::NTuple{N, CompositeEquation}` tuple is.
-@inline function _nth_true_position(mask::NTuple{M, Bool}, positions::NTuple{M, Int}, i::Int) where {M}
-    c = 0
-    for j in 1:M
-        if mask[j]
-            c += 1
-            c == i && return positions[j]
-        end
-    end
-    error("_nth_true_position: found fewer than $i matching branch equations (found $c)")
-end
-
-# Accumulate the implicit KV/Maxwell branch corrections across all branches.
-#
-# A top-level branch's *own* compute_stress equation is uniquely identified by
-# `eq.parent == eqs[1].self` (the outer SeriesModel's own equation is always
-# the first equation emitted, self = 1) combined with `fn === compute_stress`:
-# only a branch's own equation is a *direct* child of the outer equation;
-# anything nested further inside that branch (e.g. a ParallelModel nested more
-# than one level deep, or another branch's own sub-structure) has `.parent`
-# pointing at its own enclosing equation instead. This correctly disambiguates
-# branches from each other and from their own nested sub-structure regardless
-# of nesting depth or whether rheology types collide anywhere in the tree —
-# unlike matching on rheology type alone, which can be fooled by a *different*
-# branch's nested equation sharing the same leaf type.
-#
-# `.parent`/`.self` are runtime `Int` fields (not part of `CompositeEquation`'s
-# type), so this match can't be resolved at `@generated` specialisation time;
-# only the `fn === compute_stress` pre-filter can (CompositeEquation{IsGlobal,
-# T, F, R, RT}: F is parameter index 3). The pre-filtered candidate positions
-# are baked in as literals, and the final `.parent` comparisons run once per
-# branch at call time via `_nth_true_position` above.
-@generated function _kv_implicit_corrections_scalar(
-        branches::NTuple{Nb, Any}, eqs::NTuple{N, Any}, x, τ0, others, offset
-    ) where {Nb, N}
-    stress_positions = Tuple(k for k in 1:N if eqs.parameters[k].parameters[3] === typeof(compute_stress))
-    mask_expr = Expr(:tuple, (:(eqs[$k].parent == outer_self) for k in stress_positions)...)
-
-    offsets = _branch_tau0_offsets(branches)
-
-    stmts = Any[:(cor = 0.0), :(outer_self = eqs[1].self), :(mask = $mask_expr)]
-    for i in 1:Nb
-        push!(
-            stmts, quote
-                bpos = _nth_true_position(mask, $stress_positions, $i)
-                cor += _kv_implicit_branch_correction_scalar(
-                    branches[$i], x[bpos], τ0, others, offset + $(offsets[i])
-                )
-            end
-        )
-    end
-    push!(stmts, :(cor))
-    return quote
-        @inline; $(stmts...)
-    end
-end
-
-_kv_implicit_corrections_scalar(::Tuple{}, ::NTuple{N, Any}, ::Any, ::Any, ::Any, ::Any) where {N} = 0.0
-
-# Per-branch implicit correction: ws(ε_branch) / (2 η_KV(ε_branch)).
-# ε_branch = x[branch_eq_idx] is the branch's local strain rate from the
-# current Newton iterate — correct for both linear and nonlinear viscosities.
-@inline function _kv_implicit_branch_correction_scalar(branch::ParallelModel, ε_branch, τ0, others, el_idx_start)
-    iselastic(branch) == Val(false) && return zero(ε_branch)
-    args = merge((; ε = ε_branch), others)
-    η_KV = _checked_η_KV(branch.leafs, branch.branches, args)
-    ws = _weighted_backstress_scalar(branch.leafs, branch.branches, τ0, args, el_idx_start)
-    return ws / (2 * η_KV)
 end

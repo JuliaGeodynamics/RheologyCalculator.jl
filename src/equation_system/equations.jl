@@ -447,9 +447,14 @@ subtract_parent(residual::Number, x::SVector, eq::CompositeEquation, vars) = res
     compute_residual(c, x, vars, others)
 
 Evaluate the residual vector for composite model `c` at solver vector `x`.
-`vars` contains prescribed inputs such as strain-rate invariants; `others`
-contains nondifferentiable auxiliary fields such as `dt`, `τ0`, `P0`, or other
-history/state parameters.
+`vars` contains prescribed inputs: the strain rate `ε`, as a Voigt tuple or a
+scalar, and the volumetric strain rate `θ`. `others` contains nondifferentiable
+auxiliary fields such as `dt`, `τ0`, `P0`, or other history/state parameters.
+
+The global deviatoric equation of a `SeriesModel` is posed on the second
+invariant of `ε + H`, where `H` is the history tensor of
+[`effective_strain_rate_correction`](@ref); other composites use the invariant
+of `ε`.
 """
 function compute_residual(c, x::SVector{N, T}, vars, others) where {N, T}
 
@@ -460,42 +465,34 @@ function compute_residual(c, x::SVector{N, T}, vars, others) where {N, T}
     # evaluates the self-components of the residual
     residual = evaluate_state_functions(eqs, args_all, others)
     residual = add_children(residual, x, eqs)
-    residual = subtract_parent(residual, x, eqs, vars)
+    residual = subtract_parent(residual, x, eqs, invariant_vars(c, eqs, x, vars, others))
 
     return SA[residual...]
 end
 
-# SeriesModel specialisation: subtracts the implicit elastic backstress correction
-# from the global equation residual. For non-elastic composites the fallback in
-# subtract_elastic_correction is a no-op, so there is no overhead.
-function compute_residual(c::SeriesModel, x::SVector{N, T}, vars, others) where {N, T}
+"""
+    invariant_vars(c, eqs, x, vars, others)
 
-    eqs = generate_equations(c)
-    @assert length(eqs) == length(x)
-    args_all = generate_args_template(eqs, x, others)
+`vars` with the strain rate replaced by the scalar the global deviatoric
+equation subtracts: the invariant of `ε + H` for a `SeriesModel`, of `ε`
+otherwise. `H` depends on `x` through the block viscosities, so this is part of
+the differentiated residual.
+"""
+@inline invariant_vars(c, eqs, x, vars::NamedTuple, others) =
+    hasfield(typeof(vars), :ε) ? merge(vars, (; ε = _global_strain_rate(c, eqs, x, vars.ε, others))) : vars
 
-    residual = evaluate_state_functions(eqs, args_all, others)
-    residual = add_children(residual, x, eqs)
-    residual = subtract_parent(residual, x, eqs, vars)
-    residual = subtract_elastic_correction(c, eqs, residual, x, others)
+@inline _global_strain_rate(c, eqs, x, ε, others) =
+    differentiable_second_invariant(assembled_strain_rate(c, eqs, x, ε, others))
 
-    return SA[residual...]
-end
+"""
+    assembled_strain_rate(c, eqs, x, ε, others)
 
-# Subtract the implicit elastic correction from the first (global) residual entry.
-# The correction is a scalar function of x (through the branch strain rates), so
-# ForwardDiff differentiates through it automatically.
-# `residual` is annotated by length only: differentiating with respect to a
-# quantity that enters a single equation makes it heterogeneous (one Dual entry
-# among Float64s), which NTuple{N} would reject.
-@inline function subtract_elastic_correction(c::SeriesModel, eqs, residual::Tuple{Vararg{Any, N}}, x::SVector{N}, others) where {N}
-    iselastic(c) == Val(false) && return residual
-    cor = _implicit_elastic_correction(c, eqs, x, others)
-    return _subtract_first(residual, cor)
-end
-
-# Return a new NTuple with the first entry decreased by `cor`.
-@inline _subtract_first(r::Tuple{Vararg{Any, N}}, cor) where {N} = (r[1] - cor, Base.tail(r)...)
+The tensor `E = ε + H` whose invariant the global deviatoric equation solves
+for, with `H` the history tensor at solver vector `x`. Composites other than a
+`SeriesModel` carry no history correction, so `E = ε`.
+"""
+@inline assembled_strain_rate(c::SeriesModel, eqs, x, ε, others) = ε .+ _history_tensor(c, eqs, x, ε, others)
+@inline assembled_strain_rate(c, eqs, x, ε, others) = ε
 
 function compute_residual(c, x::SVector{N, T}, vars, others, ::Int, ::Int) where {N, T}
 
@@ -506,7 +503,7 @@ function compute_residual(c, x::SVector{N, T}, vars, others, ::Int, ::Int) where
     eq = first(eqs)
     residual = evaluate_state_function(eq, args_all, others)
     residual = add_children(residual, x, eq)
-    residual = subtract_parent(residual, x, eq, vars)
+    residual = subtract_parent(residual, x, eq, invariant_vars(c, eqs, x, vars, others))
 
     return residual
 end

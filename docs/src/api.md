@@ -81,6 +81,7 @@ RheologyCalculator.compute_plastic_stress
 RheologyCalculator.compute_viscosity
 RheologyCalculator.compute_viscosity_series
 RheologyCalculator.compute_viscosity_parallel
+viscosity_depends_on_state
 ```
 
 ## Argument Helpers

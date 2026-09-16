@@ -28,7 +28,7 @@ function validate(c::AbstractCompositeModel, vars, others)
     isbitstype(typeof(vars)) || throw(ArgumentError("vars must be an isbits type"))
     isbitstype(typeof(others)) || throw(ArgumentError("others must be an isbits type"))
     hasproperty(vars, :ε) || throw(ArgumentError("vars must contain `ε`"))
-    all(isfinite, (vars.ε,)) || throw(ArgumentError("vars.ε must be finite"))
+    all(isfinite, vars.ε) || throw(ArgumentError("vars.ε must be finite"))
     _validate_elements(c.leafs, others)
     _validate_elements(c.branches, others)
     return c

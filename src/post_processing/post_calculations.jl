@@ -138,8 +138,11 @@ end
 #   η_star = η_eff_M / η_el  for a Maxwell sub-branch   (attenuated backstress)
 #
 # Inverting (*) gives ε_p, from which each spring's physical stress follows:
-#   τ_spring = τ0_i + 2 * η_i * ε_p                (direct elastic leaf)
-#   τ_spring = 2 * η_eff_M * (ε_p + τ0_i / (2*η_el)) (Maxwell sub-branch)
+#   τ_spring = τ0_i + 2 * η_i * ε_p                      (direct elastic leaf)
+#   τ_spring = 2 * η_eff_M * (ε_p + Σ_k τ0_k / (2*η_el,k)) (spring of a sub-branch)
+#
+# Every spring of a sub-branch carries the sub-branch stress, so the sum runs
+# over all springs k of that sub-branch, each with its own η_el,k = G_k*dt.
 #
 # All index arithmetic is resolved at *compile time* by the @generated
 # functions below — the emitted code is a flat sequence of arithmetic with no
@@ -191,7 +194,7 @@ where `ws = Σ η_star_i * τ0_i` (scalar weighted-backstress sum) and
 
 Each spring stress is then:
   - direct KV leaf:    `τ0_II + 2 * η * ε_p`
-  - Maxwell sub-branch: `2 * η_eff_M * (ε_p + τ0_II / (2 * η_el))`
+  - spring of a sub-branch: `2 * η_eff_M * (ε_p + Σ_k τ0_II,k / (2 * η_el,k))`, summed over the springs of that sub-branch
 
 `el_idx_start` is the 0-based index of the elastic element immediately before
 the first one owned by this branch (`τ0[el_idx_start + 1]` is this branch's
@@ -228,9 +231,9 @@ first backstress entry).
         i = info[k]
         # Direct elastic leaf of the ParallelModel (pure KV): the spring stress
         # is simply the backstress plus the elastic loading from ε_p.
-        # Maxwell SeriesModel sub-branch: use the Maxwell effective viscosity
-        # and the sub-branch's elastic viscosity η_el = G * dt.
-        i.direct ? i.τ0_II + 2 * i.η * ε_p : 2 * i.η_eff_M * (ε_p + i.τ0_II / (2 * i.η_el))
+        # Spring of a SeriesModel sub-branch: the sub-branch stress, from its
+        # effective viscosity and the backstress rate of all its springs.
+        i.direct ? i.τ0_II + 2 * i.η * ε_p : 2 * i.η_eff_M * (ε_p + i.hist_rate / 2)
     end
 end
 
@@ -241,14 +244,14 @@ Compile-time–generated helper that returns a tuple of NamedTuples, one per
 elastic source inside a `ParallelModel` branch, containing everything needed
 by `_branch_elastic_stress` to reconstruct the physical spring stress:
 
-| field    | meaning                                                  |
-|----------|----------------------------------------------------------|
-| η_star   | backstress weight: 1.0 (direct leaf) or η_eff_M/η_el    |
-| τ0_II    | scalar second invariant of the previous spring stress    |
-| direct   | true = direct elastic leaf, false = Maxwell sub-branch   |
-| η        | elastic viscosity G*dt (direct leaf only)                |
-| η_eff_M  | Maxwell effective viscosity 1/(1/η_v + 1/(G*dt)) (sub-branch) |
-| η_el     | elastic viscosity G*dt of the sub-branch (sub-branch)    |
+| field     | meaning                                                        |
+|-----------|----------------------------------------------------------------|
+| η_star    | backstress weight: 1 (direct leaf) or η_eff_M/(G*dt)           |
+| τ0_II     | scalar second invariant of the previous spring stress          |
+| direct    | true = direct elastic leaf, false = spring of a sub-branch     |
+| η         | elastic viscosity G*dt (direct leaf only)                      |
+| η_eff_M   | effective viscosity 1/Σ(1/η) of the sub-branch (sub-branch)    |
+| hist_rate | Σ_k τ0_II,k/(G_k*dt) over the springs of the sub-branch (sub-branch) |
 
 The element positions inside `leafs` and each sub-branch's leaf tuple are
 found by type inspection at specialisation time (`<: AbstractElasticity`), and
@@ -276,30 +279,36 @@ so that `τ0[el_idx_start + k]` is the k-th elastic backstress owned by this bra
                     info..., (
                         η_star = 1.0, τ0_II = τ0_II, direct = true,
                         η = compute_viscosity(leafs[$pos], args),
-                        η_eff_M = 0.0, η_el = 1.0,
+                        η_eff_M = 0.0, hist_rate = 0.0,
                     ),
                 )
             end
         )
     end
 
-    # --- Maxwell SeriesModel sub-branches (η_star = η_eff_M / η_el) ---
-    # The Maxwell weighting attenuates the backstress: a soft spring (small G)
-    # contributes nearly all its backstress (η_star → 1); a very stiff spring
-    # contributes negligibly (η_star → 0, element behaves as a pure dashpot).
+    # --- Springs of SeriesModel sub-branches (η_star = η_eff_M / (G*dt)) ---
+    # η_eff_M and hist_rate belong to the sub-branch; η_el is each spring's own G*dt.
     for j in 1:Ns
-        for _ in sub_elastic_pos[j]
+        isempty(sub_elastic_pos[j]) && continue
+        η_eff_M, hist_rate = Symbol(:η_eff_M_, j), Symbol(:hist_rate_, j)
+        el_first = el_count
+        push!(stmts, :($η_eff_M = _η_eff_maxwell(subs[$j].leafs, args)))
+        rate_terms = [
+            :(second_invariant_value(τ0[el_idx_start + $(el_first + k)]) / compute_viscosity(subs[$j].leafs[$pos], args))
+                for (k, pos) in enumerate(sub_elastic_pos[j])
+        ]
+        push!(stmts, :($hist_rate = +($(rate_terms...))))
+        for pos in sub_elastic_pos[j]
             el_count += 1
             push!(
                 stmts, quote
                     τ0_II = second_invariant_value(τ0[el_idx_start + $el_count])
-                    η_eff_M = _η_eff_maxwell(subs[$j].leafs, args)   # 1/(1/η_v + 1/(G*dt))
-                    η_el = _η_eff_elastic(subs[$j].leafs, args)   # G * dt
                     # η = 0.0 unused for sub-branch recovery (direct = false).
                     info = (
                         info..., (
-                            η_star = η_eff_M / η_el, τ0_II = τ0_II, direct = false,
-                            η = 0.0, η_eff_M = η_eff_M, η_el = η_el,
+                            η_star = $η_eff_M / compute_viscosity(subs[$j].leafs[$pos], args),
+                            τ0_II = τ0_II, direct = false,
+                            η = 0.0, η_eff_M = $η_eff_M, hist_rate = $hist_rate,
                         ),
                     )
                 end

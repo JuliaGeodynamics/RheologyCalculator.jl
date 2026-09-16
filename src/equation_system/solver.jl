@@ -90,9 +90,10 @@ Newton-Raphson iteration and backtracking line search.
 contains prescribed differentiable inputs such as `ε` and `θ`; `others`
 contains nondifferentiable auxiliary values such as `dt`, `τ0`, and `P0`.
 
-For tensor-valued strain rates, the solver applies
-`effective_strain_rate_correction` and solves in terms of the second invariant
-of the corrected effective strain-rate tensor.
+`vars.ε` is a Voigt tuple or a scalar. The global deviatoric equation is posed
+on the second invariant of `ε + H`, where `H` is the history tensor of
+[`effective_strain_rate_correction`](@ref), so non-coaxial and reversed
+backstresses enter with their orientation and sign. A scalar `ε` is signed.
 
 # Keywords
 - `xnorm0`: normalization vector for residual norms. If `nothing`, ones are used.
@@ -111,19 +112,7 @@ at floating-point precision for three consecutive iterations. This prevents a
 residual floor that cannot be represented by the selected numeric type from
 consuming the full `itermax` budget.
 """
-function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0 = nothing, atol::Float64 = 1.0e-12, rtol::Float64 = 1.0e-12, itermax = 1.0e4, verbose::Bool = false)
-    # Pre-correct ONLY the direct elastic leafs of the outer composite
-    # (simple Maxwell backstress).  Tensor arithmetic is used here so that
-    # second_invariant(ε + τ0/(2G·dt)) is evaluated correctly even for
-    # non-coaxial ε/τ0 pairs.
-    # ParallelModel branch corrections are handled implicitly inside
-    # compute_residual via subtract_elastic_correction, so they must NOT be
-    # included here to avoid double-counting.
-    ε_corr = _direct_leaf_elastic_correction(c, vars0.ε, others)
-    εII = second_invariant_value(vars0.ε .+ ε_corr)
-    vars = merge(vars0, (; ε = εII))
-
-    # vars = merge((; ε = εII), vars0)
+function solve(c::AbstractCompositeModel, x::SVector, vars, others; xnorm0 = nothing, atol::Float64 = 1.0e-12, rtol::Float64 = 1.0e-12, itermax = 1.0e4, verbose::Bool = false)
     xnorm = correct_xnorm(x, xnorm0)
     # Initial residual and its Jacobian, fused: the loop below always runs at
     # least one iteration (`er` starts at `Inf`, not `er0`), so this Jacobian
@@ -136,7 +125,7 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0 = no
     # value stored in the returned `RCSolution` is inferrable.
     er = oftype(er0, Inf)
 
-    nonneg = branch_strain_rate_mask(c)
+    nonneg = branch_strain_rate_mask(c, vars.ε)
 
     α = 1.0e0
     stagnant_iters = 0
@@ -171,12 +160,6 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0 = no
         if stagnant_iters ≥ 3
             throw(NonConvergenceError(it, er, x, :stagnation))
         end
-
-        # ε_corr = effective_strain_rate_correction(c, vars0.ε, others.τ0, others)
-        # ε_eff  = vars0.ε .+ ε_corr
-        # εII    = second_invariant_value(ε_eff)
-        # vars   = merge(vars0, (; ε = εII)) # this mames it type unstable; TODO
-
     end
     if verbose && it > 1
         println("Iterations: $it, Error: $er, α = $α")
@@ -312,10 +295,10 @@ end
 Return an `SVector{N,Bool}` marking the entries of the solver vector of `c` that
 hold the strain rate of a parallel branch.
 
-These are second invariants and so non-negative, but the Newton iterate itself
-is not: at low imposed strain rate it overshoots below zero, where a power law's
-`ε^(1/n)` is undefined. The mask lets [`solve`](@ref) bound the step for exactly
-these entries. Stress and multiplier unknowns are left unbounded — their
+For a tensor strain rate these are second invariants and so non-negative, but
+the Newton iterate itself is not: at low imposed strain rate it overshoots below
+zero, where a power law's `ε^(1/n)` is undefined. The mask lets [`solve`](@ref)
+bound the step for exactly these entries. Stress and multiplier unknowns are left unbounded — their
 iterates are not the ones observed to leave the physical range, and bounding an
 entry that starts at zero would block the first step.
 """
@@ -323,6 +306,11 @@ function branch_strain_rate_mask(c::AbstractCompositeModel)
     eqs = generate_equations(c)
     return SA[branch_strain_rate_mask(eqs)...]
 end
+
+# A signed scalar strain rate makes the branch strain rates signed too: after a
+# load reversal they are physically negative, so no entry is bounded.
+branch_strain_rate_mask(c::AbstractCompositeModel, ::Tuple) = branch_strain_rate_mask(c)
+branch_strain_rate_mask(c::AbstractCompositeModel, ::Number) = zero(branch_strain_rate_mask(c))
 
 @inline branch_strain_rate_mask(eqs::NTuple{N, CompositeEquation}) where {N} =
     maptuple(eq -> _is_branch_strain_rate(eq.fn), eqs)

@@ -12,5 +12,6 @@ end
 @inline _isvolumetric(::BulkElasticity) = true
 @inline series_state_functions(::BulkElasticity) = (compute_volumetric_strain_rate,)
 @inline parallel_state_functions(::BulkElasticity) = (compute_pressure,)
+@inline viscosity_depends_on_state(::BulkElasticity) = false
 @inline compute_volumetric_strain_rate(r::BulkElasticity; P = 0, P0 = 0, dt = 0, kwargs...) = -(P - P0) / (r.K * dt)
 @inline compute_pressure(r::BulkElasticity; θ = 0, P0 = 0, dt = 0, kwargs...) = P0 - r.K * dt * θ

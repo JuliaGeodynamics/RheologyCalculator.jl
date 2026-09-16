@@ -12,6 +12,7 @@ end
 @inline _isvolumetric(::BulkViscosity) = true
 @inline series_state_functions(::BulkViscosity) = (compute_volumetric_strain_rate,)
 @inline parallel_state_functions(::BulkViscosity) = (compute_pressure,)
+@inline viscosity_depends_on_state(::BulkViscosity) = false
 
 # Sign convention: `P` is positive in compression and `θ` positive in dilation, so
 # compressing the material must compact it and the two carry opposite signs.

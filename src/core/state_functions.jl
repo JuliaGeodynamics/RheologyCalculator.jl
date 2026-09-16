@@ -150,5 +150,25 @@ Concrete rheologies may specialize this separately from `compute_viscosity`
 when the effective-viscosity estimate depends on composition.
 """ compute_viscosity_parallel
 
+"""
+    viscosity_depends_on_state(r::AbstractRheology)
+
+Return `true` when the effective viscosity of `r` can change with the local
+stress or strain rate within a time step, and `false` when it is fixed for the
+step: it may depend on `dt` or on other fields of `others`, but not on `τ` or
+`ε`.
+
+Parallel blocks that carry elastic history weight their backstresses with the
+viscosities of their elements. An element whose viscosity depends on the state
+needs those weights evaluated at its physical state, which costs extra unknowns;
+an element that returns `false` does not.
+
+The default is `true`, which is correct for every rheology, linear ones
+included, and only costs performance. Return `false` only for a law whose
+viscosity is independent of `τ` and `ε`: declaring `false` for a nonlinear law
+gives silently wrong results.
+"""
+viscosity_depends_on_state(::AbstractRheology) = true
+
 # NOTE: for user defined new functions, add the template below to the element's own file under src/rheology/
 # compute_variable(r::AbstractRheology, kwargs::NamedTuple) = compute_variable(r; kwargs...)

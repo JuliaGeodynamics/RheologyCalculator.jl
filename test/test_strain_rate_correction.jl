@@ -1,7 +1,7 @@
 import RheologyCalculator:
     count_elastic, _n_elastic_in_parallel,
     _iselastic,
-    _η_eff_maxwell, _η_eff_elastic, _η_KV,
+    _η_eff_maxwell, _η_KV,
     _weighted_backstress,
     _kv_branch_correction, _kv_corrections,
     effective_strain_rate_correction
@@ -110,18 +110,6 @@ end
 end
 
 # -----------------------------------------------------------------------
-# _η_eff_elastic  —  G * dt for the elastic leaf
-# -----------------------------------------------------------------------
-@testset "_η_eff_elastic" begin
-    # Elastic leaf is present: should return G*dt
-    @test _η_eff_elastic((visc2, el1), args_base) ≈ G1 * dt  rtol = 1.0e-12
-    @test _η_eff_elastic((el1, visc2), args_base) ≈ G1 * dt  rtol = 1.0e-12
-
-    # No elastic leaf: should return 0.0
-    @test _η_eff_elastic((visc1, visc2), args_base) == 0.0
-end
-
-# -----------------------------------------------------------------------
 # _η_KV  —  arithmetic sum of effective viscosities
 # -----------------------------------------------------------------------
 @testset "_η_KV" begin
@@ -133,6 +121,12 @@ end
 
     # Leafs only, two viscous:  η_KV = η_v1 + η_v2
     @test _η_KV((visc1, visc2), (), args_base) ≈ η_v1 + η_v2  rtol = 1.0e-12
+
+    # The sums keep the element type of the viscosities.
+    args32 = (; ε = 1.0f-14, dt = 1.0f10)
+    sub32 = SeriesModel(LinearViscosity(5.0f20), IncompressibleElasticity(2.0f10))
+    @test _η_KV((LinearViscosity(1.0f20), IncompressibleElasticity(3.0f10)), (sub32,), args32) isa Float32
+    @test _η_eff_maxwell(sub32.leafs, args32) isa Float32
 
     # One viscous leaf + one Maxwell sub-branch:
     # η_KV = η_v2 + η_eff_M(visc3, el1)

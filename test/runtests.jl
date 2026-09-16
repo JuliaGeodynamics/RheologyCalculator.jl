@@ -2,7 +2,7 @@ using RheologyCalculator, Test
 using RheologyCalculator.RheologyModels
 # core-internal helpers used across the tests
 import RheologyCalculator: compute_stress_elastic, compute_pressure_elastic, compute_residual,
-    mynorm, _direct_leaf_elastic_correction, second_invariant_value
+    mynorm, second_invariant_value
 
 function runtests()
     files = readdir(@__DIR__)

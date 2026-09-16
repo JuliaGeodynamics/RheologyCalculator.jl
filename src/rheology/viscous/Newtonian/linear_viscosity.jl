@@ -11,6 +11,7 @@ struct LinearViscosity{T} <: AbstractViscosity
 end
 @inline series_state_functions(::LinearViscosity) = (compute_strain_rate,)
 @inline parallel_state_functions(::LinearViscosity) = (compute_stress,)
+@inline viscosity_depends_on_state(::LinearViscosity) = false
 
 @inline compute_strain_rate(r::LinearViscosity; τ = 0, kwargs...) = τ / (2 * r.η)
 @inline compute_stress(r::LinearViscosity; ε = 0, kwargs...) = ε * 2 * r.η

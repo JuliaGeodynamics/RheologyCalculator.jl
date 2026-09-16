@@ -24,6 +24,7 @@ include("core/rheology_types.jl")
 export AbstractViscosity, AbstractPlasticity, AbstractCapPlasticity, AbstractElasticity
 
 include("core/state_functions.jl")
+export viscosity_depends_on_state
 
 include("core/composite.jl")
 export SeriesModel, ParallelModel

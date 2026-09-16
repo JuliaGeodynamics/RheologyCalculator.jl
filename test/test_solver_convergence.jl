@@ -1,10 +1,7 @@
 using Test, StaticArrays
-import RheologyCalculator: mynorm, _direct_leaf_elastic_correction, second_invariant_value
+import RheologyCalculator: mynorm
 
-function converged_residual(c, x, vars0, others, xnorm)
-    ε_corr = _direct_leaf_elastic_correction(c, vars0.ε, others)
-    εII = second_invariant_value(vars0.ε .+ ε_corr)
-    vars = merge(vars0, (; ε = εII))
+function converged_residual(c, x, vars, others, xnorm)
     r = compute_residual(c, x, vars, others)
     return mynorm(r, xnorm)
 end

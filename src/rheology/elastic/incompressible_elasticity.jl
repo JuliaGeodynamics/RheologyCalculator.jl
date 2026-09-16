@@ -11,6 +11,7 @@ struct IncompressibleElasticity{T} <: AbstractElasticity
 end
 @inline series_state_functions(::IncompressibleElasticity) = (compute_strain_rate,)
 @inline parallel_state_functions(::IncompressibleElasticity) = (compute_stress,)
+@inline viscosity_depends_on_state(::IncompressibleElasticity) = false
 
 @inline compute_strain_rate(r::IncompressibleElasticity; τ = 0, τ0 = 0, dt = 0, kwargs...) = τ / (2 * r.G * dt)
 @inline compute_stress(r::IncompressibleElasticity; ε = 0, τ0 = 0, dt = 0, kwargs...) = 2 * r.G * dt * ε

@@ -24,7 +24,8 @@ import ..RheologyCalculator: series_state_functions, parallel_state_functions,
     compute_strain_rate, compute_stress, compute_pressure, compute_volumetric_strain_rate,
     compute_plastic_strain_rate, compute_plastic_stress, compute_volumetric_plastic_strain_rate,
     compute_lambda, compute_lambda_parallel,
-    compute_viscosity, compute_viscosity_series, compute_viscosity_parallel
+    compute_viscosity, compute_viscosity_series, compute_viscosity_parallel,
+    viscosity_depends_on_state
 
 # used by the tensor helpers
 import ..RheologyCalculator: second_invariant
