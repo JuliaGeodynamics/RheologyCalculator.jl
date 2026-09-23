@@ -38,9 +38,9 @@ _isvolumetric(c::AbstractCompositeModel) = _isvolumetric(c.leafs, c.branches)
 @inline safe_inv(v) = iszero(primal(v)) ? zero(v) : inv(v)
 @inline safe_inv_one(v) = iszero(primal(v)) ? one(v) : inv(v)
 
-# Value of `x` with every layer of dual partials stripped. 
-# `iszero` on a `ForwardDiff.Dual` also tests the partials, so a zero primal 
-# carrying a nonzero derivative (a strain rate of zero seeded for differentiation) 
+# Value of `x` with every layer of dual partials stripped.
+# `iszero` on a `ForwardDiff.Dual` also tests the partials, so a zero primal
+# carrying a nonzero derivative (a strain rate of zero seeded for differentiation)
 # would otherwise take the `inv` branch and produce `Inf` and `NaN` partials.
 @inline primal(x) = x
 @inline primal(x::ForwardDiff.Dual) = primal(ForwardDiff.value(x))
