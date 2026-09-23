@@ -115,10 +115,14 @@ estimate_initial_value(eq::CompositeEquation, vars, args, others) = _estimate_in
 # viscosity of a power law (η = τ/(2ε̇) ∝ τ^(1-n) → ∞ as τ → 0), so the first
 # Newton step is NaN. The prescribed strain-rate invariant is finite and is the
 # physical order of magnitude of a branch strain rate.
+# The same fallback covers a non-finite estimate, which a branch element 
+# with zero viscosity produces (τ/(2η) = 0/0 at τ = 0).
 @inline function _estimate_initial_value(::typeof(compute_stress), eq, vars, args, others)
     est = _estimate_initial_value_arith(eq.fn, eq.rheology, eq.el_number, vars, args, others)
-    return iszero(est) ? _prescribed_strain_rate(vars) : est
+    return _usable_seed(est) ? est : _prescribed_strain_rate(vars)
 end
+
+@inline _usable_seed(est) = isfinite(est) && !iszero(primal(est))
 
 # `vars.ε` may be a tensor or an invariant; both reduce here. A composite with no
 # prescribed deviatoric strain rate keeps the previous zero seed.
