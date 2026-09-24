@@ -100,8 +100,12 @@ method based on the equation's kernel function (`eq.fn`):
 - `Float64`: scalar initial-guess value for the unknown of `eq`.
 """
 function estimate_initial_value(eq::CompositeEquation, vars, args, others)
-    supplied = _supplied_initial_value(eq, args)
-    return supplied === nothing ? _estimate_initial_value(eq.fn, eq, vars, args, others) : supplied
+    x0 = get(args, :x0, (;))
+    supplied = _supplied_for(eq.fn, x0)
+
+    return isnothing(supplied) ?
+           _estimate_initial_value(eq.fn, eq, vars, args, others) :
+           supplied
 end
 
 # Only τ, P, and λ may override model-derived initial values.
