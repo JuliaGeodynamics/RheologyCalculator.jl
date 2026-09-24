@@ -118,7 +118,7 @@ julia> inspect(SeriesModel(viscous, ParallelModel(LinearViscosity(1e21), Incompr
 
 To start each time step from the previous solution, and to get the Jacobian at
 the converged solution, see [Warm-starting from the previous solution](@ref) and
-[The Jacobian at the converged solution](@ref).
+[Obtaining the Jacobian at the converged solution](@ref).
 
 `solve` raises `NonConvergenceError` when the requested tolerances are not
 reached. The exception includes the last iterate, normalized residual, and a
