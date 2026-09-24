@@ -104,15 +104,6 @@ function estimate_initial_value(eq::CompositeEquation, vars, args, others)
     return supplied === nothing ? _estimate_initial_value(eq.fn, eq, vars, args, others) : supplied
 end
 
-# An explicit `args.x0 = (; τ, P, λ)` seeds the corresponding unknowns. Seeding
-# is opt-in through `x0` rather than read off `args.τ`/`args.P`, which callers
-# fill with placeholder values not meant as starting points. Only τ, P and λ
-# are seedable: a `compute_stress` equation's unknown is a branch strain rate
-# despite its `ε`-named kwarg, and its estimator avoids the singular zero seed.
-@inline _supplied_initial_value(eq::CompositeEquation, args::NamedTuple) =
-    hasfield(typeof(args), :x0) ? _supplied_for(eq.fn, args.x0) : nothing
-@inline _supplied_initial_value(::CompositeEquation, ::Any) = nothing
-
 # Not seedable: anything whose unknown is not one of τ, P, λ.
 @inline _supplied_for(::F, ::Any) where {F} = nothing
 @inline _supplied_for(::typeof(compute_strain_rate), g::NamedTuple) = _maybe_get(g, :τ)
