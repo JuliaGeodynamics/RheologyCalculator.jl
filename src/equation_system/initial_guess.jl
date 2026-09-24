@@ -104,15 +104,20 @@ function estimate_initial_value(eq::CompositeEquation, vars, args, others)
     return supplied === nothing ? _estimate_initial_value(eq.fn, eq, vars, args, others) : supplied
 end
 
-# Not seedable: anything whose unknown is not one of τ, P, λ.
-@inline _supplied_for(::F, ::Any) where {F} = nothing
-@inline _supplied_for(::typeof(compute_strain_rate), g::NamedTuple) = _maybe_get(g, :τ)
-@inline _supplied_for(::typeof(compute_volumetric_strain_rate), g::NamedTuple) = _maybe_get(g, :P)
-@inline _supplied_for(::typeof(compute_lambda), g::NamedTuple) = _maybe_get(g, :λ)
-@inline _supplied_for(::typeof(compute_lambda_parallel), g::NamedTuple) = _maybe_get(g, :λ)
+# Only τ, P, and λ may override model-derived initial values.
+@inline _supplied_for(::Any, ::Any) = nothing
 
-# An absent key keeps that unknown at the model's own estimate.
-@inline _maybe_get(g::NamedTuple, k::Symbol) = hasfield(typeof(g), k) ? getfield(g, k) : nothing
+@inline _supplied_for(::typeof(compute_strain_rate), x0::NamedTuple) =
+    get(x0, :τ, nothing)
+
+@inline _supplied_for(::typeof(compute_volumetric_strain_rate), x0::NamedTuple) =
+    get(x0, :P, nothing)
+
+@inline _supplied_for(::typeof(compute_lambda), x0::NamedTuple) =
+    get(x0, :λ, nothing)
+
+@inline _supplied_for(::typeof(compute_lambda_parallel), x0::NamedTuple) =
+    get(x0, :λ, nothing)
 # Fallback: unknown equation type → use 0 as the initial guess.
 @inline _estimate_initial_value(::F, eq, vars, args, others) where {F} = 0
 # Strain-rate-like unknowns use a harmonic-mean estimate across the element rheologies.
