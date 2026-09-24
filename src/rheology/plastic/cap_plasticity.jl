@@ -21,15 +21,13 @@ end
 # Consistency residual: `F = λ·η_vp` above yield, `λ·η_vp = 0` below it.
 @inline function compute_lambda(r::AbstractCapPlasticity; τ = 0, λ = 0, P = 0, kwargs...)
     F = compute_F(r, τ, P)
-    yielding = F > -1.0e-8
-    return -F * yielding + λ * _lambda_below_yield(r, yielding)
+    if F > -1.0e-8
+        return -F + λ * r.η_vp
+    else
+        η = iszero(r.η_vp) ? oneunit(r.η_vp) : r.η_vp
+        return λ * η
+    end
 end
-
-# Below yield an unregularized cap (`η_vp = 0`) would leave `λ` undetermined,
-# so the factor falls back to `oneunit` there to pin it at zero.
-@inline _lambda_below_yield(r::AbstractCapPlasticity, yielding) =
-    (iszero(r.η_vp) && !yielding) ? oneunit(r.η_vp) : r.η_vp
-
 @inline compute_stress(r::AbstractCapPlasticity; τ_pl = 0, kwargs...) = τ_pl
 @inline compute_pressure(r::AbstractCapPlasticity; P_pl = 0, kwargs...) = P_pl
 
