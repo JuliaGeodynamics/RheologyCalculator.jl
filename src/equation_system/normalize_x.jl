@@ -19,8 +19,11 @@ function normalisation_x(c::AbstractCompositeModel, char_τ = 1.0, char_ε = 1.0
     return SA[x0...]
 end
 
-@inline normalisation_x(eqs::NTuple{N, CompositeEquation}, char_τ, char_ε) where {N} =
-    maptuple(eq -> _normalize_x_value(eq.fn, _nonzero_scale(char_τ), _nonzero_scale(char_ε)), eqs)
+@inline function normalisation_x(eqs::NTuple{N, CompositeEquation}, char_τ, char_ε) where {N}
+    τ_scale = _nonzero_scale(char_τ)
+    ε_scale = _nonzero_scale(char_ε)
+    return maptuple(eq -> _normalize_x_value(eq.fn, τ_scale, ε_scale), eqs)
+end
 
 @inline _nonzero_scale(s) = (iszero(s) || !isfinite(s)) ? oneunit(s) : abs(s)
 
