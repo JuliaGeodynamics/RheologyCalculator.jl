@@ -48,6 +48,45 @@ package's static local-system representation.
 @inline jacobian(c::AbstractCompositeModel, x::SVector, vars, others) =
     ForwardDiff.jacobian(y -> compute_residual(c, y, vars, others), x)
 
+# Residual and Jacobian from a single ForwardDiff dual pass, via the supported
+# `jacobian!`/DiffResults API. `solve` calls this once, for the residual and
+# Jacobian it needs at its own starting point, to avoid the redundant primal
+# residual evaluation implicit in computing that first Jacobian separately.
+# Every later iteration already carries its residual from the previous line
+# search, so it keeps calling `jacobian` alone: fusing there would recompute a
+# residual `solve` already has, and the DiffResults extraction is not uniformly
+# cheaper than the plain call when only the Jacobian is needed.
+#
+# `solve` (and hence this function) must itself stay differentiable, e.g. under
+# `ForwardDiff.derivative(rate -> solve(c, x, (; ε = rate), others)[1], rate)`.
+# There the residual's value type is an outer `Dual` even though `x` is plain
+# `Float64`, so `DiffResults.JacobianResult(x)`/`JacobianResult(y, x)` are both
+# unsafe here: their `StaticArray` methods type the Jacobian storage from `x`
+# alone (see DiffResults.jl's `JacobianResult(y::StaticArray, x::StaticArray)`),
+# which silently drops the outer dual and throws inside `jacobian!` once it
+# tries to store one. The value and Jacobian slots are built directly instead,
+# both typed from the residual's inferred output type `T`, which is what
+# carries any outer dual layer through the Jacobian entries too. `T` is
+# obtained by type inference (`Base.promote_op`), not by evaluating the
+# residual, so this remains a single evaluation overall for the common case.
+#
+# `Base.promote_op` is a best-effort inference query, not a guarantee: for
+# some composite models (e.g. multi-level Series/Parallel nesting) inference
+# gives up and returns a non-concrete `T`, and whether it does so is not even
+# stable across Julia versions/platforms for the same model, since it depends
+# on inference's internal effort heuristics. `zero(T)` on such a `T` throws,
+# so when `T` isn't concrete this falls back to evaluating the residual once
+# to get a concrete prototype directly, paying for the extra primal
+# evaluation only on that (rare, inference-dependent) path.
+@inline function residual_and_jacobian(c::AbstractCompositeModel, x::SVector, vars, others)
+    f = y -> compute_residual(c, y, vars, others)
+    T = Base.promote_op(f, typeof(x))
+    y_proto = isconcretetype(T) ? zero(T) : f(x)
+    jacobian_proto = zeros(similar_type(typeof(y_proto), Size(length(y_proto), length(x))))
+    result = ForwardDiff.jacobian!(DiffResults.DiffResult(y_proto, (jacobian_proto,)), f, x)
+    return DiffResults.value(result), DiffResults.jacobian(result)
+end
+
 """
     solve(c::AbstractCompositeModel, x::SVector, vars, others; xnorm0=nothing,
           atol=1.0e-12, rtol=1.0e-12, itermax=1.0e4, verbose=false)
@@ -97,7 +136,11 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0 = no
 
     # vars = merge((; ε = εII), vars0)
     xnorm = correct_xnorm(x, xnorm0)
-    r = compute_residual(c, x, vars, others)   # initial residual
+    # Initial residual and its Jacobian, fused: the loop below always runs at
+    # least one iteration (`er` starts at `Inf`, not `er0`), so this Jacobian
+    # is never wasted the way a preemptively computed next-iterate Jacobian
+    # could be.
+    r, J = residual_and_jacobian(c, x, vars, others)
     it = 0
     er0 = mynorm(r, xnorm)
     # `oftype` keeps the residual a single type across the loop, so that the
@@ -111,7 +154,10 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0 = no
     while er > atol && er > rtol * er0
         it += 1
 
-        J = jacobian(c, x, vars, others)
+        # The first iteration's Jacobian was already produced above, fused
+        # with the initial residual; later iterations recompute it here since
+        # their residual instead comes from the previous line search.
+        it > 1 && (J = jacobian(c, x, vars, others))
         Δx = backsolve(J, r)
         α = max_feasible_step(x, Δx, nonneg)
         α, x_next, r, er = _bt_line_search_result(

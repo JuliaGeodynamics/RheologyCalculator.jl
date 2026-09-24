@@ -30,7 +30,7 @@ and more general visco-elasto-plastic networks are represented.
 ## Material with a configuration in series
 
 Example of a Maxwell visco-elastic model, with a viscous damper of viscosity
-$\eta=10^{20}$ and an elastic spring with $G=10$ GPa and $K=46.67$ GPa. First
+``\eta=10^{20}~\mathrm{Pa\,s}`` and an elastic spring with ``G=10~\mathrm{GPa}`` and ``K=46.67~\mathrm{GPa}``. First
 we define the individual components:
 
 ```jldoctest composites
