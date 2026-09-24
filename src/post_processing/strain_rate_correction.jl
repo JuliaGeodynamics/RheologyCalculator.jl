@@ -10,16 +10,12 @@ symmetric deviatoric tensor stored in Voigt-like component order.
 @inline second_invariant(xx, yy, xy) = _invariant_sqrt((xx^2 + yy^2 + (-xx - yy)^2) / 2 + xy^2)
 @inline second_invariant(xx, yy, zz, yz, xz, xy) = _invariant_sqrt(0.5 * (xx^2 + yy^2 + zz^2) + xy^2 + yz^2 + xz^2)
 
-# `√` of the sum of squares of a second invariant. Zero at `s = 0`: the true
-# derivative diverges there, which ForwardDiff turns into NaN, and zero is the
-# elastic limit (a zero effective strain rate carries no strain-rate
-# sensitivity).
+# Avoid the undefined derivative of √s at s = 0 by defining the AD derivative there as zero.
 @inline _invariant_sqrt(s) = iszero(s) ? zero(s) : √s
 # Convenience wrappers: accept either a bare scalar or a Voigt-ordered NTuple.
 @inline second_invariant_value(a::Number) = second_invariant(a)
-# Heterogeneous, not `NTuple{N,T}`: a partial-width ForwardDiff pass mixes
-# `Dual` and `Float64` components.
-@inline second_invariant_value(a::Tuple{Vararg{Number}}) = second_invariant(promote(a...)...)
+# ForwardDiff may produce heterogeneous tuples of Dual and scalar values.
+@inline second_invariant_value(a::Tuple{Vararg{Number}}) = second_invariant(a...)
 
 # -----------------------------------------------------------------------
 # effective_strain_rate_correction — public entry points

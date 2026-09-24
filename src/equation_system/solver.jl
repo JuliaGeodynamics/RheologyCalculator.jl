@@ -170,12 +170,6 @@ adds the Jacobian, it does not change the iteration.
 
 The converged Jacobian is not one of the Jacobians the Newton loop formed —
 those are taken before the last update — so it costs one extra evaluation.
-That is why it is a separate entry point rather than something `solve` always
-pays for: RC solves are small and often converge in a single iteration, so the
-extra evaluation is a large fraction of the total. Measured on this package's
-composites (Julia 1.12, single thread, best of seven runs over 200k–500k
-solves), `solve_with_jacobian` costs about 29% more than `solve` on a
-Drucker-Prager series model and about 33% more on a power-law/elastic one.
 
 Use [`tangent`](@ref) if you want the assembled material tangent rather than
 the residual Jacobian.
@@ -185,8 +179,11 @@ function solve_with_jacobian(c::AbstractCompositeModel, x::SVector, vars0, other
     # Rebuild the corrected `vars` the iteration used, so the Jacobian is taken
     # for the same system `solve` actually solved rather than the raw `vars0`.
     ε_corr = _direct_leaf_elastic_correction(c, vars0.ε, others)
-    vars = merge(vars0, (; ε = second_invariant_value(vars0.ε .+ ε_corr)))
-    return RCSolution(sol.x, sol.iterations, sol.residual, jacobian(c, sol.x, vars, others))
+    εII = second_invariant_value(vars0.ε .+ ε_corr)
+    vars = merge(vars0, (; ε = εII))
+    J = jacobian(c, sol.x, vars, others)
+
+    return RCSolution(sol.x, sol.iterations, sol.residual, J)
 end
 
 solve_with_jacobian(c::AbstractCompositeModel, sol::RCSolution, vars0, others; kwargs...) =
