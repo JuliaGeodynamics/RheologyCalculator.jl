@@ -18,11 +18,16 @@ end
     return θ_pl * (F > -1.0e-8)
 end
 
+# Consistency residual: `F = λ·η_vp` above yield, `λ·η_vp = 0` below it.
 @inline function compute_lambda(r::AbstractCapPlasticity; τ = 0, λ = 0, P = 0, kwargs...)
     F = compute_F(r, τ, P)
-    return -F * (F > -1.0e-8) + λ * r.η_vp + λ * 1        # last term is for regularisation below yield
+    if F > -1.0e-8
+        return -F + λ * r.η_vp
+    else
+        η = iszero(r.η_vp) ? oneunit(r.η_vp) : r.η_vp
+        return λ * η
+    end
 end
-
 @inline compute_stress(r::AbstractCapPlasticity; τ_pl = 0, kwargs...) = τ_pl
 @inline compute_pressure(r::AbstractCapPlasticity; P_pl = 0, kwargs...) = P_pl
 

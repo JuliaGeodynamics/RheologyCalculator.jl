@@ -9,6 +9,9 @@ for composite model `c` or equation tuple `eqs`.
 
 Stress-like unknowns (`τ`, `P`, `λ`) use `char_τ`; strain-rate-like unknowns
 (`ε`, `θ`, plastic strain rates) use `char_ε`.
+
+A vanishing or non-finite characteristic scale is replaced by one, so that no
+residual row becomes unmeasurable.
 """
 function normalisation_x(c::AbstractCompositeModel, char_τ = 1.0, char_ε = 1.0)
     eqs = generate_equations(c)
@@ -16,8 +19,13 @@ function normalisation_x(c::AbstractCompositeModel, char_τ = 1.0, char_ε = 1.0
     return SA[x0...]
 end
 
-@inline normalisation_x(eqs::NTuple{N, CompositeEquation}, char_τ, char_ε) where {N} =
-    maptuple(eq -> _normalize_x_value(eq.fn, char_τ, char_ε), eqs)
+@inline function normalisation_x(eqs::NTuple{N, CompositeEquation}, char_τ, char_ε) where {N}
+    τ_scale = _nonzero_scale(char_τ)
+    ε_scale = _nonzero_scale(char_ε)
+    return maptuple(eq -> _normalize_x_value(eq.fn, τ_scale, ε_scale), eqs)
+end
+
+@inline _nonzero_scale(s) = (iszero(s) || !isfinite(s)) ? oneunit(s) : abs(s)
 
 for fn in (:compute_stress, :compute_pressure, :compute_lambda, :compute_lambda_parallel)
     @eval _normalize_x_value(::typeof($fn), char_stress, char_strainrate) = char_stress
