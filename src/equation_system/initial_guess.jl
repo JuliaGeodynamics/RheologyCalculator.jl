@@ -104,8 +104,8 @@ function estimate_initial_value(eq::CompositeEquation, vars, args, others)
     supplied = _supplied_for(eq.fn, x0)
 
     return isnothing(supplied) ?
-           _estimate_initial_value(eq.fn, eq, vars, args, others) :
-           supplied
+        _estimate_initial_value(eq.fn, eq, vars, args, others) :
+        supplied
 end
 
 # Only τ, P, and λ may override model-derived initial values.
