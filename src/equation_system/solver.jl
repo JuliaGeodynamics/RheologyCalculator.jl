@@ -114,13 +114,10 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0 = no
         J = jacobian(c, x, vars, others)
         Δx = backsolve(J, r)
         α = max_feasible_step(x, Δx, nonneg)
-        α, x_next, r = bt_line_search(
+        α, x_next, r, er = _bt_line_search_result(
             Δx, x, c, vars, others, xnorm, er;
             α = α, ρ = 0.5, lstol = 0.95, α_min = 0.1
         )
-
-        # check convergence
-        er = mynorm(r, xnorm)
 
         # Once the update is below floating-point resolution, continuing the
         # Newton iteration cannot change either the iterate or its residual.
@@ -339,46 +336,46 @@ norm at `x + α * Δx` is at most `lstol` times the current residual norm. The
 initial feasible step is accepted whenever it does not increase the residual;
 backtracked steps require the stricter `lstol` reduction. If no trial passes,
 the best finite trial is returned.
-
-Returns `(α, x_next, r)`, the iterate and residual belonging to the returned
-`α`, so [`solve`](@ref) need not re-evaluate the residual there.
 """
 function bt_line_search(Δx, x, composite, vars, others, xnorm, rnorm; α = 1.0, ρ = 0.5, lstol = 0.9, α_min = 1.0e-8)
+    # Preserve the step-only helper's behavior when there are no trials.
+    α >= α_min || return α
+    return first(_bt_line_search_result(Δx, x, composite, vars, others, xnorm, rnorm; α, ρ, lstol, α_min))
+end
 
+# Return the chosen point and residual as well as its step length. The initial
+# point is also the fallback if no finite trial exists or the feasible step is
+# below α_min; solve previously evaluated that point after the step-only search.
+@inline function _bt_line_search_result(Δx, x, composite, vars, others, xnorm, rnorm; α = 1.0, ρ = 0.5, lstol = 0.9, α_min = 1.0e-8)
     α_initial = α
-    best_α = α
     best_rnorm = Inf
-    # Seeded to `α_initial`'s point, matching `best_α`: seeding `x` instead
-    # would let the fall-through return an unmoved iterate and trip `solve`'s
-    # stagnation guard.
-    best_x = @. x + α * Δx
-    best_r = compute_residual(composite, best_x, vars, others)
+    perturbed_x = x + α .* Δx
+    perturbed_r = compute_residual(composite, perturbed_x, vars, others)
+    perturbed_rnorm = mynorm(perturbed_r, xnorm)
+    best = (α, perturbed_x, perturbed_r, perturbed_rnorm)
 
     while α ≥ α_min
-        # Apply scaled update
-        perturbed_x = @. x + α * Δx
-
-        # Get updated residual
-        perturbed_r = compute_residual(composite, perturbed_x, vars, others)
-        perturbed_rnorm = mynorm(perturbed_r, xnorm)
-
         if isfinite(perturbed_rnorm) && perturbed_rnorm < best_rnorm
-            best_α, best_rnorm = α, perturbed_rnorm
-            best_x, best_r = perturbed_x, perturbed_r
+            best = (α, perturbed_x, perturbed_r, perturbed_rnorm)
+            best_rnorm = perturbed_rnorm
         end
 
         # The first feasible trial may be limited by non-negativity, so do not
         # demand artificial decrease from a step that merely avoids growth.
         target = α == α_initial ? 1.0 : lstol
         if isfinite(perturbed_rnorm) && perturbed_rnorm ≤ target * rnorm
-            return α, perturbed_x, perturbed_r
+            return (α, perturbed_x, perturbed_r, perturbed_rnorm)
         end
 
         # Bisect step length
         α *= ρ
+        α ≥ α_min || break
+        perturbed_x = x + α .* Δx
+        perturbed_r = compute_residual(composite, perturbed_x, vars, others)
+        perturbed_rnorm = mynorm(perturbed_r, xnorm)
     end
 
-    return best_α, best_x, best_r
+    return best
 end
 
 """

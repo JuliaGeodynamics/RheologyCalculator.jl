@@ -1,58 +1,55 @@
-# `bt_line_search`'s `(α, x_next, r)` must stay internally consistent.
 using Test, StaticArrays
-using RheologyCalculator.RheologyModels
-import RheologyCalculator: SeriesModel, ParallelModel, initial_guess_x,
-    normalisation_x, solve, compute_residual, mynorm, bt_line_search, jacobian,
-    backsolve, second_invariant_value, _direct_leaf_elastic_correction
+using RheologyCalculator, RheologyCalculator.RheologyModels, ForwardDiff
+import RheologyCalculator: compute_residual, _bt_line_search_result, bt_line_search
 
-@testset "line search residual reuse" begin
+struct LineSearchProbe{F}
+    f::F
+    calls::Base.RefValue{Int}
+end
 
-    c = SeriesModel(
-        LinearViscosity(1.0e22), IncompressibleElasticity(10.0e9),
-        ParallelModel(LinearViscosity(1.0e20), DruckerPrager(10.0e6, 30.0, 0.0)),
-    )
-    vars = vars_2D(1.0e-14)
-    others = (; dt = 1.0e8, τ0 = (zero_stress_tensor_2D(),), P = 1.0e6, P0 = (0.0,))
-    xnorm = normalisation_x(c, 1.0e6, second_invariant_2D(vars.ε))
-    x0 = initial_guess_x(c, vars, (; τ = 2.0e3, λ = 0.0), others)
-
-    # `solve` iterates on the corrected invariant of ε
-    ε_corr = _direct_leaf_elastic_correction(c, vars.ε, others)
-    v = (; ε = second_invariant_value(vars.ε .+ ε_corr), θ = vars.θ)
-
-    @testset "the returned triple is self-consistent" begin
-        x = x0
-        for _ in 1:5
-            r = compute_residual(c, x, v, others)
-            er = mynorm(r, xnorm)
-            Δx = backsolve(jacobian(c, x, v, others), r)
-
-            α, x_next, r_next = bt_line_search(
-                Δx, x, c, v, others, xnorm, er; α = 1.0, ρ = 0.5, lstol = 0.95, α_min = 0.1
-            )
-
-            @test x_next ≈ x .+ α .* Δx rtol = 1.0e-14
-            @test r_next ≈ compute_residual(c, x_next, v, others) rtol = 1.0e-14
-            # while the update is significant the step must move; once
-            # converged, Δx ≈ 0 and x_next == x legitimately
-            if maximum(abs, Δx) > 8 * eps() * maximum(abs, x)
-                @test x_next != x
-            end
-            x = x_next
-        end
+@testset "Residual reuse preserves numeric and AD behavior" begin
+    for T in (Float32, Float64)
+        c = SeriesModel(LinearViscosity(T(5)))
+        x = SVector(T(0.7))
+        stress = rate -> solve(c, x, (; ε = rate), (;))[1]
+        @test stress(T(0.1)) ≈ 10 * T(0.1)
+        @test ForwardDiff.derivative(stress, T(0.1)) ≈ 10
+        @test ForwardDiff.derivative(rate -> ForwardDiff.derivative(stress, rate), T(0.1)) ≈ 0 atol = 1.0e-12
     end
+end
 
-    @testset "the solve still converges on the hard step" begin
-        x = x0
-        τ_e, P_e = (zero_stress_tensor_2D(),), (0.0,)
-        x_hard, o_hard = x, others
-        for _ in 1:469
-            o = (; dt = others.dt, τ0 = τ_e, P = others.P, P0 = P_e)
-            x_hard, o_hard = x, o
-            x = solve(c, x, vars, o; xnorm0 = xnorm)
-            τ_e = elastic_stress_history_2D(c, x[1], vars.ε, τ_e, o)
+function compute_residual(probe::LineSearchProbe, x::SVector, vars, others)
+    probe.calls[] += 1
+    return SVector(probe.f(x[1]))
+end
+
+@testset "Line-search residual reuse" begin
+    cases = (
+        ("initial acceptance", identity, 1.0, 0.1, 1.0, 1),
+        ("backtracked acceptance", x -> 2x, 1.0, 0.1, 0.25, 3),
+        ("best trial is not last", x -> (x - 0.5)^2 + 2, 1.0, 0.1, 0.5, 4),
+        ("nonfinite first trial", x -> x == 1 ? NaN : 0.5, 1.0, 0.1, 0.5, 2),
+        ("no finite trial", x -> NaN, 1.0, 0.1, 1.0, 4),
+        ("feasible step below minimum", identity, 0.05, 0.1, 0.05, 1),
+    )
+    for (name, f, initial, minimum_step, expected_step, calls) in cases
+        @testset "$name" begin
+            probe = LineSearchProbe(f, Ref(0))
+            α, x, r, norm = _bt_line_search_result(
+                SA[1.0], SA[0.0], probe, (;), (;), SA[1.0], 1.0;
+                α = initial, α_min = minimum_step, lstol = 0.95
+            )
+            @test α == expected_step
+            @test x == SA[expected_step]
+            @test isequal(r, SA[f(expected_step)])
+            @test isequal(norm, abs(f(expected_step)))
+            @test probe.calls[] == calls
+            probe.calls[] = 0
+            @test bt_line_search(
+                SA[1.0], SA[0.0], probe, (;), (;), SA[1.0], 1.0;
+                α = initial, α_min = minimum_step, lstol = 0.95
+            ) == expected_step
+            @test probe.calls[] == (initial < minimum_step ? 0 : calls)
         end
-        sol = solve(c, x_hard, vars, o_hard; xnorm0 = xnorm, itermax = 10)
-        @test sol.residual < 1.0e-8
     end
 end
