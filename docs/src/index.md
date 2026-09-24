@@ -42,8 +42,8 @@ The typical workflow is:
 
 1. Define rheological elements, such as viscosity, elasticity, or plasticity.
 2. Compose them with [`SeriesModel`](@ref) and [`ParallelModel`](@ref).
-3. Provide prescribed inputs in `vars`, initial unknown estimates in `args`,
-   and auxiliary/history values in `others`.
+3. Provide prescribed inputs in `vars`, values of the unknowns to build the
+   initial estimate from in `args`, and auxiliary/history values in `others`.
 4. Build an initial solver vector with [`initial_guess_x`](@ref).
 5. Solve with [`solve`](@ref).
 6. Update elastic history with
@@ -73,10 +73,12 @@ RCSolution (iterations: 1, residual: 0.0)
  0.0
 ```
 
-Here `vars` contains prescribed rates (`ε`, `θ`), `args` seeds the solver
-unknowns (`τ`, `P`, and any branch-local unknowns), and `others` carries values
-that are not differentiated by the local Newton solve (`dt`, elastic history,
-grain size, temperature, pressure-dependent parameters, and similar fields).
+Here `vars` contains prescribed rates (`ε`, `θ`), `args` holds the values of the
+unknowns (`τ`, `P`) at which [`initial_guess_x`](@ref) evaluates the elements to
+estimate a starting point, and `others` carries values that are not
+differentiated by the local Newton solve (`dt`, elastic history, grain size,
+temperature, pressure-dependent parameters, and similar fields). The estimate is
+built from the model, so the `args` values themselves do not appear in `x0`.
 `solve` returns an [`RCSolution`](@ref), which supports positional indexing and
 can be passed directly to the next solve. Its `x` field is the solved `SVector`,
 and `iterations` and `residual` record how the Newton iteration ended.
@@ -113,6 +115,10 @@ julia> inspect(SeriesModel(viscous, ParallelModel(LinearViscosity(1e21), Incompr
       1  τ    compute_strain_rate  global  LinearViscosity 1
       2  ε    compute_stress       branch  LinearViscosity 2, IncompressibleElasticity 1
 ```
+
+To start each time step from the previous solution, and to get the Jacobian at
+the converged solution, see [Warm-starting from the previous solution](@ref) and
+[The Jacobian at the converged solution](@ref).
 
 `solve` raises `NonConvergenceError` when the requested tolerances are not
 reached. The exception includes the last iterate, normalized residual, and a

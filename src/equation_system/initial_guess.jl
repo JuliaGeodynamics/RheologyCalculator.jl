@@ -99,29 +99,7 @@ method based on the equation's kernel function (`eq.fn`):
 # Returns
 - `Float64`: scalar initial-guess value for the unknown of `eq`.
 """
-function estimate_initial_value(eq::CompositeEquation, vars, args, others)
-    x0 = get(args, :x0, (;))
-    supplied = _supplied_for(eq.fn, x0)
-
-    return isnothing(supplied) ?
-        _estimate_initial_value(eq.fn, eq, vars, args, others) :
-        supplied
-end
-
-# Only τ, P, and λ may override model-derived initial values.
-@inline _supplied_for(::Any, ::Any) = nothing
-
-@inline _supplied_for(::typeof(compute_strain_rate), x0::NamedTuple) =
-    get(x0, :τ, nothing)
-
-@inline _supplied_for(::typeof(compute_volumetric_strain_rate), x0::NamedTuple) =
-    get(x0, :P, nothing)
-
-@inline _supplied_for(::typeof(compute_lambda), x0::NamedTuple) =
-    get(x0, :λ, nothing)
-
-@inline _supplied_for(::typeof(compute_lambda_parallel), x0::NamedTuple) =
-    get(x0, :λ, nothing)
+estimate_initial_value(eq::CompositeEquation, vars, args, others) = _estimate_initial_value(eq.fn, eq, vars, args, others)
 # Fallback: unknown equation type → use 0 as the initial guess.
 @inline _estimate_initial_value(::F, eq, vars, args, others) where {F} = 0
 # Strain-rate-like unknowns use a harmonic-mean estimate across the element rheologies.
