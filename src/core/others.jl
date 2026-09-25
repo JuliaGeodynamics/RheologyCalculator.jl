@@ -35,5 +35,12 @@ _isvolumetric(c::AbstractCompositeModel) = _isvolumetric(c.leafs, c.branches)
 # can override those functions in the SparseConnectivityTracer extension. The guards only
 # ever protected the value against Inf/NaN. The dependency pattern is the
 # same with or without them. Float64 behaviour is unchanged.
-@inline safe_inv(v) = iszero(v) ? zero(v) : inv(v)
-@inline safe_inv_one(v) = iszero(v) ? one(v) : inv(v)
+@inline safe_inv(v) = iszero(primal(v)) ? zero(v) : inv(v)
+@inline safe_inv_one(v) = iszero(primal(v)) ? one(v) : inv(v)
+
+# Value of `x` with every layer of dual partials stripped.
+# `iszero` on a `ForwardDiff.Dual` also tests the partials, so a zero primal
+# carrying a nonzero derivative (a strain rate of zero seeded for differentiation)
+# would otherwise take the `inv` branch and produce `Inf` and `NaN` partials.
+@inline primal(x) = x
+@inline primal(x::ForwardDiff.Dual) = primal(ForwardDiff.value(x))

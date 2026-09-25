@@ -1,4 +1,4 @@
-using RheologyCalculator, Test, StaticArrays
+using RheologyCalculator, Test, StaticArrays, ForwardDiff
 using RheologyCalculator.RheologyModels
 using RheologyCalculator.RheologyModels: ModCamClay
 import RheologyCalculator.RheologyModels: second_invariant_2D
@@ -35,6 +35,37 @@ import RheologyCalculator.RheologyModels: second_invariant_2D
     gτ = initial_guess_x(c, (; ε = εII, θ = 0.0), (; τ = 1.0e-2), (;))
     @test gτ[2] != εII
     @test gτ[2] > 0
+end
+
+@testset "initial guess with a zero-viscosity branch element" begin
+    # compute_strain_rate of LinearViscosity(0) at τ = 0 is 0/0, which used to
+    # propagate into the branch strain-rate seed.
+    c = SeriesModel(
+        IncompressibleElasticity(5.0),
+        ParallelModel(PowerLawViscosity(4.0e-4, 3), LinearViscosity(0.0)),
+    )
+    εII = 1.0e-2
+    g = initial_guess_x(c, (; ε = εII), (; τ = 0.0), (; dt = 0.1, τ0 = (0.0,)))
+    @test all(isfinite, g)
+    @test g[2] == εII
+end
+
+@testset "initial guess differentiated at zero strain rate" begin
+    # A Dual strain rate with zero primal and nonzero partials must take the
+    # zero branch of safe_inv, otherwise the seed carries Inf/NaN partials.
+    @test RheologyCalculator.safe_inv(ForwardDiff.Dual(0.0, 4.0)) == ForwardDiff.Dual(0.0, 0.0)
+    @test RheologyCalculator.safe_inv_one(ForwardDiff.Dual(0.0, 4.0)) == ForwardDiff.Dual(1.0, 0.0)
+
+    c = SeriesModel(LinearViscosity(2.0), IncompressibleElasticity(5.0))
+    others = (; dt = 0.1, τ0 = (0.7,))
+    x0(ε) = initial_guess_x(c, (; ε = ε), (; τ = 0.0), others)
+    @test isfinite(ForwardDiff.derivative(ε -> x0(ε)[1], 0.0))
+
+    # dτ/dε through solve equals twice the series effective viscosity.
+    τ(ε) = solve(c, x0(ε), (; ε = ε), others)[1]
+    η_eff = inv(inv(2.0) + inv(5.0 * 0.1))
+    @test ForwardDiff.derivative(τ, 0.0) ≈ 2 * η_eff
+    @test ForwardDiff.derivative(τ, 1.0e-3) ≈ 2 * η_eff
 end
 
 @testset "solve reports non-convergence" begin
