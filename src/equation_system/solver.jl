@@ -119,8 +119,8 @@ and the final residual norm; [`inspect`](@ref) describes its entries. Its
 
 Throws [`NonConvergenceError`](@ref) if the iteration ends without meeting
 either tolerance, which includes the case of a residual that became `NaN`.
-The solver also stops early when the Newton update leaves the iterate unchanged
-at floating-point precision for three consecutive iterations. This prevents a
+The solver also stops early when the Newton update moves no entry of the
+iterate by more than a few ulps for three consecutive iterations. This prevents a
 residual floor that cannot be represented by the selected numeric type from
 consuming the full `itermax` budget.
 """
@@ -172,7 +172,7 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0 = no
         # Also require the residual to be finite: non-finite residuals follow
         # the existing diagnostic path below. A decreasing but slow residual
         # must remain an iteration-limit failure, not a stagnation failure.
-        if isfinite(er) && x_next == x
+        if isfinite(er) && within_ulps(x_next, x)
             stagnant_iters += 1
         else
             stagnant_iters = 0
@@ -325,6 +325,19 @@ end
 # branch strain rate of exactly zero is not just infeasible but singular, since
 # d(ε^(1/n))/dε diverges there and the next Jacobian would be Inf.
 const FRACTION_TO_BOUNDARY = 0.995
+
+"""
+    within_ulps(x, y, n = 4)
+
+Return `true` if every entry of `x` is within `n` ulps of the matching entry of
+`y`. An ulp ("unit in the last place") is the spacing between adjacent floats
+at that magnitude, `eps(x)`.
+
+At the roundoff floor a Newton step doesn't always leave the iterate exactly
+unchanged: it can hop back and forth by an ulp or two. [`solve`](@ref) uses this
+to tell such an iterate from one that is still moving.
+"""
+within_ulps(x, y, n = 4) = all(map((a, b) -> abs(a - b) ≤ n * eps(max(abs(a), abs(b))), x, y))
 
 """
     max_feasible_step(x, Δx, mask)
