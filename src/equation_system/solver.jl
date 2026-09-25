@@ -162,8 +162,12 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0 = no
         it > 1 && (J = jacobian(c, x, vars, others))
         Δx = backsolve(J, r)
         α = max_feasible_step(x, Δx, nonneg)
+        # `er` is still `Inf` on the first iteration, which would let the line
+        # search accept any finite first step; it has to compare against `er0`.
+        # `atol` keeps a start that is already converged, such as a warm start,
+        # from backtracking on roundoff.
         α, x_next, r, er = _bt_line_search_result(
-            Δx, x, c, vars, others, xnorm, er;
+            Δx, x, c, vars, others, xnorm, it == 1 ? max(er0, atol) : er;
             α = α, ρ = 0.5, lstol = 0.95, α_min = 0.1
         )
 
