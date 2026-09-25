@@ -29,6 +29,32 @@ import RheologyCalculator: compute_stress
     @test x[2] ≈ lo rtol = 1.0e-12
 end
 
+@testset "first Newton step is line-searched" begin
+    # From this seed the first Newton step lands far past the root, where the
+    # slip rate blows up (a residual of 1.5e36). If that step is accepted,
+    # Newton needs 89 iterations to walk back instead of 10.
+    rs = RateStateFriction(0.0, 0.2, 4.0e-9, 0.011, 0.017, 0.05, 0.0, 625.0)
+    c = SeriesModel(IncompressibleElasticity(3.0e10), rs)
+    vars = (; ε = 1.0e-9)
+    others = (; dt = 1.0e6, τ0 = (0.0,), P0 = (0.0,), P = 5.0e7, Ω_old = -5.0)
+    xnorm = normalisation_x(c, 1.0e6, 1.0e-9)
+    x0 = 0.7 .* initial_guess_x(c, vars, (; τ = 0.0, P = 5.0e7), others)
+
+    # itermax = 0 with zero tolerances stops after exactly one iteration
+    first_step = try
+        solve(c, x0, vars, others; xnorm0 = xnorm, itermax = 0, atol = 0.0, rtol = 0.0)
+    catch e
+        e
+    end
+    @test first_step isa NonConvergenceError
+    @test first_step.iterations == 1
+    @test first_step.residual < 1.0e3
+
+    sol = solve(c, x0, vars, others; xnorm0 = xnorm)
+    @test sol.iterations ≤ 15
+    @test sol.x[1] ≈ 8.822062639363287e6 rtol = 1.0e-12
+end
+
 @testset "RateStateFriction state update stays finite" begin
     rs = RateStateFriction(0, 0.5, 4.0e-9, 0.011, 0.015, 0.0047, 0, 500)
     # An overflowed slip rate and a fully relaxed state at dt = 0 both drive
