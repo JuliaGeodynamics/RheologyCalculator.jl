@@ -30,6 +30,7 @@ struct RateStateFriction{T} <: AbstractViscosity
 end
 RateStateFriction(args...) = RateStateFriction(promote(args...)...)
 @inline series_state_functions(::RateStateFriction) = (compute_strain_rate,)
+@inline parallel_state_functions(::RateStateFriction) = (compute_stress,)
 
 # strain rate as a function of stress, state, and pressure
 @inline function compute_strain_rate(r::RateStateFriction; τ = 0, Ω_old = 0, P = 0, dt = 0, kwargs...)
@@ -49,15 +50,16 @@ end
     return τII
 end
 
-# This updates the state variable Ω based on slip velocity Vp and time step dt, which is needed outside the rheology definition
+# This updates the state variable Ω based on slip velocity Vp and time step dt, which is needed outside the rheology definition.
+# Θ = exp(Ω) is floored before the log, since it reaches zero for an overflowed slip rate or for dt = 0 with a fully relaxed Ω_old.
 @inline function update_Ω(r::RateStateFriction; ε = 0, Ω_old = 0, dt = 0, kwargs...)
     Vp = 2 * r.D * ε
     if (Vp * dt / r.L ≤ 1.0e-6)
-        Ω = log(exp(Ω_old) * (1 - Vp * dt / r.L) + r.V₀ * dt / r.L)
+        Θ = exp(Ω_old) * (1 - Vp * dt / r.L) + r.V₀ * dt / r.L
     else
-        Ω = log(r.V₀ / Vp + (exp(Ω_old) - r.V₀ / Vp) * exp(-Vp * dt / r.L))
+        Θ = r.V₀ / Vp + (exp(Ω_old) - r.V₀ / Vp) * exp(-Vp * dt / r.L)
     end
-    return Ω
+    return log(max(Θ, 1.0e-300))
 end
 
 # --------------------------------------------------------------------
