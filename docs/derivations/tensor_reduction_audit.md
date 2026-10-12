@@ -206,15 +206,34 @@ match the SRC special cases.
 
 Load cases: constant pure shear; reversal after 6 steps; pure shear → simple shear; 3D with all six components and a change of direction; scalar ε, constant and reversed.
 
-| Topology | Coaxial / scalar | Scalar reversal | Tensor reversal, rotation, 3D | IDs |
-|---|---|---|---|---|
-| Maxwell `S(η,G)` | pass | pass | pass | — |
-| KV, mixed, Burgers, direct spring + sub-branch | pass | pass | fail (τ_II error 5–870 %) | S1, S6, S7 |
-| two blocks | pass | `NonConvergenceError` | fail | S1, S6, S7, S24 |
-| two springs in a sub-branch (G_a ≠ G_b) | fail (τ_II error 7 %) | fail | fail | S2 (+ S1) |
-| power law as outer leaf, linear block | pass | pass | fail | S1, S6, S7 |
-| power law as direct KV element / in a sub-branch | `ArgumentError` (NaN η_KV) | same | same | S5 |
+Topologies: Maxwell; KV; mixed; Burgers; two blocks; direct spring + sub-branch; two springs in a sub-branch (G_a ≠ G_b); power law as outer leaf, as direct KV element, and in a sub-branch.
 
-- S1, S6, S7: a signed scalar ε keeps the sign of τ0, so these only show with tensor ε.
-- S4: `solve` itself does not throw for the power-law block cases, but the post-solve spring reconstruction does (S5), so the solve result is not compared yet.
-- Not covered by these tests: S3 (nested non-elastic parallel inside a sub-branch; the reference rejects that topology), D3, D11.
+Every topology passes every load case, for the solve alone (fed the reference history), the recovery alone, and the package's own time loop. The same file checks `component_partition` inside blocks against the reference, and `test/test_tensor_tangent.jl` checks `tangent_tensor` and `tangent` against finite differences of `solve` with a non-coaxial history.
+
+Not covered: S3 (the reference rejects that topology; the package throws), plastic elements in a block that carries history.
+
+---
+
+## 5. Status
+
+| ID | Status | Resolution |
+|---|---|---|
+| T1–T11 | fixed | `tensor_reduction.typ` rewritten |
+| S1 | fixed | The global equation is posed on the invariant of `ε + H`, with `H` assembled as a tensor (`_history_tensor`) |
+| S2 | fixed | Each spring of a sub-branch weighted by its own G (`_block_state`) |
+| S3 | fixed | A history-carrying block with a composite nested in a sub-branch throws |
+| S4 | fixed | Closure unknowns e_b, t_j; state-dependent elements evaluated at their physical argument (`src/equation_system/closure_unknowns.jl`) |
+| S5 | fixed | One coefficient path (`_block_state`) for the solve, `H`, the closures, the recovery and the partitions |
+| S6, S7 | fixed | Spring tensors recovered from the physical block tensors (`elastic_stress_history`) |
+| S8–S12, S14, S17, S18, S20, S21 | fixed | Comments and docstrings rewritten or removed with the code they described |
+| S13 | fixed | Missing spring is an error |
+| S15, S16, S19 | fixed | Dead code removed |
+| S22 | fixed | Seeds take the element type |
+| S23 | fixed | `component_partition` / `dissipation_partition` evaluate block elements at physical values (`physical_solution`) |
+| S24 | fixed | Block strain rates are bounded only for tensor ε |
+| S25 | fixed in blocks | Closure unknowns are signed for scalar ε; elements are evaluated at their absolute value. `initial_guess_x` still evaluates a power law at a negative scalar ε |
+| D1–D8, D10 | fixed | `docs/src/strain_rate_correction.md` rewritten |
+| D9 | correct | — |
+| D11 | verified | The worked example runs |
+| P1–P9 | — | External document |
+| open | — | Plastic elements in a block that carries elastic history are evaluated at the shifted block strain rate |

@@ -229,10 +229,9 @@ end
 @inline effective_strain_rate_correction(c::AbstractRheology, ε, τ0, others, I) = effective_strain_rate_correction(iselastic(c), c, ε, τ0, others, I)
 @inline effective_strain_rate_correction(::Val{false}, c::AbstractRheology, ε, τ0, others, I) = 0
 
-# For an elastic leaf: correction = τ0 / (2η).  This is the Maxwell backstress
-# term: the strain the spring would have produced at strain rate τ0/(2G·dt)
-# times dt, which must be subtracted from the total ε before solving.
-# η = G·dt for an Elasticity element, so τ0/(2η) = τ0/(2G·dt).
+# A spring of the outer SeriesModel adds τ0 / (2η) = τ0 / (2 G dt) to ε: its
+# backward-Euler law ε_s = (τ - τ0) / (2 G dt) moves the backstress term to the
+# applied side, so the series sees the strain rate ε + τ0 / (2 G dt).
 @inline function effective_strain_rate_correction(::Val{true}, c::AbstractRheology, ε, τ0, others, I)
     η = compute_viscosity(c, merge((; ε), others))
     correction = @. τ0 / (2 * η)
@@ -277,29 +276,28 @@ elastic rheology, otherwise `Val(false)`.
 # Generalized Maxwell / Kelvin-Voigt strain-rate correction for branches
 # -----------------------------------------------------------------------
 #
-# Background (see docs/derivations/tensor_reduction.typ for the full derivation):
+# Derivation: docs/derivations/tensor_reduction.typ (generalized parallel block)
+# and noncoaxial_reduction.typ.
 #
-# For a SeriesModel whose branches contain ParallelModel elements, each
-# parallel block contributes an effective strain-rate correction beyond the
-# simple Maxwell leaf correction already handled by the existing code.
+# Each ParallelModel block b of the outer SeriesModel adds to H the term
 #
-# For one ParallelModel branch the corrected strain rate is:
+#   Σ_{springs i of b} η_star_i τ0_i / (2 η_KV)                    (*)
 #
-#   ε_eff = ε + Σ_i η_star_i * τ0_i / (2 * η_KV)           (*)
+# with
 #
-# where the sum runs over every elastic source (leaf or sub-branch) inside
-# the parallel block, and:
+#   η_KV   = Σ_{direct elements} η + Σ_{sub-branches j} η_M,j   (a sum)
+#   η_M,j  = 1 / Σ_{elements of j} (1 / η)                       (an inverse sum)
+#   η_star = 1                        for a direct spring
+#   η_star = η_M,j / (G_i dt)         for spring i of sub-branch j, with its own G_i
 #
-#   η_KV  = Σ η_eff_i   (sum of effective viscosities, i.e. arithmetic mean)
-#   η_star = 1                                  for a direct elastic leaf
-#   η_star = η_eff_M / (G * dt) = η_v / (η_v + G*dt)  for a Maxwell sub-branch
+# where every element counts with its effective viscosity (a spring with
+# G dt). η_star ≤ 1 inside a sub-branch: a stiff spring takes a small share of
+# the strain rate, so its backstress weighs little. Elements whose viscosity
+# depends on the state are evaluated at the closure unknowns of the block
+# (src/equation_system/closure_unknowns.jl).
 #
-# η_star < 1 for Maxwell branches: a softer spring (small G) contributes more
-# of its backstress; a very stiff spring makes η_star → 0 because the elastic
-# strain is negligible and the element behaves like a pure dashpot.
-#
-# All index arithmetic and η_star expressions are resolved at *compile time*
-# by the generated functions below, so the runtime code is a flat sequence of
+# All index arithmetic and η_star expressions are resolved at compile time by
+# the generated functions below, so the runtime code is a flat sequence of
 # arithmetic with no dynamic dispatch or branching.
 # -----------------------------------------------------------------------
 
@@ -311,7 +309,7 @@ leaf tuple `r`. Used to compute τ0 index offsets before processing the
 `ParallelModel` branches of a `SeriesModel`.
 """
 @generated function count_elastic(r::NTuple{N, AbstractRheology}) where {N}
-    # Count by inspecting the concrete element types at specialisation time.
+    # Count by inspecting the concrete element types at specialization time.
     n = count(T -> T <: AbstractElasticity, r.parameters)
     return :($n)
 end
@@ -324,7 +322,7 @@ Return, at the *type level*, the total number of elastic elements inside a
 `ParallelModel`: elastic direct leafs (type `L`) plus elastic leafs of every
 `SeriesModel` sub-branch in `B`.
 
-Called only from `_kv_corrections` at specialisation time; never called at
+Called only from `_kv_corrections` at specialization time; never called at
 runtime.
 """
 function _n_elastic_in_parallel(::Type{ParallelModel{L, B}}) where {L, B}
@@ -350,7 +348,7 @@ leafs only, i.e. at most one level of Series/Parallel alternation. `_η_eff_maxw
 reads only a sub-branch's leafs, so any composite nested inside a sub-branch
 would be left out of η_KV and of the backstress weights.
 
-Throw at specialisation time when a branch that carries elastic history has such
+Throw at specialization time when a branch that carries elastic history has such
 a nested composite, whether or not the nested composite is itself elastic.
 Branches without elastic elements take no correction and are not restricted.
 """
@@ -371,7 +369,7 @@ end
 """
     _branch_tau0_offsets(branches::Type)
 
-Per-branch starting offsets into the `τ0` tuple, resolved at specialisation time.
+Per-branch starting offsets into the `τ0` tuple, resolved at specialization time.
 
 `τ0` is ordered to match `global_eltype_numbering`: the outer `SeriesModel`'s own
 elastic leafs first, then its branches left to right, each branch owning
@@ -400,7 +398,7 @@ inside the branches. Branch `i` evaluates its state-independent viscosities at
 strain rate `εb[i]`, and the others at its closure unknowns `phys[i]` (see
 `_block_closure_values`); without `phys` every viscosity is evaluated at `εb`.
 
-The τ0 index for each branch is pre-computed at specialisation time (via
+The τ0 index for each branch is pre-computed at specialization time (via
 `_n_elastic_in_parallel`) and baked in as a literal integer, yielding
 allocation-free, branch-free runtime code.
 """
@@ -437,9 +435,8 @@ The correction follows equation (*) in `docs/derivations/tensor_reduction.typ`:
 
     Σ_i η_star_i * τ0_i / (2 * η_KV)
 
-`el_idx_start` is the 1-based index of the elastic element immediately before
-the first elastic element owned by this branch (i.e. `τ0[el_idx_start + 1]`
-is this branch's first backstress entry). The branch viscosities are evaluated
+`el_idx_start` is the number of `τ0` entries that precede this branch, so
+`τ0[el_idx_start + 1]` is its first backstress. The branch viscosities are evaluated
 as in `_block_state`, at the scalar strain rate `εb` and the closure unknowns
 `phys`.
 """
@@ -456,20 +453,19 @@ as in `_block_state`, at the scalar strain rate `εb` and the closure unknowns
 end
 
 """
-    _η_KV(leafs, subs, args)
+    _η_KV(leafs, subs, args[, phys])
 
 Compute the Kelvin-Voigt effective viscosity of a parallel block:
 
-    η_KV = Σ_j η_j  (viscous leafs)  +  Σ_k η_eff_M_k  (Maxwell sub-branches)
+    η_KV = Σ_j η_j  (direct leafs)  +  Σ_k η_eff_M_k  (Maxwell sub-branches)
 
-where `η_eff_M = 1 / (1/η_v + 1/(G*dt))` is the harmonic-mean effective
-viscosity of each Maxwell `SeriesModel` sub-branch.
+where a direct dashpot counts with `η`, a direct spring with `G dt`, and
+`η_eff_M = 1 / Σ_i (1/η_i)` is the inverse sum over the elements of each
+`SeriesModel` sub-branch. Elements are evaluated at `args` and `phys` as
+described above `_secant_viscosity`.
 """
-# Arithmetic sum over the direct leafs of the ParallelModel (a viscous leaf
-# contributes η, an elastic one G*dt) and the harmonic-mean effective
-# viscosities of its Maxwell SeriesModel sub-branches. The `false` seed is an
-# additive zero that takes the viscosities' type, so Float32 and dual numbers
-# are preserved.
+# The `false` seed is an additive zero that takes the viscosities' type, so
+# Float32 and dual numbers are preserved.
 @inline _η_KV(leafs::NTuple{N, AbstractRheology}, subs::Tuple, args, phys = nothing) where {N} =
     _sum_viscosities(_direct_viscosities(leafs, args, phys), _subbranch_viscosities(subs, args, phys))
 
@@ -507,16 +503,16 @@ end
 """
     _η_eff_maxwell(leafs::NTuple{N, AbstractRheology}, args)
 
-Effective viscosity of a Maxwell `SeriesModel` branch: the harmonic mean of
-the viscosities of its constituent leaf elements.
+Effective viscosity of a Maxwell `SeriesModel` branch: the inverse of the sum
+of the inverse viscosities of its leaf elements.
 
     η_eff_M = 1 / Σ_i (1 / η_i)
 
 For a two-element branch `(viscous, elastic)` this reduces to the standard
 Maxwell formula `η_v * G * dt / (η_v + G * dt)`.
 """
-# The harmonic mean -- the inverse of the sum of inverses -- is the effective
-# viscosity of elements in series.
+# Elements in series share the stress and add their strain rates, so their
+# inverse viscosities add.
 @inline _η_eff_maxwell(leafs::NTuple{N, AbstractRheology}, args) where {N} =
     _η_eff_maxwell(leafs, args, nothing, nothing)
 
@@ -635,7 +631,7 @@ sub-branches `subs`, as `(η_KV, W, ηM, S)`:
 
 Element viscosities are evaluated at `args` and `phys` as described above
 `_secant_viscosity`. Every τ0 index and every η_star expression is resolved at
-specialisation time, so the emitted code is a flat sequence of multiply-adds
+specialization time, so the emitted code is a flat sequence of multiply-adds
 with literal indices.
 """
 @generated function _block_state(

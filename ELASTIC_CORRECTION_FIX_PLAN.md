@@ -185,20 +185,12 @@ Exit: met. All Step 1 cases pass for τ and every spring tensor at every step (n
 
 ## Step 6: Comments and docs
 
-- [ ] Source comments and docstrings:
-  - S8, S9, S14, S18 (describe **H** and the exact nonlinear closure);
-  - S10 (sign), S11/S12 (sum / inverse sum), S17 (offset), S20 (parallel elements share strain rate), S21 (unsupported "proven");
-  - remove the "Option 3" / "old approach" text with the removed code.
-- [ ] `docs/src/strain_rate_correction.md`:
-  - D1/D2 (tensor **E**, invariant of the assembled tensor), D3 (history update), D4 (per-spring η*), D5, D6, D8, D10;
-  - supported topologies, the shifted unknowns, the e_b/t_j unknowns and their `x_keys`;
-  - the `viscosity_depends_on_state` trait for user rheologies;
-  - an updated implementation table;
-  - an example with load reversal and a change of direction (linear Burgers and a nonlinear KV), checked against the reference.
-- [ ] `docs/src/api.md`: the new and changed methods.
-- [ ] Typst derivations: add §1.3–§1.5 (shifted unknowns, closure, recovery), since the docs cite them.
-- [ ] Changelog: results change for tensor-ε models with blocks; new unknowns for nonlinear history-bearing blocks; the `compute_stress_elastic` / `effective_strain_rate_correction` method changes.
-- [ ] Audit notes: final status per ID.
+- [x] Source comments and docstrings: S8, S9, S14, S18 (H and the closure; `solve` docstring lists the closure keys), S10, S11/S12 (sum / inverse sum), S17, S20/S21 (removed with `_branch_elastic_*`); no "Option 3" / "old approach" text left; American spelling in `strain_rate_correction.jl`.
+- [x] `docs/src/strain_rate_correction.md` rewritten: assembled tensor **E** (D1/D2), recovery with `elastic_stress_history` (D3), per-spring η* (D4), D5, D6, D8, D10; supported topologies; shifted unknowns; e_b/t_j and their `x_keys`; the trait; implementation table; a reversal + change-of-direction loop for Burgers and a power-law KV block (the comparison against the reference lives in the test suite). All code blocks run.
+- [x] `docs/src/api.md`: `elastic_stress_history`; `compute_stress_elastic` shows both docstrings. Docs build (`makedocs`) passes.
+- [x] Typst: `noncoaxial_reduction.typ` gains §3–5 (shifted unknowns, recovery, closure). The commented-out draft sections are untouched.
+- [x] `CHANGELOG.md` created (Unreleased).
+- [x] Audit notes: §4 updated, §5 status per ID.
 
 ---
 

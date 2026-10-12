@@ -94,6 +94,10 @@ contains nondifferentiable auxiliary values such as `dt`, `τ0`, and `P0`.
 on the second invariant of `ε + H`, where `H` is the history tensor of
 [`effective_strain_rate_correction`](@ref), so non-coaxial and reversed
 backstresses enter with their orientation and sign. A scalar `ε` is signed.
+A `ParallelModel` block that carries elastic history and holds an element whose
+viscosity depends on the state (see [`viscosity_depends_on_state`](@ref)) adds
+closure unknowns to `x`, listed by [`x_keys`](@ref) as `:εII_block` and
+`:τII_subbranch`.
 
 # Keywords
 - `xnorm0`: normalization vector for residual norms. If `nothing`, ones are used.

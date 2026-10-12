@@ -68,6 +68,77 @@ tau_#II = 2 eta^("eff") (#ed^("eff"))_#II, quad
 (#ed^("eff"))_#II = (#ed + bold(H))_#II .
 $ <scalar>
 
+= Shifted block unknowns <sec-shifted>
+
+The spring state functions of the package carry no history, so the equation
+graph of a block that carries history solves the history-free problem with the
+same outer stress. Its unknowns are *shifted* invariants: the block strain rate
+$tilde(x)_b$ and the stress $tilde(x)_j$ of each sub-branch, with
+
+$
+tau_#II = 2 eta_("KV",b) tilde(x)_b, quad tilde(x)_j = 2 eta^("eff")_(M,j) tilde(x)_b .
+$ <shifted>
+
+With the direction $bold(n) = #ed^("eff") \/ (#ed^("eff"))_#II$ of the
+assembled strain rate ($bold(n) = 1$ for a signed scalar strain rate), the
+outer stress is $#tt = tau_#II bold(n)$, and @block and the sub-branch law give
+the physical tensors
+
+$
+#ed^p_b = tilde(x)_b bold(n) - bold(W)_b / (2 eta_("KV",b)), quad
+#tt _j = 2 eta^("eff")_(M,j) #ed^p_b + bold(S)_j
+= tilde(x)_j bold(n) - eta^("eff")_(M,j) / eta_("KV",b) bold(W)_b + bold(S)_j,
+$ <physical>
+
+where $bold(W)_b = sum_(i in b) eta^star_i #to _i$ and $bold(S)_j$ is the part of
+$bold(W)_b$ owned by the springs of sub-branch $j$. The shifted tensors
+$tilde(x)_b bold(n)$ and $tilde(x)_j bold(n)$ are coaxial with $#tt$, which is
+why the scalar parent-child equations of the graph are exact.
+
+= Recovery and history update <sec-update>
+
+The stress of every spring at the end of the step is the next step's history:
+
+$
+#tt^("new")_k = #tt quad "spring of the outer series", quad
+#tt^("new")_s = #to _s + 2 G_s Delta t #ed^p_b quad "direct spring of block" b,
+$
+
+and $#tt^("new")_(j k) = #tt _j$ for every spring $k$ of sub-branch $j$, all from
+@physical. These tensors are in general coaxial with neither $#tt$ nor $#ed$.
+The parallel balance
+$#tt = sum_l 2 eta_l #ed^p_b + sum_s #tt^("new")_s + sum_j #tt _j$
+follows from @weights and @block.
+
+= Elements whose viscosity depends on the state <sec-closure>
+
+An element whose viscosity depends on the state must be evaluated at its
+physical argument, which @physical gives only once the viscosities are known.
+The loop is closed with physical invariants as extra unknowns: $e_b$ for a block
+with such an element among its direct leafs, and $t_j$ for each sub-branch with
+such an element, with residuals built from assembled tensors:
+
+$
+r_b = e_b - (tilde(x)_b bold(n) - bold(W)_b / (2 eta_("KV",b)))_#II, quad
+r_j = t_j - (tilde(x)_j bold(n) - eta^("eff")_(M,j) / eta_("KV",b) bold(W)_b + bold(S)_j)_#II .
+$ <closure>
+
+For a signed scalar strain rate the invariant is the signed value itself. Each
+such element is evaluated through its own law at $abs(e_b)$ or $abs(t_j)$ as a
+secant viscosity,
+
+$
+eta_l = (tau_l lr((abs(e_b)))) / (2 abs(e_b)) quad "direct element", quad
+eta_l = abs(t_j) / (2 dot(epsilon)_l lr((abs(t_j)))) quad "element of sub-branch" j,
+$
+
+and its term in the graph equations is the same secant applied to the shifted
+unknown, $tau_l lr((abs(e_b))) tilde(x)_b \/ abs(e_b)$ or
+$dot(epsilon)_l lr((abs(t_j))) tilde(x)_j \/ abs(t_j)$. The graph, $bold(H)$ and
+@closure therefore share one set of coefficients, and at convergence the
+tensor equations @block, @physical hold exactly. Elements whose viscosity does
+not depend on the state need no extra unknowns.
+
 // = Tensor recovery
 
 // Given the scalar solution $tau_#II$, the stress tensor follows from @constitutive:

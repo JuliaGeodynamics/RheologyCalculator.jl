@@ -8,7 +8,7 @@ Fields store the equation index (`self`), parent equation index, child equation
 indices, state function `fn`, rheology tuple, input-variable index, type-local
 element numbering for history lookup, and `closure`: `nothing`, or the data
 linking the equation to the closure unknowns of a parallel block that carries
-elastic history (see [`closure_unknowns`](@ref)).
+elastic history (see `closure_unknowns`).
 """
 struct CompositeEquation{IsGlobal, T, F, R, RT, C}
     parent::Int       # i-th element of x to be substracted
