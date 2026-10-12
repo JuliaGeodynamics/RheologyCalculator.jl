@@ -67,6 +67,19 @@ RheologyCalculator.viscosity_depends_on_state(::NoViscosityRheology) = false
         viscous, ParallelModel(viscous, SeriesModel(viscous, ParallelModel(viscous, elastic)))
     )
     @test_throws nested_msg effective_strain_rate_correction(c_nested_elastic, (1.0e-14, -1.0e-14, 0.0), ((0.0, 0.0, 0.0),), (; dt = 1.0e10))
+    # A plastic element in a block that carries elastic history would yield on the
+    # history-free stress; the combination throws.
+    plastic_msg = "Plastic elements are not supported in a ParallelModel with a spring"
+    plastic_el = DruckerPrager(5.0e6, 0.0, 0.0, 1.0e18)
+    vars_pl = (; ε = (1.0e-14, -1.0e-14, 0.0), θ = 0.0)
+    others_pl = (; dt = 1.0e10, τ0 = ((0.0, 0.0, 0.0),), P = 0.0)
+    for c_pl in (
+            SeriesModel(viscous, ParallelModel(plastic_el, viscous, elastic)),
+            SeriesModel(viscous, ParallelModel(viscous, SeriesModel(plastic_el, elastic))),
+        )
+        x_pl = initial_guess_x(c_pl, vars_pl, (; τ = 1.0e7), others_pl)
+        @test_throws plastic_msg compute_residual(c_pl, x_pl, vars_pl, others_pl)
+    end
     # A block without elastic history takes no correction and is not restricted.
     c_nested_no_history = SeriesModel(
         elastic, ParallelModel(viscous, SeriesModel(viscous, ParallelModel(viscous, viscous)))

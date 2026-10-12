@@ -349,11 +349,20 @@ reads only a sub-branch's leafs, so any composite nested inside a sub-branch
 would be left out of η_KV and of the backstress weights.
 
 Throw at specialization time when a branch that carries elastic history has such
-a nested composite, whether or not the nested composite is itself elastic.
-Branches without elastic elements take no correction and are not restricted.
+a nested composite, whether or not the nested composite is itself elastic, or
+holds a plastic element: the plastic local equations see the history-free
+block strain rate and stress, so the yield condition would ignore the
+backstresses. Branches without elastic elements take no correction and are not
+restricted.
 """
 function _assert_kv_nesting_supported(::Type{ParallelModel{L, B}}) where {L, B}
     _type_has_elastic(ParallelModel{L, B}) || return nothing
+    plastic = findfirst(T -> T <: AbstractPlasticity, [L.parameters..., (T for S in B.parameters for T in S.parameters[1].parameters)...])
+    plastic === nothing || error(
+        "elastic strain-rate correction: a ParallelModel that carries elastic history holds a " *
+            "plastic element. Plastic elements are not supported in a ParallelModel with a spring; " *
+            "place the plastic element in the outer SeriesModel or in a block without springs."
+    )
     for S in B.parameters
         sub_branches = S.parameters[2]  # SeriesModel sub-branch's own `branches` field type
         isempty(sub_branches.parameters) || error(
@@ -489,9 +498,8 @@ end
 Every caller reaches this only after establishing that the branch carries
 elastic history, so a zero, negative, or `NaN` aggregate is a defect — a leaf
 with no `compute_viscosity` method, or an `others` that omits `dt` — and would
-otherwise produce a silent `Inf` or `NaN` correction. `Inf` itself is a
-legitimate value: a rigid leaf (a plastic element below yield) in parallel with a
-spring makes the whole branch rigid, and its correction is correctly zero.
+otherwise produce a silent `Inf` or `NaN` correction. `Inf` passes: an element of
+infinite viscosity makes the whole branch rigid, and its correction is zero.
 """
 @inline _checked_η_KV(leafs, subs, args, phys = nothing) = _check_η_KV(_η_KV(leafs, subs, args, phys))
 

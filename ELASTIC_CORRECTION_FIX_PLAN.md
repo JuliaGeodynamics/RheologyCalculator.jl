@@ -154,12 +154,8 @@ Exit: Step 1 linear cases match the reference for τ.
 - [x] **One coefficient path**: `_element_viscosity` / `_secant_viscosity` feed `_block_state` (η_KV, W, η_M,j, S_j), used by `_kv_branch_correction` (H) and by the closures. `_η_KV`, `_η_eff_maxwell`, `_weighted_backstress` take the same optional `phys`. Recovery (`_branch_elastic_stress`) still evaluates at ε = 0: Step 5.
 - [x] **Layout-dependent API**: `x_keys`, `initial_guess_x` (e_b from the prescribed strain rate, t_j like its sub-branch), `normalisation_x` (residual units: e_b → char_ε, t_j → char_τ), `branch_strain_rate_mask`, `inspect` (closure rows list the elements they serve).
 - [x] Allocation, type-stability/JET, sparsity-tracer (local, residual) and GPU tests for PL in a KV block (tensor ε) and in a Maxwell sub-branch (scalar ε).
-- [ ] **Plastic elements in history-bearing blocks.** Not done: plastic elements are excluded from secant evaluation and keep the previous behavior. Plastic elements carry their own λ unknowns and local equations (`compute_lambda`, `compute_plastic_strain_rate`), not a secant stress law, so §1.4 does not apply directly. Investigate `P(DruckerPrager, η_reg, G)` and `P(η, S(DruckerPrager, G))`:
-  - derive the physical argument each plastic equation needs (yield on the physical τ_j or on the block stress share);
-  - check whether the λ equations can read e_b / t_j and the physical tensors;
-  - add a reference case to Step 1.
-
-  If it can be made exact, implement it here. Otherwise this is the one remaining open decision (§Decisions).
+- [x] **Plastic elements in history-bearing blocks.** Investigated `P(DruckerPrager, η_reg, G)` against a closed-form reference (package convention: λ = 2‖ε̇_b‖, ‖τ_pl‖ = Y + 2η_vp‖ε̇_b‖). Step 1 (no history) matches exactly; afterwards the package ignores the block history (`compute_viscosity(::DruckerPrager) = Inf` makes η_KV = ∞, and the yield condition sees the shifted stress): 85 % τ_II error under constant pure shear, larger on reversal. **Now throws** for plastic elements anywhere in a history-bearing block.
+  - Exact formulation (not implemented): at graph convergence 1/(2η_KV) = x̃_b/τ_II, so ε̇_b = (x̃_b/τ_II)(τ − W_b). With M_b = ‖τ − W_b‖, the block term of **H** is W_b x̃_b/τ_II, physical e_b = x̃_b M_b/τ_II, and plastic block contributions rescale by ρ_b = τ_II/M_b (λ equation reads 2x̃_b/ρ_b). All regular in the rigid limit (x̃_b = 0), unlike the secant η_pl = ‖τ_pl‖/(2e_b). A plastic element in a sub-branch reads t_j for its yield condition and rescales λ/2 by x̃_j/t_j. Needs: reference support for plastic, guard for τ_II → 0. Decision pending.
 
 Exit: Step 1 nonlinear cases match the reference **for τ (solve)** in all 12 nonlinear cases. Spring recovery for nonlinear blocks remains `@test_broken` (S5 in `_branch_elastic_stress`, Step 5).
 

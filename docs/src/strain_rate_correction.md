@@ -291,7 +291,8 @@ sub-branches.
 
 The formulas hold for a `SeriesModel` of leaf elements and `ParallelModel`
 blocks whose sub-branches hold leaf elements only. A block that carries elastic
-history and has a composite nested inside a sub-branch throws an error. The
+history and has a composite nested inside a sub-branch, or holds a plastic
+element, throws an error. The
 elements are assumed isotropic, and the inelastic strain rates of the outer
 leafs coaxial with ``\boldsymbol{\tau}``. `τ0` is taken in the current frame;
 rotating it is up to the caller.
@@ -347,8 +348,7 @@ It defaults to `true`, which is always correct and only costs the extra
 unknowns; `LinearViscosity` and the springs return `false`. A user rheology
 whose viscosity is independent of ``\boldsymbol{\tau}`` and
 ``\boldsymbol{\varepsilon}`` may return `false`; returning `false` for a
-nonlinear law gives wrong results. Plastic elements in a block that carries
-history are evaluated at the shifted block strain rate.
+nonlinear law gives wrong results.
 
 ---
 

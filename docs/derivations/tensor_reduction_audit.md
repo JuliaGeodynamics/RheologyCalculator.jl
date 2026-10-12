@@ -236,4 +236,4 @@ Not covered: S3 (the reference rejects that topology; the package throws), plast
 | D9 | correct | — |
 | D11 | verified | The worked example runs |
 | P1–P9 | — | External document |
-| open | — | Plastic elements in a block that carries elastic history are evaluated at the shifted block strain rate |
+| X8 | fail-fast | A plastic element in a block that carries elastic history ignored the block's backstresses (`compute_viscosity = Inf` removes the block from `H`, and the yield condition sees the history-free stress): 85 % error in τ_II under constant pure shear against a closed-form reference. The combination now throws. An exact formulation exists: with ε̇_b = (x̃_b/τ_II)(τ − W_b), the block term of `H` is W_b x̃_b/τ_II and the plastic terms rescale by τ_II/‖τ − W_b‖, both regular in the rigid limit |

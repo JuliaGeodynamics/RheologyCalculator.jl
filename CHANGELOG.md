@@ -47,6 +47,8 @@
   carries elastic history holds an element whose viscosity depends on the
   state; use the form that takes the solver vector `x`.
 - Composites whose blocks carry elastic history and nest a composite inside a
-  sub-branch throw an error.
+  sub-branch, or hold a plastic element, throw an error. A plastic element in
+  such a block yielded on the history-free stress and ignored the block's
+  backstresses.
 - The solver vector of a model with a state-dependent element in a block that
   carries elastic history has extra entries.
