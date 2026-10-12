@@ -79,7 +79,23 @@ end
     )
     x_dil_br = initial_guess_x(c_dilatant_branch, vars_dil, (; τ = 1.0e6, P = 1.0e6), others_dil)
 
+    # Power law in a parallel block that carries elastic history, as a direct
+    # element and inside a sub-branch: the closure unknowns, their secant
+    # evaluation and the closure residuals are live. Tensor ε reaches the
+    # residual as a tensor; scalar ε against an opposing history keeps its sign.
+    powerlaw = PowerLawViscosity(2.5e34, 3)
+    c_pl_block = SeriesModel(LinearViscosity(1.0e21), ParallelModel(powerlaw, elasticinc))
+    c_pl_sub = SeriesModel(LinearViscosity(1.0e21), ParallelModel(LinearViscosity(5.0e20), SeriesModel(powerlaw, elasticinc)))
+    vars_pl_tensor = (; ε = (1.0e-14, -1.0e-14, 5.0e-15))
+    others_pl_tensor = (; dt = 1.0e10, τ0 = ((1.0e6, -2.0e6, 5.0e5),))
+    vars_pl_scalar = (; ε = 1.0e-14)
+    others_pl_scalar = (; dt = 1.0e10, τ0 = (-3.0e6,))
+    x_pl_block = initial_guess_x(c_pl_block, vars_pl_tensor, (; τ = 1.0e7), others_pl_tensor)
+    x_pl_sub = initial_guess_x(c_pl_sub, vars_pl_scalar, (; τ = 1.0e7), others_pl_scalar)
+
     cases = (
+        (c_pl_block, vars_pl_tensor, others_pl_tensor, x_pl_block),
+        (c_pl_sub, vars_pl_scalar, others_pl_scalar, x_pl_sub),
         (c_flat, vars_flat, others_flat, x_flat),
         (c_single_branch, vars_sb, others_sb, x_sb),
         (c_multi_branch, vars_mb, others_mb, x_mb),
@@ -120,6 +136,17 @@ end
         for (c, vars, others, x) in cases
             solve(c, x, vars, others)
             @test (@allocated solve(c, x, vars, others)) == 0
+        end
+    end
+
+    @testset "elastic history recovery" begin
+        for (c, vars, others, x) in cases
+            c isa SeriesModel && hasfield(typeof(others), :τ0) || continue
+            xc = solve(c, x, vars, others).x
+            elastic_stress_history(c, xc, vars.ε, others.τ0, others)
+            @test (@allocated elastic_stress_history(c, xc, vars.ε, others.τ0, others)) == 0
+            component_partition(c, xc, vars, others)
+            @test (@allocated component_partition(c, xc, vars, others)) == 0
         end
     end
 

@@ -75,9 +75,10 @@ end
     ks = keys(differentiable_kwargs(eq.fn))
     equation = nameof(eq.fn)
     isglob = isglobal(eq) === Val(true)
-    elements = map(=>, map(r -> nameof(typeof(r)), eq.rheology), eq.el_number)
+    rheology, el_number = _inspected_elements(eq)
+    elements = map(=>, map(r -> nameof(typeof(r)), rheology), el_number)
     inputs = keys(residual_kwargs(eq.fn))
-    history = _history_keys(eq.rheology)
+    history = _history_keys(rheology)
     return ntuple(Val(length(ks))) do i
         (;
             var = ks[i], equation, isglobal = isglob, elements,
@@ -85,6 +86,15 @@ end
         )
     end
 end
+
+# The elements an equation evaluates, with their numbers. A closure equation
+# lists the elements whose physical argument it supplies: the direct leafs of
+# its block for `e_b`, the leafs of sub-branch `J` for `t_j`.
+@inline _inspected_elements(eq::CompositeEquation) = (eq.rheology, eq.el_number)
+@inline _inspected_elements(eq::CompositeEquation{false, T, F, R, RT, <:BlockClosure{0}}) where {T, F, R, RT} =
+    (eq.rheology.leafs, eq.el_number[1])
+@inline _inspected_elements(eq::CompositeEquation{false, T, F, R, RT, <:BlockClosure{J}}) where {T, F, R, RT, J} =
+    (eq.rheology.branches[J].leafs, eq.el_number[2][J][1])
 
 @generated function _history_keys(rheology::NTuple{N, AbstractRheology}) where {N}
     keys = Symbol[]

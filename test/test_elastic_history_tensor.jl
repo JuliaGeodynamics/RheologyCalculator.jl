@@ -78,11 +78,6 @@ With `feed = :package` each side advances with its own spring history, which is
 the end-to-end time loop. With `feed = :reference` the package solves every step
 from the reference history, so `τII` measures the solve alone and `springs` the
 history recovery alone.
-
-An error from the package ends the comparison and reports `NaN` for what it
-prevented: a failed `solve` (non-convergence, or a `DomainError` from an element
-law evaluated outside its domain) makes both errors `NaN`; a failed history recovery
-makes `springs` `NaN`, and also `τII` when `feed = :package`.
 """
 function compare_histories(c, load; feed::Symbol)
     feed in (:package, :reference) || throw(ArgumentError("feed must be :package or :reference"))
@@ -109,64 +104,22 @@ function compare_histories(c, load; feed::Symbol)
         others = (; dt, τ0)
         vars = (; ε, θ = 0.0)
         x0 = x === nothing ? initial_guess_x(c, vars, (; τ = τc, P = 0.0), others) : x
-        x = try
-            solve(c, x0, vars, others; xnorm0, itermax = 200).x
-        catch err
-            err isa Union{NonConvergenceError, DomainError} || rethrow()
-            return (; τII = NaN, springs = NaN)
-        end
+        x = solve(c, x0, vars, others; xnorm0, itermax = 200).x
         τII_ref = nc == 1 ? τ_ref[1] : tensor_invariant(τ_ref)
         err_τ = max(err_τ, abs(x[1] - τII_ref) / abs(τII_ref))
 
-        springs_pkg = try
-            history(c, x, ε, τ0, others)
-        catch err
-            err isa ArgumentError || rethrow()
-            feed === :package && return (; τII = NaN, springs = NaN)
-            err_springs = NaN
-            nothing
+        springs_pkg = history(c, x, ε, τ0, others)
+        for (sp, sr) in zip(springs_pkg, springs_ref)
+            scale = max(tensor_invariant(sr), 1.0e-6 * τc)
+            err_springs = max(err_springs, tensor_invariant(map(-, as_tuple(sp), sr)) / scale)
         end
-        if springs_pkg !== nothing
-            for (sp, sr) in zip(springs_pkg, springs_ref)
-                scale = max(tensor_invariant(sr), 1.0e-6 * τc)
-                err_springs = max(err_springs, tensor_invariant(map(-, as_tuple(sp), sr)) / scale)
-            end
-            hist_pkg = springs_pkg
-        end
+        hist_pkg = springs_pkg
         hist_ref = springs_ref
     end
     return (; τII = err_τ, springs = err_springs)
 end
 
 const history_rtol = 1.0e-9
-
-# Checks the package does not yet pass, with the audit IDs in
-# `docs/derivations/tensor_reduction_audit.md` that explain them. `:solve` is τII
-# from the reference history, `:recovery` the spring tensors from the reference
-# history, `:loop` both quantities along the package's own time loop.
-const known_failures = let
-    all_loads = keys(ElasticHistoryCases.load_cases)
-    tensor_loads = (:reversal, :rotation, :three_D)
-    linear_blocks = (:KV, :mixed, :Burgers, :two_blocks, :spring_and_subbranch, :two_springs_subbranch, :PL_outer)
-    nonlinear_blocks = (:PL_direct, :PL_subbranch)
-    solve = Set{Tuple{Symbol, Symbol}}()
-    recovery = Set{Tuple{Symbol, Symbol}}()
-    # S4: power-law viscosities in a block evaluated at the shifted block strain
-    # rate. S25: under scalar reversal the block strain rate turns negative,
-    # where the scalar power law throws a `DomainError`.
-    for t in nonlinear_blocks, l in all_loads
-        push!(solve, (t, l))
-    end
-    # S6/S7: block spring stresses recovered from invariants, coaxial with ε + H.
-    for t in linear_blocks, l in tensor_loads
-        push!(recovery, (t, l))
-    end
-    # S5: block power-law viscosities evaluated at ε = 0 during recovery.
-    for t in nonlinear_blocks, l in all_loads
-        push!(recovery, (t, l))
-    end
-    (; solve, recovery, loop = union(solve, recovery))
-end
 
 @testset "full-tensor reference: Maxwell closed form" begin
     # Backward Euler for S(η, G): τ = η*(τᵒ + 2GΔt ε), η* = η/(η + GΔt).
@@ -207,14 +160,116 @@ end
 
 @testset "elastic history vs full-tensor reference" begin
     C = ElasticHistoryCases
-    check(broken, r) = broken ? (@test_broken r < history_rtol) : (@test r < history_rtol)
     for (tn, c) in pairs(merge(C.linear_topologies, C.nonlinear_topologies)), (ln, load) in pairs(C.load_cases)
         @testset "$tn / $ln" begin
             fed = compare_histories(c, load; feed = :reference)
             own = compare_histories(c, load; feed = :package)
-            check((tn, ln) in known_failures.solve, fed.τII)
-            check((tn, ln) in known_failures.recovery, fed.springs)
-            check((tn, ln) in known_failures.loop, max(own.τII, own.springs))
+            @test fed.τII < history_rtol
+            @test fed.springs < history_rtol
+            @test max(own.τII, own.springs) < history_rtol
+        end
+    end
+end
+
+@testset "closure unknowns of blocks carrying elastic history" begin
+    C = ElasticHistoryCases
+    # Each closure unknown is a local equation of its block, ahead of the
+    # sub-branches; blocks of linear elements keep their layout.
+    @test x_keys(C.linear_topologies.KV) == (:τ, :ε)
+    @test x_keys(C.linear_topologies.mixed) == (:τ, :ε, :τ)
+    @test x_keys(C.nonlinear_topologies.PL_direct) == (:τ, :ε, :εII_block)
+    @test x_keys(C.nonlinear_topologies.PL_subbranch) == (:τ, :ε, :τII_subbranch, :τ)
+    @test x_keys(C.nonlinear_topologies.PL_outer) == (:τ, :ε)
+    c_both = SeriesModel(C.η₁, ParallelModel(C.PL, SeriesModel(C.PL, C.G₁), SeriesModel(C.η₃, C.G₂)))
+    @test x_keys(c_both) == (:τ, :ε, :εII_block, :τII_subbranch, :τ, :τ)
+
+    # Closure unknowns are invariants, bounded for a tensor strain rate and
+    # signed for a scalar one. Their residuals are scaled like the block
+    # (strain rate) and sub-branch (stress) residuals.
+    c = C.nonlinear_topologies.PL_subbranch
+    @test RheologyCalculator.branch_strain_rate_mask(c, (1.0, -1.0, 0.0)) == [false, true, true, false]
+    @test !any(RheologyCalculator.branch_strain_rate_mask(c, 1.0))
+    @test normalisation_x(c, 2.0, 3.0) == [3.0, 2.0, 2.0, 3.0]
+
+    # At the solution each closure unknown equals the invariant of the physical
+    # tensor of the reference solve.
+    (; dt, τc, εc) = C
+    m = ReferenceModel(c)
+    ε = C._tensor(C.pure_shear_2D)
+    τ0 = ((2.0e6, -1.0e6, 1.5e6),)
+    _, springs_ref, _ = reference_step(m, ε, τ0, dt; guess = initial_guess(m, ε), τc, εc)
+    others = (; dt, τ0)
+    vars = (; ε, θ = 0.0)
+    x0 = initial_guess_x(c, vars, (; τ = τc, P = 0.0), others)
+    x = solve(c, x0, vars, others; xnorm0 = normalisation_x(c, τc, εc)).x
+    # The sub-branch carries the stress of its only spring.
+    @test x[3] ≈ tensor_invariant(springs_ref[1]) rtol = 1.0e-9
+end
+
+@testset "spring stress recovery" begin
+    C = ElasticHistoryCases
+    (; dt, τc, εc) = C
+    c = C.linear_topologies.two_blocks
+    ε = C._tensor(C.dir_a_3D)
+    τ0 = ((2.0e6, -1.0e6, -1.0e6, 5.0e5, 0.0, 1.0e6), (-1.0e6, 3.0e6, -2.0e6, 0.0, 1.0e6, -5.0e5))
+    others = (; dt, τ0)
+    vars = (; ε, θ = 0.0)
+    x0 = initial_guess_x(c, vars, (; τ = τc, P = 0.0), others)
+    x = solve(c, x0, vars, others; xnorm0 = normalisation_x(c, τc, εc)).x
+    springs = elastic_stress_history(c, x, ε, τ0, others)
+    @test length(springs) == length(τ0)
+    @test springs == elastic_stress_history_3D(c, x, ε, τ0, others)
+    @test compute_stress_elastic(c, x, ε, others) == map(tensor_invariant, springs)
+
+    # A tensor history makes the block springs non-coaxial with the outer
+    # stress, which the methods without ε cannot recover.
+    @test_throws "use `compute_stress_elastic(c, x, ε, others)`" compute_stress_elastic(c, x, others)
+    @test_throws "pass the solver vector `x`" elastic_stress_history_3D(c, x[1], ε, τ0, others)
+
+    # A scalar history has no direction: both methods give the signed stresses.
+    τ0s = (2.0e6, -1.0e6)
+    others_s = (; dt, τ0 = τ0s)
+    vars_s = (; ε = -C.εII, θ = 0.0)
+    xs = solve(c, x0, vars_s, others_s; xnorm0 = normalisation_x(c, τc, εc)).x
+    @test compute_stress_elastic(c, xs, others_s) == compute_stress_elastic(c, xs, vars_s.ε, others_s)
+end
+
+@testset "component partition inside blocks carrying elastic history" begin
+    # Elements of a block are reported at the physical block strain rate and
+    # sub-branch stress, not at the shifted unknowns of the solver.
+    C = ElasticHistoryCases
+    (; dt, τc, εc, η₁, η₂, G₁, PL) = C
+    ε = C._tensor(C.pure_shear_2D)
+    τ0 = ((3.0e6, 1.0e6, -2.0e6),)
+    others = (; dt, τ0)
+    vars = (; ε, θ = 0.0)
+    for (c, block_elements) in (
+            (C.linear_topologies.KV, (η₂,)),
+            (C.nonlinear_topologies.PL_direct, (PL,)),
+            (C.nonlinear_topologies.PL_subbranch, (η₂, PL)),
+        )
+        m = ReferenceModel(c)
+        τ_ref, springs_ref, _ = reference_step(m, ε, τ0, dt; guess = initial_guess(m, ε), τc, εc)
+        x0 = initial_guess_x(c, vars, (; τ = τc, P = 0.0), others)
+        x = solve(c, x0, vars, others; xnorm0 = normalisation_x(c, τc, εc)).x
+        p = component_partition(c, x, vars, others)
+        @test p.viscous_elements == (η₁, block_elements...)
+        # outer dashpot: the outer stress
+        @test p.viscous_τ[1] ≈ tensor_invariant(τ_ref) rtol = 1.0e-9
+        if c === C.nonlinear_topologies.PL_subbranch
+            # direct dashpot of the block: the block strain rate, from the
+            # stress balance τ = 2η₂ ε̇_b + τ_sub
+            ε_block = tensor_invariant(map((t, s) -> (t - s) / (2 * η₂.η), τ_ref, springs_ref[1]))
+            @test p.viscous_ε[2] ≈ ε_block rtol = 1.0e-9
+            # power law of the sub-branch: the stress of its spring
+            τ_sub = tensor_invariant(springs_ref[1])
+            @test p.viscous_τ[3] ≈ τ_sub rtol = 1.0e-9
+            @test p.viscous_ε[3] ≈ RheologyCalculator.compute_strain_rate(PL; τ = τ_sub) rtol = 1.0e-9
+        else
+            # direct element of the block: the block strain rate, from its spring
+            ε_block = tensor_invariant(map((s, s0) -> (s - s0) / (2 * G₁.G * dt), springs_ref[1], τ0[1]))
+            @test p.viscous_ε[2] ≈ ε_block rtol = 1.0e-9
+            @test p.viscous_τ[2] ≈ RheologyCalculator.compute_stress(block_elements[1]; ε = ε_block) rtol = 1.0e-9
         end
     end
 end

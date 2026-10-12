@@ -35,6 +35,7 @@ include("validation.jl")
 export validate
 
 include("equation_system/equations.jl")
+include("equation_system/closure_unknowns.jl")
 export generate_equations, compute_residual
 
 include("core/others.jl")

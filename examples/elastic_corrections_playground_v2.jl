@@ -31,7 +31,7 @@ c, x, τ0, ε, args, others = let
 
     vars = (; ε = 1.0e-14, θ = 0.0e-20)                # input variables (constant)
     args = (; τ = 2.0e3, P = 1.0e6)                    # guess variables (we solve for these, differentiable)
-    others = (; dt = 1.0e10, τ0 = (0.0e0,), P0 = (0.0,)) # other non-differentiable variables needed to evaluate the state functions
+    others = (; dt = 1.0e10, τ0 = (0.0e0, 0.0e0), P0 = (0.0, 0.0)) # other non-differentiable variables needed to evaluate the state functions
 
     x = initial_guess_x(c, vars, args, others)
     τ0 = ([0.0, 0.0e3, 0.0], [1.0e5, -1.0e5, 9.0e5])  # initial stress state (2D: xx,zz,xz)
@@ -133,7 +133,7 @@ function stress_time_invariant_manual(c, x0, τ0, ε; ntime = 200, dt = 1.0e8)
     τxz[1] = τ0[1][3]
     τII[1] = second_invariant(τxx[1], τzz[1], τxz[1])
 
-    P_e = (0.0,)
+    P_e = (0.0, 0.0)
     t = 0.0
     for i in 2:ntime
         εeff_xx = ε[1] + τxx_e[1] / (2 * G1 * dt) + τxx_e[2] / (2 * G2 * dt + 2 * η2)

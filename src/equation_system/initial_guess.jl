@@ -120,6 +120,16 @@ estimate_initial_value(eq::CompositeEquation, vars, args, others) = _estimate_in
     return iszero(est) ? _prescribed_strain_rate(vars) : est
 end
 
+# A block strain-rate invariant starts like the block strain rate; a sub-branch
+# stress invariant like the stress of its sub-branch.
+@inline _estimate_initial_value(::typeof(compute_block_strain_rate_invariant), eq, vars, args, others) =
+    _prescribed_strain_rate(vars)
+
+@inline function _estimate_initial_value(::typeof(compute_subbranch_stress_invariant), eq::CompositeEquation{false, T, F, R, RT, <:BlockClosure{J}}, vars, args, others) where {T, F, R, RT, J}
+    sub = eq.rheology.branches[J]
+    return _estimate_initial_value_harm(compute_strain_rate, sub.leafs, eq.el_number[2][J][1], vars, args, others)
+end
+
 # `vars.ε` may be a tensor or an invariant; both reduce here. A composite with no
 # prescribed deviatoric strain rate keeps the previous zero seed.
 @inline _prescribed_strain_rate(vars::NamedTuple) =

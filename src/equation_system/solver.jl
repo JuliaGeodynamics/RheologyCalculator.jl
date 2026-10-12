@@ -293,7 +293,9 @@ end
     branch_strain_rate_mask(c::AbstractCompositeModel)
 
 Return an `SVector{N,Bool}` marking the entries of the solver vector of `c` that
-hold the strain rate of a parallel branch.
+hold the strain rate of a parallel branch, or a closure unknown of a parallel
+block that carries elastic history (the invariant of a physical block strain
+rate or sub-branch stress).
 
 For a tensor strain rate these are second invariants and so non-negative, but
 the Newton iterate itself is not: at low imposed strain rate it overshoots below
@@ -307,17 +309,21 @@ function branch_strain_rate_mask(c::AbstractCompositeModel)
     return SA[branch_strain_rate_mask(eqs)...]
 end
 
-# A signed scalar strain rate makes the branch strain rates signed too: after a
-# load reversal they are physically negative, so no entry is bounded.
+# A signed scalar strain rate makes the branch strain rates and the closure
+# unknowns signed too: after a load reversal they are physically negative, so no
+# entry is bounded.
 branch_strain_rate_mask(c::AbstractCompositeModel, ::Tuple) = branch_strain_rate_mask(c)
 branch_strain_rate_mask(c::AbstractCompositeModel, ::Number) = zero(branch_strain_rate_mask(c))
 
 @inline branch_strain_rate_mask(eqs::NTuple{N, CompositeEquation}) where {N} =
-    maptuple(eq -> _is_branch_strain_rate(eq.fn), eqs)
+    maptuple(eq -> _is_branch_strain_rate(eq.fn) | _is_closure_invariant(eq.fn), eqs)
 
 # The unknown of a `compute_stress` equation is a parallel branch's strain rate.
 @inline _is_branch_strain_rate(::F) where {F} = false
 @inline _is_branch_strain_rate(::typeof(compute_stress)) = true
+
+@inline _is_closure_invariant(::F) where {F} = false
+@inline _is_closure_invariant(::ClosureFunction) = true
 
 """
     bt_line_search(Δx, x, composite, vars, others, xnorm, rnorm; α=1.0, ρ=0.5, lstol=0.9, α_min=1.0e-8)

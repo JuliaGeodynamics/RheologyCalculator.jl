@@ -11,8 +11,8 @@ using StaticArrays, LinearAlgebra
 import ForwardDiff: ForwardDiff
 
 # postprocessing helpers used by the tensor helpers below and by downstream code
-import ..RheologyCalculator: compute_stress_elastic, compute_pressure_elastic
-export compute_stress_elastic, compute_pressure_elastic
+import ..RheologyCalculator: compute_stress_elastic, compute_pressure_elastic, elastic_stress_history
+export compute_stress_elastic, compute_pressure_elastic, elastic_stress_history
 
 # Names the element files below extend. Importing them once here, rather than
 # per file, is what makes an `include`d method extend the core generic: a file
@@ -28,7 +28,7 @@ import ..RheologyCalculator: series_state_functions, parallel_state_functions,
     viscosity_depends_on_state
 
 # used by the tensor helpers
-import ..RheologyCalculator: second_invariant
+import ..RheologyCalculator: second_invariant, _has_block_springs
 
 # Basic viscous/elastic/plastic building blocks, one struct per file, grouped by
 # category (and, where the literature draws a clear line, by sub-family).

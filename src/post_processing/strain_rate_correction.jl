@@ -124,7 +124,8 @@ end
     # whose `τ0` and `P0` keywords default to zero.
     hasfield(typeof(others), :τ0) || return ε .* zero(eltype(x))
     εb = _block_strain_rates(eqs, x, c.branches)
-    return _history_tensor(c.leafs, c.branches, ε, others.τ0, others, εb)
+    phys = _block_closure_values(eqs, x, c.branches, global_eltype_numbering(c)[2])
+    return _history_tensor(c.leafs, c.branches, ε, others.τ0, others, εb, phys)
 end
 
 # Split into two independent contributions and add them:
@@ -132,15 +133,17 @@ end
 #   2. Elastic elements inside ParallelModel branches (KV / generalized Maxwell).
 # The τ0 tuple is ordered: leafs first (indexed 1 … n_el_leafs), then branches
 # (indexed n_el_leafs+1 … end), matching global_eltype_numbering. `εb` holds, per
-# branch, the strain rate at which its viscosities are evaluated.
-@inline function _history_tensor(leafs::NTuple{N, Any}, branches::NTuple{Nb, Any}, ε, τ0::NTuple{Nτ}, others, εb) where {N, Nb, Nτ}
+# branch, the strain rate at which its state-independent viscosities are
+# evaluated, and `phys` the closure unknowns of the branch, or `nothing` (see
+# `_block_closure_values`).
+@inline function _history_tensor(leafs::NTuple{N, Any}, branches::NTuple{Nb, Any}, ε, τ0::NTuple{Nτ}, others, εb, phys = maptuple(_ -> nothing, branches)) where {N, Nb, Nτ}
     n_el_leafs = count_elastic(leafs)
     cor_leafs = if iszero(n_el_leafs)
         ε .* 0
     else
         effective_strain_rate_correction(leafs, (), ε, τ0, others)
     end
-    cor_branch = _kv_corrections(branches, ε, τ0, others, n_el_leafs, εb)
+    cor_branch = _kv_corrections(branches, ε, τ0, others, n_el_leafs, εb, phys)
     return cor_leafs .+ cor_branch
 end
 
@@ -151,15 +154,53 @@ The block strain-rate unknowns of `x`, one per branch of the outer
 `SeriesModel`. They are the children of its global `compute_strain_rate`
 equation that follow its local children, in branch order.
 """
-@generated function _block_strain_rates(eqs::NTuple{N, Any}, x, branches::NTuple{Nb, Any}) where {N, Nb}
+@inline _block_strain_rates(eqs, x, branches) = maptuple(i -> x[i], block_equation_indices(eqs, branches))
+
+"""
+    block_equation_indices(eqs, branches)
+
+Indices of the block equations, one per branch of the outer `SeriesModel`: the
+children of its global `compute_strain_rate` equation that follow its local
+children, in branch order.
+"""
+@generated function block_equation_indices(eqs::NTuple{N, Any}, branches::NTuple{Nb, Any}) where {N, Nb}
     k = findfirst(E -> E.parameters[1] === true && E.parameters[3] === typeof(compute_strain_rate), collect(eqs.parameters))
     k === nothing && return :(error("composite has no global deviatoric equation"))
-    entries = [:(x[child[end - $Nb + $i]]) for i in 1:Nb]
+    entries = [:(child[end - $Nb + $i]) for i in 1:Nb]
     return quote
         @inline
         child = eqs[$k].child
         return ($(entries...),)
     end
+end
+
+"""
+    _block_closure_values(eqs, x, branches, el_nums)
+
+Per branch of the outer `SeriesModel`, `nothing` when the branch has no closure
+unknowns, otherwise `(; e, t, el)`: the value of `e_b` and of `t_j` per
+sub-branch (zero where absent) and the element numbering `el` of the branch.
+The closure unknowns follow the block equation, in the order of
+`closure_unknowns`.
+"""
+@generated function _block_closure_values(eqs::NTuple{N, Any}, x, branches::NTuple{Nb, Any}, el_nums) where {N, Nb}
+    entries = [
+        :(_closure_values(closure_unknowns(branches[$i], compute_stress), branches[$i], iblock[$i], x, el_nums[$i]))
+            for i in 1:Nb
+    ]
+    return quote
+        @inline
+        iblock = block_equation_indices(eqs, branches)
+        return ($(entries...),)
+    end
+end
+
+@inline _closure_values(::Tuple{}, branch, iblock, x, el) = nothing
+@inline function _closure_values(markers::NTuple{N, Any}, branch, iblock, x, el) where {N}
+    e_offset, t_offsets = closure_offsets(markers, branch.branches)
+    e = _x_at(x, _index_or_zero(_closure_index(e_offset, iblock)))
+    t = maptuple(k -> _x_at(x, _index_or_zero(_closure_index(k, iblock))), t_offsets)
+    return (; e, t, el)
 end
 
 # Scan the leaf tuple for elastic elements and accumulate their corrections.
@@ -348,21 +389,26 @@ function _branch_tau0_offsets(branches::Type)
 end
 
 """
-    _kv_corrections(branches, ε, τ0, others, offset, εb)
+    _kv_corrections(branches, ε, τ0, others, offset, εb[, phys])
 
 Accumulate the generalized Maxwell / KV effective strain-rate corrections from
 all `ParallelModel` branches of a `SeriesModel`.
 
 `offset` is the number of elastic elements already consumed by the series
 leafs, so `τ0[offset + k]` is the backstress for the k-th elastic element
-inside the branches. Branch `i` evaluates its viscosities at strain rate `εb[i]`.
+inside the branches. Branch `i` evaluates its state-independent viscosities at
+strain rate `εb[i]`, and the others at its closure unknowns `phys[i]` (see
+`_block_closure_values`); without `phys` every viscosity is evaluated at `εb`.
 
 The τ0 index for each branch is pre-computed at specialisation time (via
 `_n_elastic_in_parallel`) and baked in as a literal integer, yielding
 allocation-free, branch-free runtime code.
 """
+@inline _kv_corrections(branches::Tuple, ε, τ0, others, offset, εb) =
+    _kv_corrections(branches, ε, τ0, others, offset, εb, maptuple(_ -> nothing, branches))
+
 @generated function _kv_corrections(
-        branches::NTuple{Nb, Any}, ε, τ0, others, offset, εb
+        branches::NTuple{Nb, Any}, ε, τ0, others, offset, εb, phys
     ) where {Nb}
     offsets = _branch_tau0_offsets(branches)
 
@@ -370,7 +416,7 @@ allocation-free, branch-free runtime code.
     # index baked in as a literal integer — no runtime bookkeeping needed.
     stmts = Any[:(cor = ε .* 0)]
     for i in 1:Nb
-        push!(stmts, :(cor = cor .+ _kv_branch_correction(branches[$i], ε, τ0, others, offset + $(offsets[i]), εb[$i])))
+        push!(stmts, :(cor = cor .+ _kv_branch_correction(branches[$i], ε, τ0, others, offset + $(offsets[i]), εb[$i], phys[$i])))
     end
     push!(stmts, :(cor))
 
@@ -381,7 +427,7 @@ allocation-free, branch-free runtime code.
 end
 
 """
-    _kv_branch_correction(branch::ParallelModel, ε, τ0, others, el_idx_start, εb)
+    _kv_branch_correction(branch::ParallelModel, ε, τ0, others, el_idx_start, εb[, phys])
 
 Compute the generalized Maxwell / Kelvin-Voigt effective strain-rate correction
 for a single `ParallelModel` branch.  Returns zero immediately when the branch
@@ -394,19 +440,18 @@ The correction follows equation (*) in `docs/derivations/tensor_reduction.typ`:
 `el_idx_start` is the 1-based index of the elastic element immediately before
 the first elastic element owned by this branch (i.e. `τ0[el_idx_start + 1]`
 is this branch's first backstress entry). The branch viscosities are evaluated
-at the scalar strain rate `εb`.
+as in `_block_state`, at the scalar strain rate `εb` and the closure unknowns
+`phys`.
 """
-@inline function _kv_branch_correction(branch::ParallelModel, ε, τ0, others, el_idx_start, εb)
+@inline function _kv_branch_correction(branch::ParallelModel, ε, τ0, others, el_idx_start, εb, phys = nothing)
     # Short-circuit: no elastic elements anywhere in this parallel block.
     iselastic(branch) == Val(false) && return ε .* 0
     args = merge((; ε = εb), others)
     # η_KV: arithmetic sum of effective viscosities of all sub-elements
-    # (viscous leafs + Maxwell sub-branches).  This is the denominator of (*).
-    η_KV = _checked_η_KV(branch.leafs, branch.branches, args)
-    # ws = Σ_i η_star_i * τ0_i — the weighted backstress numerator of (*).
-    # Same shape as ε (tensor), because τ0 entries are also stored as tensors.
-    ws = _weighted_backstress(branch.leafs, branch.branches, ε, τ0, args, el_idx_start)
-    # Final correction tensor: ws / (2 * η_KV) broadcasted element-wise.
+    # (viscous leafs + Maxwell sub-branches), the denominator of (*).
+    # ws = Σ_i η_star_i * τ0_i, the weighted backstress numerator of (*), with
+    # the shape of ε (τ0 entries are stored as tensors).
+    η_KV, ws = _block_state(branch.leafs, branch.branches, τ0, args, el_idx_start, phys, ε .* 0)
     return @. ws / (2 * η_KV)
 end
 
@@ -420,15 +465,15 @@ Compute the Kelvin-Voigt effective viscosity of a parallel block:
 where `η_eff_M = 1 / (1/η_v + 1/(G*dt))` is the harmonic-mean effective
 viscosity of each Maxwell `SeriesModel` sub-branch.
 """
-@inline function _η_KV(leafs::NTuple{N, AbstractRheology}, subs::Tuple, args) where {N}
-    # Arithmetic sum over the direct leafs of the ParallelModel: a viscous leaf
-    # contributes η, an elastic one G*dt. The `false` seed is an additive zero
-    # that takes the viscosities' type, so Float32 and dual numbers are preserved.
-    η = foldtuple(+, false, l -> compute_viscosity_series(l, args), leafs)
-    # Each Maxwell SeriesModel sub-branch contributes its harmonic-mean
-    # effective viscosity η_eff_M = (η_v * G*dt)/(η_v + G*dt).
-    return foldtuple(+, η, sub -> _η_eff_maxwell(sub.leafs, args), subs)
-end
+# Arithmetic sum over the direct leafs of the ParallelModel (a viscous leaf
+# contributes η, an elastic one G*dt) and the harmonic-mean effective
+# viscosities of its Maxwell SeriesModel sub-branches. The `false` seed is an
+# additive zero that takes the viscosities' type, so Float32 and dual numbers
+# are preserved.
+@inline _η_KV(leafs::NTuple{N, AbstractRheology}, subs::Tuple, args, phys = nothing) where {N} =
+    _sum_viscosities(_direct_viscosities(leafs, args, phys), _subbranch_viscosities(subs, args, phys))
+
+@inline _sum_viscosities(direct, sub) = foldtuple(+, foldtuple(+, false, identity, direct), identity, sub)
 
 @noinline function _throw_nonpositive_η_KV(η_KV)
     throw(
@@ -452,8 +497,9 @@ otherwise produce a silent `Inf` or `NaN` correction. `Inf` itself is a
 legitimate value: a rigid leaf (a plastic element below yield) in parallel with a
 spring makes the whole branch rigid, and its correction is correctly zero.
 """
-@inline function _checked_η_KV(leafs, subs, args)
-    η_KV = _η_KV(leafs, subs, args)
+@inline _checked_η_KV(leafs, subs, args, phys = nothing) = _check_η_KV(_η_KV(leafs, subs, args, phys))
+
+@inline function _check_η_KV(η_KV)
     η_KV > 0 || _throw_nonpositive_η_KV(η_KV)
     return η_KV
 end
@@ -472,7 +518,69 @@ Maxwell formula `η_v * G * dt / (η_v + G * dt)`.
 # The harmonic mean -- the inverse of the sum of inverses -- is the effective
 # viscosity of elements in series.
 @inline _η_eff_maxwell(leafs::NTuple{N, AbstractRheology}, args) where {N} =
+    _η_eff_maxwell(leafs, args, nothing, nothing)
+
+@inline _η_eff_maxwell(leafs::NTuple{N, AbstractRheology}, args, ::Nothing, ::Nothing) where {N} =
     inv(foldtuple(+, false, l -> inv(compute_viscosity_series(l, args)), leafs))
+
+@inline _η_eff_maxwell(leafs::NTuple{N, AbstractRheology}, args, t, el) where {N} =
+    inv(foldtuple(+, false, inv, maptuple((l, n) -> _element_viscosity(compute_strain_rate, l, args, t, n), leafs, el)))
+
+# -----------------------------------------------------------------------
+# Element viscosities of a block carrying elastic history
+# -----------------------------------------------------------------------
+#
+# `phys` is `nothing` when every element is evaluated at `args`, whose `ε` is
+# the shifted block strain rate; this is exact for elements whose viscosity
+# does not depend on the state. Otherwise `phys = (; e, t, el)` holds the
+# closure unknowns of the block (see src/equation_system/closure_unknowns.jl)
+# and its element numbering, and every element for which `_uses_secant` holds
+# is evaluated at its physical argument: `e` for a direct element, `t[j]` for an
+# element of sub-branch `j`. The graph equations evaluate these elements the
+# same way (`_evaluate_leaf`), so both share one set of coefficients.
+# -----------------------------------------------------------------------
+
+"""
+    _secant_viscosity(fn, r, args, s, n)
+
+Secant viscosity of element `r` at physical argument `s`, from its own state
+function evaluated at `a = |s|`: `compute_stress(r; ε = a) / (2a)` for a
+strain-rate argument (a direct element of a block), `a / (2
+compute_strain_rate(r; τ = a))` for a stress argument (an element of a
+sub-branch). `s` is signed for a scalar strain rate. `n` is the element number
+used to extract its history fields from `args`.
+"""
+@inline function _secant_viscosity(::typeof(compute_stress), r, args, s, n)
+    e = abs(s)
+    local_args = merge(extract_local_kwargs(args, history_kwargs(r), n), (; ε = e))
+    return compute_stress(r, local_args) * safe_inv(2 * e)
+end
+
+@inline function _secant_viscosity(::typeof(compute_strain_rate), r, args, s, n)
+    t = abs(s)
+    local_args = merge(extract_local_kwargs(args, history_kwargs(r), n), (; τ = t))
+    return t * safe_inv(2 * compute_strain_rate(r, local_args))
+end
+
+@inline _element_viscosity(fn::F, r, args, s, n) where {F} = _element_viscosity(Val(_uses_secant(r)), fn, r, args, s, n)
+@inline _element_viscosity(::Val{false}, ::F, r, args, s, n) where {F} = compute_viscosity_series(r, args)
+@inline _element_viscosity(::Val{true}, fn::F, r, args, s, n) where {F} = _secant_viscosity(fn, r, args, s, n)
+
+@inline _direct_viscosities(leafs, args, ::Nothing) = maptuple(l -> compute_viscosity_series(l, args), leafs)
+@inline _direct_viscosities(leafs, args, phys) =
+    maptuple((l, n) -> _element_viscosity(compute_stress, l, args, phys.e, n), leafs, phys.el[1])
+
+@inline _subbranch_physical(::Nothing, j) = (nothing, nothing)
+@inline _subbranch_physical(phys, j) = (phys.t[j], phys.el[2][j][1])
+
+# Effective viscosity of each sub-branch, in sub-branch order.
+@generated function _subbranch_viscosities(subs::NTuple{Ns, Any}, args, phys) where {Ns}
+    entries = [:(_η_eff_maxwell(subs[$j].leafs, args, _subbranch_physical(phys, $j)...)) for j in 1:Ns]
+    return quote
+        @inline
+        $(Expr(:tuple, entries...))
+    end
+end
 
 # Compile-time positions of the elastic sources inside a `ParallelModel` branch:
 # the elastic direct leafs, and per sub-branch the elastic leafs within it.
@@ -511,42 +619,60 @@ All τ0 index literals and η_star computations are resolved at *compile time*
 leaf count.
 """
 @inline _weighted_backstress(leafs, subs, ε, τ0, args, el_idx_start) =
-    _accumulate_weighted_backstress(identity, ε .* 0, leafs, subs, τ0, args, el_idx_start)
+    _block_state(leafs, subs, τ0, args, el_idx_start, nothing, ε .* 0)[2]
 
-# Σ_i η_star_i * entry(τ0_i), accumulated from `seed`. Every τ0 index and every
-# η_star expression is resolved here at specialisation time, so the emitted code
-# is a flat sequence of multiply-adds with literal indices.
-@generated function _accumulate_weighted_backstress(
-        entry::E, seed, leafs::NTuple{N, AbstractRheology}, subs::NTuple{Ns, Any}, τ0, args, el_idx_start
-    ) where {E, N, Ns}
+"""
+    _block_state(leafs, subs, τ0, args, el_idx_start, phys, seed)
+
+The coefficients of a `ParallelModel` block with direct elements `leafs` and
+sub-branches `subs`, as `(η_KV, W, ηM, S)`:
+
+- `η_KV`: the effective viscosity of the block, checked to be positive;
+- `W = Σ_i η_star_i τ0_i`: the weighted backstress of all its springs,
+  accumulated from `seed`, which sets its shape;
+- `ηM[j]`: the effective viscosity of sub-branch `j`;
+- `S[j]`: the part of `W` owned by the springs of sub-branch `j`.
+
+Element viscosities are evaluated at `args` and `phys` as described above
+`_secant_viscosity`. Every τ0 index and every η_star expression is resolved at
+specialisation time, so the emitted code is a flat sequence of multiply-adds
+with literal indices.
+"""
+@generated function _block_state(
+        leafs::NTuple{N, AbstractRheology}, subs::NTuple{Ns, Any}, τ0, args, el_idx_start, phys, seed
+    ) where {N, Ns}
     direct, per_sub = _elastic_source_positions(leafs, subs)
 
-    stmts = Any[:(ws = seed)]
+    stmts = Any[
+        :(ηM = _subbranch_viscosities(subs, args, phys)),
+        :(η_KV = _check_η_KV(_sum_viscosities(_direct_viscosities(leafs, args, phys), ηM))),
+        :(W = seed),
+    ]
     el_count = 0
 
     # Direct elastic leafs of the ParallelModel: η_star = 1, the pure
     # Kelvin-Voigt case, where the backstress enters undiluted.
     for _ in direct
         el_count += 1
-        push!(stmts, :(ws = ws .+ entry(τ0[el_idx_start + $el_count])))
+        push!(stmts, :(W = W .+ τ0[el_idx_start + $el_count]))
     end
 
     # Springs of a SeriesModel sub-branch: η_star = η_eff_M / (G*dt), with η_eff_M
     # shared by the sub-branch and G the spring's own modulus.
+    S = [Symbol(:S_, j) for j in 1:Ns]
     for j in 1:Ns
-        isempty(per_sub[j]) && continue
-        η_eff_M = Symbol(:η_eff_M_, j)
-        push!(stmts, :($η_eff_M = _η_eff_maxwell(subs[$j].leafs, args)))
+        push!(stmts, :($(S[j]) = seed))
         for pos in per_sub[j]
             el_count += 1
             push!(
                 stmts,
-                :(ws = ws .+ ($η_eff_M / compute_viscosity(subs[$j].leafs[$pos], args)) .* entry(τ0[el_idx_start + $el_count]))
+                :($(S[j]) = $(S[j]) .+ (ηM[$j] / compute_viscosity(subs[$j].leafs[$pos], args)) .* τ0[el_idx_start + $el_count])
             )
         end
+        push!(stmts, :(W = W .+ $(S[j])))
     end
 
-    push!(stmts, :(ws))
+    push!(stmts, :((η_KV, W, ηM, $(Expr(:tuple, S...)))))
     return quote
         @inline
         $(stmts...)

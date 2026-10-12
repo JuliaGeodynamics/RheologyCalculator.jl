@@ -40,14 +40,20 @@ end
     component_partition(c::AbstractCompositeModel, sol::AbstractVector, vars, others)
 
 Return the per-component deviatoric strain-rate and stress contributions of a
-converged local solution. The `vars` argument is accepted to preserve the
-package's conventional post-processing calling sequence; the component values are
-reconstructed from `sol` and `others`.
+converged local solution, as second invariants (signed for a scalar strain
+rate). `sol`, `vars`, and `others` must be the arguments supplied to
+[`solve`](@ref).
+
+Inside a `ParallelModel` block that carries elastic history the solver holds
+shifted unknowns; the components there are evaluated at the physical block
+strain rate and sub-branch stresses of `physical_solution`, which need
+the applied strain rate `vars.ε`. Elastic components are evaluated by their
+history-free state functions, so their entries omit `τ0`.
 """
-function component_partition(c::AbstractCompositeModel, sol::AbstractVector, _vars, others)
+function component_partition(c::AbstractCompositeModel, sol::AbstractVector, vars, others)
     eqs = generate_equations(c)
     n = length(eqs)
-    x = SVector{n}(ntuple(i -> @inbounds(sol[i]), n))
+    x = _partition_solution(c, SVector{n}(ntuple(i -> sol[i], n)), vars, others)
     args = generate_args_template(eqs, x, others)
 
     viscous = _component_contributions(eqs, args, others, Val(:viscous))
@@ -55,6 +61,12 @@ function component_partition(c::AbstractCompositeModel, sol::AbstractVector, _va
     plastic = _component_contributions(eqs, args, others, Val(:plastic))
     return ComponentPartition(viscous..., elastic..., plastic...)
 end
+
+@inline _partition_solution(c, x, vars, others) = x
+@inline _partition_solution(c::SeriesModel, x, vars, others) =
+    _partition_solution(Val(_has_block_springs(c) && hasfield(typeof(vars), :ε)), c, x, vars, others)
+@inline _partition_solution(::Val{false}, c, x, vars, others) = x
+@inline _partition_solution(::Val{true}, c, x, vars, others) = physical_solution(c, x, vars.ε, others)
 
 @generated function _component_contributions(
         eqs::NTuple{N, CompositeEquation}, args, others, ::Val{category},

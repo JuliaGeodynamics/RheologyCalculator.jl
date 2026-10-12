@@ -106,9 +106,14 @@ end
 Advance the elastic backstress history of composite `c` by one step, returning
 one stress tensor per elastic element for use as the next step's `τ0`.
 
-Given a scalar `τII`, the result is a one-element tuple. Given a solver vector
-`x`, the elastic stresses are recovered with `compute_stress_elastic`, so the
-result has one entry per elastic element in `c`.
+Given a solver vector `x`, this is [`elastic_stress_history`](@ref), with one
+entry per elastic element in `c`.
+
+Given a scalar `τII`, the result is a one-element tuple: the stress `τII`
+coaxial with `ε + H`. This applies only to a composite whose springs are all
+leafs of the outer `SeriesModel`, which then share the outer stress; a spring
+inside a `ParallelModel` block throws, since its stress is not determined by
+`τII`.
 """
 elastic_stress_history_2D(c, τII, ε, τ0, others) =
     _elastic_stress_history(stress_tensor_from_invariant_2D, c, τII, ε, τ0, others)
@@ -118,12 +123,15 @@ elastic_stress_history_3D(c, τII, ε, τ0, others) =
     _elastic_stress_history(stress_tensor_from_invariant_3D, c, τII, ε, τ0, others)
 
 function _elastic_stress_history(to_tensor::F, c, τII, ε, τ0, others) where {F}
+    _has_block_springs(c) && throw(
+        ArgumentError(
+            "a spring inside a ParallelModel block does not carry the outer stress; " *
+                "pass the solver vector `x` instead of `τII`"
+        )
+    )
     ε_eff = ε .+ effective_strain_rate_correction(c, ε, τ0, others)
     return (to_tensor(τII, ε_eff),)
 end
 
-function _elastic_stress_history(to_tensor::F, c, x::AbstractVector, ε, τ0, others) where {F}
-    ε_eff = ε .+ effective_strain_rate_correction(c, x, ε, merge(others, (; τ0)))
-    τII_elastic = compute_stress_elastic(c, x, others)
-    return ntuple(i -> to_tensor(τII_elastic[i], ε_eff), length(τII_elastic))
-end
+_elastic_stress_history(::F, c, x::AbstractVector, ε, τ0, others) where {F} =
+    elastic_stress_history(c, x, ε, τ0, others)

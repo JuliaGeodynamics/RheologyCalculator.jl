@@ -145,38 +145,43 @@ Exit: Step 1 linear cases match the reference for τ.
 
 ## Step 4: Exact nonlinear elements in history-bearing blocks (S4, S5)
 
-- [ ] **Equation graph.** For each history-bearing block with a state-dependent direct element, add one unknown e_b; for each sub-branch with a state-dependent element, add one unknown t_j. Decide at the type level (`@generated`) so other models keep their current graph.
-  - New `CompositeEquation` state functions: `compute_block_strain_rate_invariant` (r_b) and `compute_subbranch_stress_invariant` (r_j), with no parent/children contributions, handled like `compute_lambda` in `add_children` / `subtract_parent`.
-  - Their residuals (§1.4) need **E**, so they receive `vars.ε` and `others.τ0`.
-- [ ] **Secant evaluation** (§1.4). In `evaluate_state_function_perleaf`, for equations of a history-bearing block with extra unknowns, evaluate each state-dependent element at the physical argument (e_b or t_j) and rescale by the shifted/physical ratio. Linear elements are evaluated as today.
-- [ ] **One coefficient function** `_block_coefficients(branch, x, others)` used by the graph rescaling, `_history_tensor`, the closures, and the post-processing. This removes the three different evaluation points (S5).
-- [ ] **Layout-dependent API** for models that gain unknowns: `x_keys` (new keys, e.g. `:εII_block`, `:τII_sub`), `initial_guess_x` (e_b from the shifted guess; t_j from the shifted stress), `normalisation_x`, `branch_strain_rate_mask` (e_b and t_j are non-negative), `inspect`.
-- [ ] Allocation, type-stability, sparsity-tracer and GPU tests for at least one nonlinear topology from Step 1.
-- [ ] **Plastic elements in history-bearing blocks.** Plastic elements carry their own λ unknowns and local equations (`compute_lambda`, `compute_plastic_strain_rate`), not a secant stress law, so §1.4 does not apply directly. Investigate `P(DruckerPrager, η_reg, G)` and `P(η, S(DruckerPrager, G))`:
+- [x] **Equation graph.** For each history-bearing block with a state-dependent direct element, add one unknown e_b; for each sub-branch with a state-dependent element, add one unknown t_j. Decided at the type level (`closure_unknowns`, `closure_offsets`) so other models keep their current graph.
+  - New equation kinds `compute_block_strain_rate_invariant` (r_b) and `compute_subbranch_stress_invariant` (r_j), keys `:εII_block` and `:τII_subbranch`. They are the **first local equations of their block** (e_b, then t_j in sub-branch order), with no parent/children contributions (`src/equation_system/closure_unknowns.jl`).
+  - `CompositeEquation` gained a `closure` field: the closure index for a block/sub-branch equation, a `BlockClosure` (indices into `x`, τ0 offset) for a closure equation, `nothing` otherwise.
+  - Residuals added by `add_closure_residuals` after `subtract_parent`, from the assembled **E**.
+  - For scalar ε the closure unknowns are **signed** (package convention); elements are evaluated at |e_b|, |t_j|. An absolute value traps Newton at e → 0 on reversal (power-law secant singular). Scalar mask bounds nothing; tensor mask bounds e_b, t_j.
+- [x] **Secant evaluation** (§1.4). `generate_args_template` adds `secant_argument = x[closure]` per equation (after the merge, so it never leaks to siblings); `_evaluate_leaf` rescales state-dependent elements (`_uses_secant`: trait `true`, not elastic, not plastic).
+- [x] **One coefficient path**: `_element_viscosity` / `_secant_viscosity` feed `_block_state` (η_KV, W, η_M,j, S_j), used by `_kv_branch_correction` (H) and by the closures. `_η_KV`, `_η_eff_maxwell`, `_weighted_backstress` take the same optional `phys`. Recovery (`_branch_elastic_stress`) still evaluates at ε = 0: Step 5.
+- [x] **Layout-dependent API**: `x_keys`, `initial_guess_x` (e_b from the prescribed strain rate, t_j like its sub-branch), `normalisation_x` (residual units: e_b → char_ε, t_j → char_τ), `branch_strain_rate_mask`, `inspect` (closure rows list the elements they serve).
+- [x] Allocation, type-stability/JET, sparsity-tracer (local, residual) and GPU tests for PL in a KV block (tensor ε) and in a Maxwell sub-branch (scalar ε).
+- [ ] **Plastic elements in history-bearing blocks.** Not done: plastic elements are excluded from secant evaluation and keep the previous behavior. Plastic elements carry their own λ unknowns and local equations (`compute_lambda`, `compute_plastic_strain_rate`), not a secant stress law, so §1.4 does not apply directly. Investigate `P(DruckerPrager, η_reg, G)` and `P(η, S(DruckerPrager, G))`:
   - derive the physical argument each plastic equation needs (yield on the physical τ_j or on the block stress share);
   - check whether the λ equations can read e_b / t_j and the physical tensors;
   - add a reference case to Step 1.
 
   If it can be made exact, implement it here. Otherwise this is the one remaining open decision (§Decisions).
 
-Exit: Step 1 nonlinear cases match the reference.
+Exit: Step 1 nonlinear cases match the reference **for τ (solve)** in all 12 nonlinear cases. Spring recovery for nonlinear blocks remains `@test_broken` (S5 in `_branch_elastic_stress`, Step 5).
+
+Notes found during Step 4:
+
+- `initial_guess_x` evaluates a power law at a negative scalar ε (`DomainError`), independent of closures. Callers pass the previous solution after reversal; worth a fix with Step 5.
+- `component_partition` / `dissipation_partition` run on closure models but read shifted unknowns (S23, Step 5).
+- No benchmark taken. Models without state-dependent elements in history blocks keep their layout; their residual gains only a no-op closure pass.
 
 ## Step 5: Recovery, history update, tangents (S6, S7, S23)
 
-- [ ] **`elastic_stress_history(c, x, ε, τ0, others)`** (dimension-agnostic, NTuple-based, allocation-free), following §1.5. `elastic_stress_history_2D/3D(c, x, ε, τ0, others)` delegate to it.
-  - The coaxial overload `(c, τII, ε, τ0, others)` stays for models without history-bearing blocks and throws for the others.
-- [ ] **`compute_stress_elastic`:**
-  - new `compute_stress_elastic(c, x, ε, others)` returns the invariants of the §1.5 tensors (signed for scalar ε);
-  - the existing `(c, x, others)` keeps working for models whose springs are all outer-series leafs, and throws with a pointer to the ε method otherwise;
-  - remove `_branch_elastic_stress`, `_branch_elastic_info`, `_kv_corrections_elastic_stress`.
-- [ ] **S23:** check whether `inspect`, `component_partition` and `dissipation_partition` read shifted block/sub-branch unknowns as physical values. Where they need physical values, use §1.3 (with ε) or the e_b/t_j unknowns. Add a reference comparison for the KV and nonlinear KV cases.
-- [ ] **Tangents** (§1.6):
-  - `tangent_tensor` differentiates the residual with respect to the ε̇ components and chains through **n**;
-  - `tangent` / `tangent_block` return dτ_II/dε̇ along the applied direction, documented;
-  - test all of them against finite differences of `solve` on non-coaxial linear and nonlinear KV cases.
-- [ ] Update and run the examples that call these functions (`Burgers.jl`, `transient_creep.jl`, `Maxwell_KV_Maxwell.jl`, `elastic_corrections_playground*.jl`, and the `Maxwell_*` examples using `compute_stress_elastic`).
+- [x] **`elastic_stress_history(c, x, ε, τ0, others)`** (dimension-agnostic, NTuple-based, allocation-free), following §1.5, with τ_j = 2η_M,j ε̇_b + S_j (equal to §1.3 at convergence, needs no sub-branch index). `elastic_stress_history_2D/3D(c, x, ε, τ0, others)` delegate to it. Exported from `RheologyModels`, in `api.md`.
+  - The coaxial overload `(c, τII, ε, τ0, others)` throws for models with springs in blocks.
+- [x] **`compute_stress_elastic`:**
+  - new `compute_stress_elastic(c, x, ε, others)`: invariants of the §1.5 tensors (signed for scalar ε);
+  - `(c, x, others)` is unchanged for models without springs in blocks; with springs in blocks it is exact for a **scalar** `τ0` (direction 1) and throws for a tensor `τ0`, pointing to the ε method (Q2: narrower break than planned);
+  - removed `_branch_elastic_stress`, `_branch_elastic_info`, `_kv_corrections_elastic_stress`.
+- [x] **S23:** `component_partition` (hence `dissipation_partition`) evaluates block elements on `physical_solution(c, x, vars.ε, others)`: block entries → ‖ε̇_b‖, sub-branch entries → ‖τ_j‖. Sub-branch equation indices come from `branch_equation_indices`, shared with equation generation. Reference comparison for KV, PL_direct, PL_subbranch. `inspect` reads no unknowns. Elastic partition entries remain history-free state-function values (documented).
+- [x] **Tangents** (§1.6): `tangent_tensor` already chained through **n** (Step 3) and differentiates the full residual, closures included. Tested `tangent_tensor` and `tangent` against central differences of `solve` for non-coaxial KV, PL_direct and PL_subbranch (rtol 1e-5).
+- [x] Examples run (GLMakie hidden): `Burgers.jl`, `transient_creep.jl`, `SLM.jl` stagnated at round-off before this change (unnormalized solves); they now pass `xnorm0`. Both `elastic_corrections_playground*.jl` passed malformed `τ0`/`P0` (scalar or too short) and v1 an invalid Makie attribute; fixed. `Maxwell_KV_Maxwell.jl`, `GoldsbyKohlstedt_2001.jl`, `Drucker_Prager_dilatancy.jl`, `Maxwell_VEVP*.jl` run. `Maxwell_NonNewtonian_2D.jl` (`lines` undefined) and `Maxwell_Golchin.jl` (non-convergence) fail identically at HEAD; not touched. Running examples overwrites `docs/assets/*.png`; those were reverted.
 
-Exit: all Step 1 cases pass for τ and every spring tensor at every step; existing analytical regressions unchanged; tangents match finite differences.
+Exit: met. All Step 1 cases pass for τ and every spring tensor at every step (no `@test_broken` left in the suite); analytical regressions unchanged; tangents match finite differences.
 
 ## Step 6: Comments and docs
 

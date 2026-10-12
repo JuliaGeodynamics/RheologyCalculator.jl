@@ -28,6 +28,9 @@ end
 @inline _compute_stress_elastic(rheology::NTuple{N, Any}, self, fn::F, el_number, xnew, others, args, eqglobal) where {N, F} =
     superflatten(maptuple((r, number) -> _compute_stress_elastic1(r, self, fn, number, xnew, others, args, eqglobal), rheology, el_number))
 
+# A closure equation holds a whole block and no elastic stress of its own.
+@inline _compute_stress_elastic(::AbstractCompositeModel, ::Vararg{Any, N}) where {N} = ()
+
 @inline _compute_stress_elastic1(::T, ::Vararg{Any, N}) where {T, N} = ()
 function _compute_stress_elastic1(r::AbstractElasticity, self, fn::F, number, xnew, others, args, eqglobal) where {F}
 
@@ -39,13 +42,9 @@ function _compute_stress_elastic1(r::AbstractElasticity, self, fn::F, number, xn
     # spring stress.
     @inline f(::typeof(compute_strain_rate), r, others, args, number, self, xnew, ::Val{true}) = xnew[self]
 
-    # Elastic element nested inside a branch (Kelvin-Voigt / generalized
-    # Maxwell sub-model): x[self] is NOT a simple ±τ0 shift of the physical
-    # spring stress (see docs/derivations/tensor_reduction.typ, mixed KV-Maxwell body — the
-    # exact correction depends on the branch's full η_KV / η_star weighting,
-    # not just τ0). These are reconstructed separately by
-    # `compute_stress_elastic(c::SeriesModel, xnew, others)` below, using the
-    # same closed-form machinery as `effective_strain_rate_correction`.
+    # Elastic element of a sub-branch: x[self] is the shifted sub-branch stress,
+    # not the physical spring stress. Springs inside blocks are recovered by
+    # `_spring_stresses` instead.
     @inline function f(::typeof(compute_strain_rate), r, others, args, number, self, xnew, ::Val{false})
         return ()
     end
@@ -63,263 +62,210 @@ function _compute_stress_elastic1(r::AbstractElasticity, self, fn::F, number, xn
 end
 
 """
-    compute_stress_elastic(c::SeriesModel, xnew::AbstractVector, others)
+    compute_stress_elastic(c::SeriesModel, x, others)
+    compute_stress_elastic(c::SeriesModel, x, ε, others)
 
-Reconstruct the physical elastic spring stress for elastic elements nested
-inside `ParallelModel` branches of `c` (Kelvin-Voigt and generalized Maxwell
-sub-models), in addition to the direct-leaf elastic stresses already produced
-by the generic `eqs`-based method.
+Return the stress of every elastic element of `c` after a solve, one entry per
+spring in the order of `τ0`: the second invariant of the spring stress tensor
+of [`elastic_stress_history`](@ref), signed for a scalar strain rate.
 
-`x[self]` for these nested equations is not a simple `±τ0` shift of the
-physical spring stress; the correct relationship is the closed-form inversion
-of the same η_KV / η_star weighting used by `effective_strain_rate_correction`
-(docs/derivations/tensor_reduction.typ, "Mixed Kelvin-Voigt and Maxwell Body" /
-"Generalized Maxwell Body"). Given the shared top-level stress `τ_shared`
-(always exactly `xnew[i]` of the model's single global equation), the local
-plastic-free strain rate of a branch is
-
-    ε_p = (τ_shared - Σ η_star_i * τ0_i) / (2 * η_KV)
-
-from which each elastic source's physical stress is recovered as
-`τ0_i + 2 * η_i * ε_p` (direct leaf) or `2 * η_eff_M_i * (ε_p + τ0_i / (2 * η_el_i))`
-(Maxwell sub-branch).
+A spring inside a `ParallelModel` block is not coaxial with the outer stress
+once the block carries a tensor history, so recovering it needs the applied
+strain rate `ε`. The form without `ε` therefore applies only when every spring
+is a leaf of the outer `SeriesModel`, or when `others.τ0` holds scalars;
+otherwise it throws.
 """
-function compute_stress_elastic(c::SeriesModel, xnew::AbstractVector, others)
-    eqs = generate_equations(c)
+compute_stress_elastic(c::SeriesModel, x::AbstractVector, others) =
+    _compute_stress_elastic_without_ε(Val(_has_block_springs(c)), c, x, others)
 
-    # Walk all equations with the generic method. For elastic elements that are
-    # *direct leafs* of the outer SeriesModel (IsGlobal = true equations), this
-    # correctly returns xnew[self] — the effective strain-rate correction already
-    # folded τ0 into the global solve, so the solved stress is the physical spring
-    # stress. For elastic elements *nested inside ParallelModel branches*
-    # (IsGlobal = false equations), the corresponding f-overloads now return ()
-    # so those entries are skipped here and handled separately below.
-    τ_direct = compute_stress_elastic(eqs, xnew, others)
+compute_stress_elastic(c::SeriesModel, x::AbstractVector, ε, others) =
+    maptuple(second_invariant_value, _spring_stress_tensors(c, _static_solution(c, x), ε, others))
 
-    # The outer model has exactly one top-level global equation (fn =
-    # compute_strain_rate, IsGlobal = true). Its solved value x[self] is the
-    # shared total stress τ that all branches must carry in a series arrangement.
-    # This is proven to equal the true physical stress regardless of τ0 (the
-    # effective strain-rate correction cancels exactly at the global level).
-    i_global = findfirst(eq -> isglobal(eq) === Val(true) && eq.fn === compute_strain_rate, eqs)
-    τ_shared = xnew[eqs[i_global].self]
+_compute_stress_elastic_without_ε(::Val{false}, c, x, others) = compute_stress_elastic(generate_equations(c), x, others)
 
-    # Count elastic elements that are direct leafs of the outer SeriesModel so
-    # that τ0 indexing inside the branches starts at the right offset. The τ0
-    # tuple is ordered: outer-series leafs first, then branch elements recursively
-    # (matching global_eltype_numbering / effective_strain_rate_correction).
-    n_el_leafs = count_elastic(c.leafs)
-
-    # Reconstruct the physical spring stress for every elastic element nested
-    # inside one of the ParallelModel branches, using the closed-form inversion
-    # described in docs/derivations/tensor_reduction.typ and in the docstring above.
-    τ_branch = _kv_corrections_elastic_stress(c.branches, τ_shared, others, n_el_leafs)
-
-    # Direct-leaf stresses come first, matching the τ0 tuple ordering expected
-    # by the next time-step's effective_strain_rate_correction.
-    return (τ_direct..., τ_branch...)
+function _compute_stress_elastic_without_ε(::Val{true}, c, x, others)
+    _scalar_history(others) || _throw_stress_elastic_needs_ε()
+    # A scalar history has no direction: the spring stresses are signed scalars.
+    xs = _static_solution(c, x)
+    return _spring_stresses(c, xs, one(eltype(xs)), others)
 end
 
-# -----------------------------------------------------------------------
-# Branch-level elastic-stress reconstruction for SeriesModel with
-# ParallelModel branches (Kelvin-Voigt / generalized Maxwell bodies)
-# -----------------------------------------------------------------------
-#
-# Background (docs/derivations/tensor_reduction.typ, "Mixed Kelvin-Voigt and Maxwell Body"):
-#
-# After the Newton solve, x[1] = τ_shared is the true physical total stress.
-# For a ParallelModel branch, all sub-elements carry the same stress τ_shared,
-# and the branch-local inelastic strain rate ε_p satisfies
-#
-#   τ_shared = 2 * η_KV * ε_p + Σ_i η_star_i * τ0_i       (*)
-#
-# where the sum runs over every elastic source in the branch:
-#   η_star = 1               for a direct elastic leaf  (pure KV case)
-#   η_star = η_eff_M / η_el  for a Maxwell sub-branch   (attenuated backstress)
-#
-# Inverting (*) gives ε_p, from which each spring's physical stress follows:
-#   τ_spring = τ0_i + 2 * η_i * ε_p                      (direct elastic leaf)
-#   τ_spring = 2 * η_eff_M * (ε_p + Σ_k τ0_k / (2*η_el,k)) (spring of a sub-branch)
-#
-# Every spring of a sub-branch carries the sub-branch stress, so the sum runs
-# over all springs k of that sub-branch, each with its own η_el,k = G_k*dt.
-#
-# All index arithmetic is resolved at *compile time* by the @generated
-# functions below — the emitted code is a flat sequence of arithmetic with no
-# dynamic dispatch, exactly mirroring _kv_corrections / _weighted_backstress
-# in src/post_processing/strain_rate_correction.jl.
-# -----------------------------------------------------------------------
+@inline _has_block_springs(c::SeriesModel) = foldtuple(|, false, _iselastic, c.branches)
+
+@inline _scalar_history(others) = hasfield(typeof(others), :τ0) ? _scalar_history_entries(others.τ0) : true
+@inline _scalar_history_entries(::Tuple{Vararg{Number}}) = true
+@inline _scalar_history_entries(::Tuple) = false
+
+@noinline function _throw_stress_elastic_needs_ε()
+    throw(
+        ArgumentError(
+            "the springs inside a ParallelModel block carry a tensor history, so their stresses " *
+                "depend on the applied strain rate; use `compute_stress_elastic(c, x, ε, others)` " *
+                "or `elastic_stress_history(c, x, ε, τ0, others)`"
+        )
+    )
+end
+
+# The solver vector as an `SVector`, as the residual is evaluated on.
+@inline function _static_solution(c, x::AbstractVector)
+    n = length(generate_equations(c))
+    length(x) == n || throw(DimensionMismatch("x has $(length(x)) entries but the solver vector of the composite has $n"))
+    return SVector{n}(ntuple(i -> x[i], n))
+end
+@inline _static_solution(c, x::SVector) = x
 
 """
-    _kv_corrections_elastic_stress(branches, τ_shared, others, offset)
+    elastic_stress_history(c::SeriesModel, x, ε, τ0, others)
 
-Accumulate the physical elastic spring stresses from all `ParallelModel`
-branches of a `SeriesModel`.
+Advance the elastic backstress history of composite `c` by one step: return the
+stress tensor of every spring, in the order of `τ0`, for use as the next step's
+`τ0`. `x` is the converged solver vector of the step solved with strain rate `ε`
+and history `τ0`; each entry has the shape of `ε`, a Voigt tuple or a signed
+scalar.
 
-`offset` is the number of elastic elements already accounted for by the series'
-own direct leafs; `τ0[offset + k]` is the k-th elastic backstress owned by the
-branches. Per-branch τ0 offsets are computed at specialisation time via
-`_n_elastic_in_parallel` and baked in as literal integers.
+With `E = ε + H` the assembled strain rate and `n = E / E_II` its direction
+(`n = 1` for a scalar `ε`), the outer stress is `τ = τ_II n`, and for each
+`ParallelModel` block `b` with shifted strain-rate unknown `x̃_b`
+
+```
+ε̇_b = x̃_b n - W_b / (2 η_KV,b)
+```
+
+is its physical strain rate. The springs carry
+
+- `τ`, for a spring of the outer `SeriesModel`;
+- `τ0_s + 2 G_s Δt ε̇_b`, for a direct spring of block `b`;
+- `τ_j = 2 η_M,j ε̇_b + S_j`, for every spring of sub-branch `j` of block `b`,
+
+with `η_KV,b`, `W_b`, `η_M,j` and `S_j` the coefficients of the block, evaluated
+as in the solve (see [`effective_strain_rate_correction`](@ref)).
 """
-@generated function _kv_corrections_elastic_stress(branches::NTuple{Nb, Any}, τ_shared, others, offset) where {Nb}
+elastic_stress_history(c::SeriesModel, x::AbstractVector, ε, τ0, others) =
+    _spring_stress_tensors(c, _static_solution(c, x), ε, merge(others, (; τ0)))
+
+@inline function _spring_stress_tensors(c::SeriesModel, x::SVector, ε, others)
+    eqs = generate_equations(c)
+    n = _direction(assembled_strain_rate(c, eqs, x, ε, others))
+    return _spring_stresses(c, x, n, others)
+end
+
+# The spring stresses for outer-stress direction `n`: a unit tensor, or `1` for a
+# signed scalar.
+@inline function _spring_stresses(c::SeriesModel, x::SVector, n, others)
+    eqs = generate_equations(c)
+    τ = x[_global_deviatoric_index(eqs)] .* n
+    seed = n .* zero(eltype(x))
+    outer = ntuple(_ -> τ, Val(count_elastic(c.leafs)))
+    εb = _block_strain_rates(eqs, x, c.branches)
+    phys = _block_closure_values(eqs, x, c.branches, global_eltype_numbering(c)[2])
+    blocks = _block_spring_stresses(c.branches, _backstresses(others, seed), others, count_elastic(c.leafs), εb, phys, n, seed)
+    return (outer..., blocks...)
+end
+
+@generated function _global_deviatoric_index(eqs::NTuple{N, Any}) where {N}
+    k = findfirst(E -> E.parameters[1] === true && E.parameters[3] === typeof(compute_strain_rate), collect(eqs.parameters))
+    k === nothing && return :(error("composite has no global deviatoric equation"))
+    return :($k)
+end
+
+# One tuple of spring stresses per branch, concatenated in branch order; each
+# branch reads its backstresses from a literal τ0 offset.
+@generated function _block_spring_stresses(branches::NTuple{Nb, Any}, τ0, others, offset, εb, phys, n, seed) where {Nb}
     offsets = _branch_tau0_offsets(branches)
-
-    # Build a flat statement list: one _branch_elastic_stress call per branch,
-    # each with a literal offset baked in at specialisation time.
-    stmts = Any[:(out = ())]
-    for i in 1:Nb
-        push!(stmts, :(out = (out..., _branch_elastic_stress(branches[$i], τ_shared, others, offset + $(offsets[i]))...)))
+    parts = [
+        :(_branch_spring_stresses(iselastic(branches[$i]), branches[$i], τ0, others, offset + $(offsets[i]), εb[$i], phys[$i], n, seed)...)
+            for i in 1:Nb
+    ]
+    return quote
+        @inline
+        $(Expr(:tuple, parts...))
     end
-    push!(stmts, :(out))
+end
 
+@inline _branch_spring_stresses(::Val{false}, branch, τ0, others, el_idx_start, εb, phys, n, seed) = ()
+
+@inline function _branch_spring_stresses(::Val{true}, branch::ParallelModel, τ0, others, el_idx_start, εb, phys, n, seed)
+    args, ε_block, ηM, S = _physical_block_state(branch, τ0, others, el_idx_start, εb, phys, n, seed)
+    return _block_springs(branch.leafs, branch.branches, τ0, args, el_idx_start, ε_block, ηM, S)
+end
+
+# The physical strain rate `ε_block = x̃_b n - W / (2 η_KV)` of a block that
+# carries elastic history, with the coefficients it was computed from.
+@inline function _physical_block_state(branch::ParallelModel, τ0, others, el_idx_start, εb, phys, n, seed)
+    args = merge((; ε = εb), others)
+    η_KV, W, ηM, S = _block_state(branch.leafs, branch.branches, τ0, args, el_idx_start, phys, seed)
+    ε_block = εb .* n .- W ./ (2 * η_KV)
+    return args, ε_block, ηM, S
+end
+
+"""
+    physical_solution(c::SeriesModel, x, ε, others)
+
+The solver vector `x` with the shifted unknowns of every `ParallelModel` block
+that carries elastic history replaced by physical invariants: the block strain
+rate by `‖ε̇_b‖` and each sub-branch stress by `‖τ_j‖` (signed values for a
+scalar `ε`), with the tensors of [`elastic_stress_history`](@ref). Other
+entries are unchanged. Element state functions evaluated on this vector give
+each element's physical strain rate and stress invariants.
+"""
+function physical_solution(c::SeriesModel, x::SVector, ε, others)
+    eqs = generate_equations(c)
+    n = _direction(assembled_strain_rate(c, eqs, x, ε, others))
+    seed = n .* zero(eltype(x))
+    iblock = block_equation_indices(eqs, c.branches)
+    phys = _block_closure_values(eqs, x, c.branches, global_eltype_numbering(c)[2])
+    return _physical_blocks(c.branches, x, iblock, _backstresses(others, seed), others, count_elastic(c.leafs), phys, n, seed, global_eltype_numbering(c)[2])
+end
+
+@generated function _physical_blocks(branches::NTuple{Nb, Any}, x, iblock, τ0, others, offset, phys, n, seed, el_nums) where {Nb}
+    offsets = _branch_tau0_offsets(branches)
+    stmts = [
+        :(x = _physical_block(iselastic(branches[$i]), branches[$i], x, iblock[$i], τ0, others, offset + $(offsets[i]), phys[$i], n, seed, el_nums[$i]))
+            for i in 1:Nb
+    ]
     return quote
         @inline
         $(stmts...)
+        return x
     end
 end
 
-"""
-    _branch_elastic_stress(branch::ParallelModel, τ_shared, others, el_idx_start)
+@inline _physical_block(::Val{false}, branch, x, ib, τ0, others, el_idx_start, phys, n, seed, el_num) = x
 
-Reconstruct the physical elastic spring stress for every elastic source inside
-one `ParallelModel` branch.  Returns an empty tuple immediately if the branch
-contains no elastic elements.
-
-The branch-local inelastic strain rate is obtained by inverting equation (*):
-
-    ε_p = (τ_shared - ws) / (2 * η_KV)
-
-where `ws = Σ η_star_i * τ0_i` (scalar weighted-backstress sum) and
-`η_KV` is the arithmetic-mean effective viscosity of the branch.
-
-Each spring stress is then:
-  - direct KV leaf:    `τ0_II + 2 * η * ε_p`
-  - spring of a sub-branch: `2 * η_eff_M * (ε_p + Σ_k τ0_II,k / (2 * η_el,k))`, summed over the springs of that sub-branch
-
-`el_idx_start` is the 0-based index of the elastic element immediately before
-the first one owned by this branch (`τ0[el_idx_start + 1]` is this branch's
-first backstress entry).
-"""
-@inline function _branch_elastic_stress(branch::ParallelModel, τ_shared, others, el_idx_start)
-    # Short-circuit: no elastic content anywhere in this parallel block.
-    iselastic(branch) == Val(false) && return ()
-
-    # Build an args NamedTuple for viscosity queries. ε = 0.0 is a scalar
-    # placeholder: for the linear rheologies that appear inside elastic-bearing
-    # branches the result of compute_viscosity_series is independent of ε.
-    # For nonlinear elements this is an approximation consistent with the level
-    # of rigor already present in effective_strain_rate_correction (which also
-    # evaluates viscosities at a representative ε, not the exact branch ε).
-    args = merge((; ε = 0.0), others)
-
-    # η_KV: arithmetic sum of effective viscosities of all sub-elements.
-    # (See _η_KV in src/post_processing/strain_rate_correction.jl for the definition.)
-    η_KV = _checked_η_KV(branch.leafs, branch.branches, args)
-
-    # Gather per-elastic-source information (η_star, τ0_II, recovery formula
-    # parameters) produced at compile time by _branch_elastic_info.
-    info = _branch_elastic_info(branch.leafs, branch.branches, others.τ0, args, el_idx_start)
-
-    # ws = Σ_i η_star_i * τ0_II_i  — the weighted backstress numerator.
-    ws = sum(i -> i.η_star * i.τ0_II, info)
-
-    # Invert equation (*) to obtain the branch-local inelastic strain rate.
-    ε_p = (τ_shared - ws) / (2 * η_KV)
-
-    # Recover the physical spring stress for each elastic source.
-    return ntuple(length(info)) do k
-        i = info[k]
-        # Direct elastic leaf of the ParallelModel (pure KV): the spring stress
-        # is simply the backstress plus the elastic loading from ε_p.
-        # Spring of a SeriesModel sub-branch: the sub-branch stress, from its
-        # effective viscosity and the backstress rate of all its springs.
-        i.direct ? i.τ0_II + 2 * i.η * ε_p : 2 * i.η_eff_M * (ε_p + i.hist_rate / 2)
-    end
+@inline function _physical_block(::Val{true}, branch::ParallelModel, x, ib, τ0, others, el_idx_start, phys, n, seed, el_num)
+    _, ε_block, ηM, S = _physical_block_state(branch, τ0, others, el_idx_start, x[ib], phys, n, seed)
+    isubs = branch_equation_indices(branch, compute_stress, ib - 1, el_num)
+    x = setindex(x, differentiable_second_invariant(ε_block), ib)
+    return foldtuple((xi, (j, i)) -> setindex(xi, differentiable_second_invariant((2 * ηM[j]) .* ε_block .+ S[j]), i), x, identity, tuple_pairs(isubs))
 end
 
-"""
-    _branch_elastic_info(leafs, subs, τ0, args, el_idx_start)
+# `((1, i₁), (2, i₂), …)` for `(i₁, i₂, …)`.
+@inline tuple_pairs(t::NTuple{N, Any}) where {N} = ntuple(j -> (j, t[j]), Val(N))
 
-Compile-time–generated helper that returns a tuple of NamedTuples, one per
-elastic source inside a `ParallelModel` branch, containing everything needed
-by `_branch_elastic_stress` to reconstruct the physical spring stress:
-
-| field     | meaning                                                        |
-|-----------|----------------------------------------------------------------|
-| η_star    | backstress weight: 1 (direct leaf) or η_eff_M/(G*dt)           |
-| τ0_II     | scalar second invariant of the previous spring stress          |
-| direct    | true = direct elastic leaf, false = spring of a sub-branch     |
-| η         | elastic viscosity G*dt (direct leaf only)                      |
-| η_eff_M   | effective viscosity 1/Σ(1/η) of the sub-branch (sub-branch)    |
-| hist_rate | Σ_k τ0_II,k/(G_k*dt) over the springs of the sub-branch (sub-branch) |
-
-The element positions inside `leafs` and each sub-branch's leaf tuple are
-found by type inspection at specialisation time (`<: AbstractElasticity`), and
-the corresponding τ0 index literals are baked into the emitted code.  The
-runtime body is therefore a flat sequence of multiply-adds with no branches.
-
-`el_idx_start` carries the cumulative τ0 offset from `_kv_corrections_elastic_stress`
-so that `τ0[el_idx_start + k]` is the k-th elastic backstress owned by this branch.
-"""
-@generated function _branch_elastic_info(leafs::NTuple{N, AbstractRheology}, subs::NTuple{Ns, Any}, τ0, args, el_idx_start) where {N, Ns}
-    elastic_leaf_pos, sub_elastic_pos = _elastic_source_positions(leafs, subs)
-
-    stmts = Any[:(info = ())]
-    el_count = 0   # running count of elastic elements consumed → τ0 index
-
-    # --- Direct elastic leafs of the ParallelModel (η_star = 1) ---
-    # Each direct spring's backstress enters the weighted sum undiluted.
-    for pos in elastic_leaf_pos
+# Direct springs first, then the springs of each sub-branch, matching the τ0
+# order of `_block_state`.
+@generated function _block_springs(
+        leafs::NTuple{N, AbstractRheology}, subs::NTuple{Ns, Any}, τ0, args, el_idx_start, ε_block, ηM, S
+    ) where {N, Ns}
+    direct, per_sub = _elastic_source_positions(leafs, subs)
+    entries = Any[]
+    el_count = 0
+    for pos in direct
         el_count += 1
-        push!(
-            stmts, quote
-                τ0_II = second_invariant_value(τ0[el_idx_start + $el_count])
-                # η = G*dt for this elastic leaf; η_eff_M / η_el unused (direct = true).
-                info = (
-                    info..., (
-                        η_star = 1.0, τ0_II = τ0_II, direct = true,
-                        η = compute_viscosity(leafs[$pos], args),
-                        η_eff_M = 0.0, hist_rate = 0.0,
-                    ),
-                )
-            end
-        )
+        push!(entries, :(τ0[el_idx_start + $el_count] .+ (2 * compute_viscosity(leafs[$pos], args)) .* ε_block))
     end
-
-    # --- Springs of SeriesModel sub-branches (η_star = η_eff_M / (G*dt)) ---
-    # η_eff_M and hist_rate belong to the sub-branch; η_el is each spring's own G*dt.
     for j in 1:Ns
-        isempty(sub_elastic_pos[j]) && continue
-        η_eff_M, hist_rate = Symbol(:η_eff_M_, j), Symbol(:hist_rate_, j)
-        el_first = el_count
-        push!(stmts, :($η_eff_M = _η_eff_maxwell(subs[$j].leafs, args)))
-        rate_terms = [
-            :(second_invariant_value(τ0[el_idx_start + $(el_first + k)]) / compute_viscosity(subs[$j].leafs[$pos], args))
-                for (k, pos) in enumerate(sub_elastic_pos[j])
-        ]
-        push!(stmts, :($hist_rate = +($(rate_terms...))))
-        for pos in sub_elastic_pos[j]
-            el_count += 1
-            push!(
-                stmts, quote
-                    τ0_II = second_invariant_value(τ0[el_idx_start + $el_count])
-                    # η = 0.0 unused for sub-branch recovery (direct = false).
-                    info = (
-                        info..., (
-                            η_star = $η_eff_M / compute_viscosity(subs[$j].leafs[$pos], args),
-                            τ0_II = τ0_II, direct = false,
-                            η = 0.0, η_eff_M = $η_eff_M, hist_rate = $hist_rate,
-                        ),
-                    )
-                end
-            )
+        isempty(per_sub[j]) && continue
+        τ_j = Symbol(:τ_, j)
+        for _ in per_sub[j]
+            push!(entries, τ_j)
         end
     end
-
-    push!(stmts, :(info))
+    sub_stresses = [:($(Symbol(:τ_, j)) = (2 * ηM[$j]) .* ε_block .+ S[$j]) for j in 1:Ns if !isempty(per_sub[j])]
     return quote
         @inline
-        $(stmts...)
+        $(sub_stresses...)
+        $(Expr(:tuple, entries...))
     end
 end
 

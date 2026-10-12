@@ -19,11 +19,11 @@ end
 @inline normalisation_x(eqs::NTuple{N, CompositeEquation}, char_τ, char_ε) where {N} =
     maptuple(eq -> _normalize_x_value(eq.fn, char_τ, char_ε), eqs)
 
-for fn in (:compute_stress, :compute_pressure, :compute_lambda, :compute_lambda_parallel)
+for fn in (:compute_stress, :compute_pressure, :compute_lambda, :compute_lambda_parallel, :compute_subbranch_stress_invariant)
     @eval _normalize_x_value(::typeof($fn), char_stress, char_strainrate) = char_stress
 end
 
-for fn in (:compute_strain_rate, :compute_volumetric_strain_rate, :compute_plastic_strain_rate, :compute_volumetric_plastic_strain_rate)
+for fn in (:compute_strain_rate, :compute_volumetric_strain_rate, :compute_plastic_strain_rate, :compute_volumetric_plastic_strain_rate, :compute_block_strain_rate_invariant)
     @eval _normalize_x_value(::typeof($fn), char_stress, char_strainrate) = char_strainrate
 end
 

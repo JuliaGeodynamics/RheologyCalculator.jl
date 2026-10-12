@@ -5,10 +5,12 @@ Internal representation of one residual equation generated from a composite
 rheology model.
 
 Fields store the equation index (`self`), parent equation index, child equation
-indices, state function `fn`, rheology tuple, input-variable index, and
-type-local element numbering for history lookup.
+indices, state function `fn`, rheology tuple, input-variable index, type-local
+element numbering for history lookup, and `closure`: `nothing`, or the data
+linking the equation to the closure unknowns of a parallel block that carries
+elastic history (see [`closure_unknowns`](@ref)).
 """
-struct CompositeEquation{IsGlobal, T, F, R, RT}
+struct CompositeEquation{IsGlobal, T, F, R, RT, C}
     parent::Int       # i-th element of x to be substracted
     child::T            # i-th element of x to be added
     self::Int         # equation number
@@ -16,10 +18,11 @@ struct CompositeEquation{IsGlobal, T, F, R, RT}
     rheology::R
     ind_input::Int
     el_number::RT
+    closure::C
 
-    function CompositeEquation(parent::Int, child::T, self::Int, fn::F, rheology::R, ind_input, ::Val{B}, el_number::RT) where {T, F, R, B, RT}
+    function CompositeEquation(parent::Int, child::T, self::Int, fn::F, rheology::R, ind_input, ::Val{B}, el_number::RT, closure::C = nothing) where {T, F, R, B, RT, C}
         @assert B isa Bool
-        return new{B, T, F, R, RT}(parent, child, self, fn, rheology, ind_input, el_number)
+        return new{B, T, F, R, RT, C}(parent, child, self, fn, rheology, ind_input, el_number, closure)
 
     end
 end
@@ -51,7 +54,10 @@ solver vector `x`.
     end
 end
 
-function generate_equations(c::AbstractCompositeModel, fns_own_global::F, ind_input, ::Val{B}, ::Val, el_num; iparent::Int = 0, iself::Int = 0) where {F, B}
+# `closure` is the index of the closure unknown that supplies the physical
+# argument of the elements of `c`'s own global equation, or `nothing` (see
+# `closure_unknowns`); a parent block passes it to its sub-branches.
+function generate_equations(c::AbstractCompositeModel, fns_own_global::F, ind_input, ::Val{B}, ::Val, el_num; iparent::Int = 0, iself::Int = 0, closure = nothing) where {F, B}
 
     @inline foo(::NTuple{N, Any}) where {N} = Val(N)
 
@@ -61,42 +67,48 @@ function generate_equations(c::AbstractCompositeModel, fns_own_global::F, ind_in
 
     _, fns_own_local_all = get_own_functions(c)
     fns_own_local = filter_local_functions(c, fns_own_local_all, fns_own_global)
+    markers = closure_unknowns(c, fns_own_global)
 
     nown = 1 # length(fns_own_global)
-    nlocal = length(fns_own_local)
     Nlocal = foo(fns_own_local)
 
     fn = counterpart(fns_own_global)
 
-    ilocal_childs = generate_ilocal_childs(iself, nown, fns_own_local)
-    offsets_parallel = generate_offsets_parallel(branches, fn, el_num[2])
-    iparallel_childs = generate_iparallel_childs(iself, nlocal, nown, offsets_parallel, branches)
+    # The closure unknowns are the first local equations of the block.
+    ilocal_childs = generate_ilocal_childs(iself, nown, (markers..., fns_own_local...))
+    iparallel_childs = branch_equation_indices(c, fns_own_global, iself, el_num)
+
+    iblock = iself + nown
+    e_offset, t_offsets = closure_offsets(markers, branches)
+    own_closure = _own_closure(e_offset, iblock, closure)
+    sub_closures = maptuple(k -> _closure_index(k, iblock), t_offsets)
 
     # ichildren = (ilocal_childs..., iparallel_childs...)
     # add globals
     # iself_ref[] += 1
     # global_eqs   = CompositeEquation(iparent, iparallel_childs, iself_ref[], fns_own_global, leafs, Val(false))
     isGlobal = Val(B)
-    global_eqs0 = add_global_equations(iparent, ilocal_childs, iparallel_childs, iself_ref, fns_own_global, leafs, branches, ind_input, isGlobal, Val(1), local_el)
+    global_eqs0 = add_global_equations(iparent, ilocal_childs, iparallel_childs, iself_ref, fns_own_global, leafs, branches, ind_input, isGlobal, Val(1), local_el, own_closure)
+    closure_eqs = add_closure_equations(markers, c, iblock, e_offset, iparallel_childs, sub_closures, iself_ref, el_num)
     local_eqs = add_local_equations(global_eqs0.self, (), iself_ref, fns_own_local, fns_own_global, leafs, Nlocal, local_el)
     # need to correct the children of the global equations in absence of local equations (i.e. remove them)
     global_eqs = correct_children(global_eqs0, local_eqs)
 
-    parallel_eqs = generate_equations_unroller(branches, fn, el_num, global_eqs, iself_ref)
+    parallel_eqs = generate_equations_unroller(branches, fn, el_num, global_eqs, iself_ref, sub_closures)
 
     # return  global_eqs, parallel_eqs
-    return (global_eqs, local_eqs..., parallel_eqs...) |> superflatten
+    return (global_eqs, closure_eqs..., local_eqs..., parallel_eqs...) |> superflatten
 end
 
 # maptuple walks the branches left to right, which is what lets `iself_ref`
 # thread the running equation counter from one sibling to the next.
-@generated function generate_equations_unroller(branches::NTuple{N, Any}, fn::F, el_num, global_eqs, iself_ref) where {N, F}
+@generated function generate_equations_unroller(branches::NTuple{N, Any}, fn::F, el_num, global_eqs, iself_ref, closures) where {N, F}
     return quote
         Base.@ntuple $N i -> begin
             @inline
             b = branches[i]
             num = el_num[2][i]
-            eqs = generate_equations(b, fn, 0, Val(false), isvolumetric(b), num; iparent = global_eqs.self, iself = iself_ref[])
+            eqs = generate_equations(b, fn, 0, Val(false), isvolumetric(b), num; iparent = global_eqs.self, iself = iself_ref[], closure = closures[i])
             # generate_equations creates its own *local* Ref for `b`'s subtree, so
             # the running counter must be threaded back here explicitly, otherwise
             # every sibling branch starts numbering its own equations from the same
@@ -111,7 +123,22 @@ end
     end
 end
 
-generate_equations_unroller(::Tuple{}, ::F, el_num, global_eqs, iself_ref) where {F} = ()
+generate_equations_unroller(::Tuple{}, ::F, el_num, global_eqs, iself_ref, closures) where {F} = ()
+
+"""
+    branch_equation_indices(c, fns_own_global, iself, el_num)
+
+Indices of the equations of the branches of composite `c` in the pass of
+`fns_own_global`, when the global equation of `c` is number `iself + 1`. They
+follow the global equation of `c` and its local equations (closure unknowns
+first).
+"""
+@inline function branch_equation_indices(c::AbstractCompositeModel, fns_own_global::F, iself, el_num) where {F}
+    _, fns_own_local_all = get_own_functions(c)
+    nlocal = length(closure_unknowns(c, fns_own_global)) + length(filter_local_functions(c, fns_own_local_all, fns_own_global))
+    offsets_parallel = generate_offsets_parallel(c.branches, counterpart(fns_own_global), el_num[2])
+    return generate_iparallel_childs(iself, nlocal, 1, offsets_parallel, c.branches)
+end
 
 # Index generators, not maps: the tuple argument supplies only its length.
 # The results are plain Int tuples, so ntuple(f, Val(N)) infers at any N.
@@ -149,9 +176,9 @@ end
 
 correct_children(eqs::CompositeEquation, ::NTuple{N, CompositeEquation}) where {N} = eqs
 
-function correct_children(eqs::CompositeEquation{IsGlobal, T, F, R, RT}, ::Tuple{Tuple{}}) where {IsGlobal, T, F, R, RT}
-    (; parent, self, fn, rheology, ind_input, el_number) = eqs
-    return CompositeEquation(parent, (), self, fn, rheology, ind_input, Val(IsGlobal), el_number)
+function correct_children(eqs::CompositeEquation{IsGlobal}, ::Tuple{Tuple{}}) where {IsGlobal}
+    (; parent, self, fn, rheology, ind_input, el_number, closure) = eqs
+    return CompositeEquation(parent, (), self, fn, rheology, ind_input, Val(IsGlobal), el_number, closure)
 end
 
 # eliminate equations
@@ -252,12 +279,12 @@ global_eltype_numbering(c::AbstractPlasticity, counter_v::Base.RefValue, counter
 @inline correct_children(children, ::Val{true}) = children
 @inline correct_children(::Any, ::Val{false}) = ()
 
-function add_global_equations(iparent, ilocal_childs, iparallel_childs, iself_ref, fns_own_global::F, leafs, branches, ind_input, ::Val{B}, ::Val{1}, el_number) where {F, B}
+function add_global_equations(iparent, ilocal_childs, iparallel_childs, iself_ref, fns_own_global::F, leafs, branches, ind_input, ::Val{B}, ::Val{1}, el_number, closure) where {F, B}
     @inline
     iself_ref[] += 1
     corrected_children = correct_children(fns_own_global, branches, iparallel_childs)
     children = (ilocal_childs..., corrected_children...)
-    return CompositeEquation(iparent, children, iself_ref[], fns_own_global, leafs, ind_input, Val(B), el_number)
+    return CompositeEquation(iparent, children, iself_ref[], fns_own_global, leafs, ind_input, Val(B), el_number, closure)
 end
 
 # Left-to-right, so each local equation takes the next number from iself_ref.
@@ -309,7 +336,7 @@ plus all other differentiable values and nondifferentiable auxiliary fields.
             diffs = Base.@ntuple $N j -> begin
                 Base.structdiff(args[j], args[i])
             end
-            merge(args[i], diffs...)
+            _with_secant_argument(merge(args[i], diffs...), eqs[i].closure, x)
         end
     end
 end
@@ -398,7 +425,7 @@ element's own dissipation; the residual only needs their sum.
             keys_hist = history_kwargs(rheology[i])
             args_local = extract_local_kwargs(others, keys_hist, el_number[i])
             args_combined = merge(args, args_local)
-            fn(rheology[i], args_combined)
+            _evaluate_leaf(fn, rheology[i], args_combined)
         end
     end
 end
@@ -465,24 +492,32 @@ function compute_residual(c, x::SVector{N, T}, vars, others) where {N, T}
     # evaluates the self-components of the residual
     residual = evaluate_state_functions(eqs, args_all, others)
     residual = add_children(residual, x, eqs)
-    residual = subtract_parent(residual, x, eqs, invariant_vars(c, eqs, x, vars, others))
+    E = assembled_vars_strain_rate(c, eqs, x, vars, others)
+    residual = subtract_parent(residual, x, eqs, invariant_vars(vars, E))
+    residual = add_closure_residuals(residual, eqs, x, E, others)
 
     return SA[residual...]
 end
 
 """
-    invariant_vars(c, eqs, x, vars, others)
+    assembled_vars_strain_rate(c, eqs, x, vars, others)
+
+The assembled strain rate `E = ε + H` of [`assembled_strain_rate`](@ref) for the
+prescribed `vars.ε`, or `nothing` when `vars` prescribes no deviatoric strain
+rate. `H` depends on `x` through the block viscosities, so this is part of the
+differentiated residual.
+"""
+@inline assembled_vars_strain_rate(c, eqs, x, vars::NamedTuple, others) =
+    hasfield(typeof(vars), :ε) ? assembled_strain_rate(c, eqs, x, vars.ε, others) : nothing
+
+"""
+    invariant_vars(vars, E)
 
 `vars` with the strain rate replaced by the scalar the global deviatoric
-equation subtracts: the invariant of `ε + H` for a `SeriesModel`, of `ε`
-otherwise. `H` depends on `x` through the block viscosities, so this is part of
-the differentiated residual.
+equation subtracts: the invariant of the assembled strain rate `E`.
 """
-@inline invariant_vars(c, eqs, x, vars::NamedTuple, others) =
-    hasfield(typeof(vars), :ε) ? merge(vars, (; ε = _global_strain_rate(c, eqs, x, vars.ε, others))) : vars
-
-@inline _global_strain_rate(c, eqs, x, ε, others) =
-    differentiable_second_invariant(assembled_strain_rate(c, eqs, x, ε, others))
+@inline invariant_vars(vars::NamedTuple, ::Nothing) = vars
+@inline invariant_vars(vars::NamedTuple, E) = merge(vars, (; ε = differentiable_second_invariant(E)))
 
 """
     assembled_strain_rate(c, eqs, x, ε, others)
@@ -503,7 +538,7 @@ function compute_residual(c, x::SVector{N, T}, vars, others, ::Int, ::Int) where
     eq = first(eqs)
     residual = evaluate_state_function(eq, args_all, others)
     residual = add_children(residual, x, eq)
-    residual = subtract_parent(residual, x, eq, invariant_vars(c, eqs, x, vars, others))
+    residual = subtract_parent(residual, x, eq, invariant_vars(vars, assembled_vars_strain_rate(c, eqs, x, vars, others)))
 
     return residual
 end

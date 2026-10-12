@@ -96,6 +96,25 @@ end
         @test sparsity == expected_sparsity
     end
 
+    @testset "residual of a power law in a block carrying elastic history" begin
+        # The closure unknowns couple every unknown of the block through the
+        # assembled strain rate; the local pattern must cover every nonzero of
+        # the Jacobian.
+        cb = SeriesModel(
+            LinearViscosity(1.0e21),
+            ParallelModel(PowerLawViscosity(2.5e34, 3), IncompressibleElasticity(1.0e10)),
+        )
+        vars = (; ε = (1.0e-14, -1.0e-14, 5.0e-15))
+        others_b = (; dt = 1.0e10, τ0 = ((1.0e6, -2.0e6, 5.0e5),))
+        x0 = initial_guess_x(cb, vars, (; τ = 1.0e7), others_b)
+        n = length(x0)
+        residual(x) = Vector(RheologyCalculator.compute_residual(cb, SVector{n}(x...), vars, others_b))
+        S = SparseConnectivityTracer.jacobian_sparsity(residual, Vector(x0), TracerLocalSparsityDetector())
+        J = ForwardDiff.jacobian(residual, Vector(x0))
+        @test size(S) == (n, n)
+        @test all(S[J .!= 0])
+    end
+
     @testset "short-circuit includes auxiliary dependencies" begin
         n = length(normalisation_x(c, plastic.C, 7.0e-14))
 

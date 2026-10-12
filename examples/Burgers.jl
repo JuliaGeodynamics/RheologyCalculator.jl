@@ -15,11 +15,13 @@ function stress_time(c, vars, x; ntime = 200, dt = 1.0e8)
     τ_e = (zero_stress_tensor_2D(), zero_stress_tensor_2D())
     P_e = (0.0, 0.0)
     t = 0.0
+    # Residual scales: stresses of order MPa, strain rates of order the applied one.
+    xnorm0 = normalisation_x(c, 1.0e6, second_invariant_2D(vars.ε))
     for i in 2:ntime
         #global τ_e, P_e, x, vars, others, t
         others = (; dt = dt, τ0 = τ_e, P0 = P_e)       # other non-differentiable variables needed to evaluate the state functions
 
-        x = solve(c, x, vars, others)
+        x = solve(c, x, vars, others; xnorm0)
         τ_e = elastic_stress_history_2D(c, x, vars.ε, τ_e, others)
         P_e = compute_pressure_elastic(c, x, others)
 

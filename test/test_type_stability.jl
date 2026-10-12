@@ -51,6 +51,32 @@ function type_stability_fixtures()
     )
 end
 
+# Power law in a parallel block that carries elastic history: closure unknowns,
+# their secant evaluation, the closure residuals, and the recovery of the spring
+# stresses from them.
+function closure_fixtures()
+    viscous = LinearViscosity(1.0e21)
+    viscous2 = LinearViscosity(5.0e20)
+    elasticinc = IncompressibleElasticity(1.0e10)
+    powerlaw = PowerLawViscosity(2.5e34, 3)
+    return (
+        (
+            "power law in a Kelvin-Voigt block",
+            SeriesModel(viscous, ParallelModel(powerlaw, elasticinc)),
+            (; ε = (1.0e-14, -1.0e-14, 5.0e-15)),
+            (; τ = 1.0e7),
+            (; dt = 1.0e10, τ0 = ((1.0e6, -2.0e6, 5.0e5),)),
+        ),
+        (
+            "power law in a Maxwell sub-branch",
+            SeriesModel(viscous, ParallelModel(viscous2, SeriesModel(powerlaw, elasticinc))),
+            (; ε = 1.0e-14),
+            (; τ = 1.0e7),
+            (; dt = 1.0e10, τ0 = (-3.0e6,)),
+        ),
+    )
+end
+
 @testset "Type stability" begin
     for (name, c, vars, args, others) in type_stability_fixtures()
         @testset "$name" begin
@@ -79,6 +105,34 @@ end
                 JET.@test_opt target_modules = (RheologyCalculator,) compute_residual(c, x, vars, others)
                 JET.@test_opt target_modules = (RheologyCalculator,) compute_stress_elastic(c, x, others)
                 JET.@test_opt target_modules = (RheologyCalculator,) compute_pressure_elastic(c, x, others)
+            end
+        end
+    end
+end
+
+@testset "Type stability: closure unknowns" begin
+    for (name, c, vars, args, others) in closure_fixtures()
+        @testset "$name" begin
+            x = initial_guess_x(c, vars, args, others)
+            xnorm = normalisation_x(c, 1.0e7, 1.0e-14)
+
+            eqs = @inferred generate_equations(c)
+            @test length(eqs) == length(x)
+
+            @inferred initial_guess_x(c, vars, args, others)
+            @inferred normalisation_x(c, 1.0e7, 1.0e-14)
+            @inferred compute_residual(c, x, vars, others)
+            xs = (@inferred solve(c, x, vars, others; xnorm0 = xnorm, verbose = false)).x
+            @inferred elastic_stress_history(c, xs, vars.ε, others.τ0, others)
+            @inferred compute_stress_elastic(c, xs, vars.ε, others)
+            @inferred RheologyCalculator.physical_solution(c, xs, vars.ε, others)
+
+            if isempty(VERSION.prerelease)
+                JET.@test_opt target_modules = (RheologyCalculator,) generate_equations(c)
+                JET.@test_opt target_modules = (RheologyCalculator,) initial_guess_x(c, vars, args, others)
+                JET.@test_opt target_modules = (RheologyCalculator,) compute_residual(c, x, vars, others)
+                JET.@test_opt target_modules = (RheologyCalculator,) elastic_stress_history(c, xs, vars.ε, others.τ0, others)
+                JET.@test_opt target_modules = (RheologyCalculator,) RheologyCalculator.physical_solution(c, xs, vars.ε, others)
             end
         end
     end

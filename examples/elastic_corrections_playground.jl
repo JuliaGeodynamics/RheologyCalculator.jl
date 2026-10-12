@@ -105,13 +105,13 @@ function stress_time_full_tensor(c, x, τ0, ε; ntime = 200, dt = 1.0e8)
     P_e = (0.0,)
     t = 0.0
     for i in 2:ntime
-        others = (; dt = dt, τ0 = τxx_e[1], P0 = P_e)              # other non-differentiable variables needed to evaluate the state functions
+        others = (; dt = dt, τ0 = τxx_e, P0 = P_e)              # other non-differentiable variables needed to evaluate the state functions
         vars = (; ε = ε[1], θ = 0.0)
         x = solve(c, x, vars, others, verbose = true, atol = 1.0e-15, rtol = 1.0e-11, itermax = 10)
         τxx_e = compute_stress_elastic(c, x, others)              # elastic stress components
         τxx[i] = x[1]                                              # total stress
 
-        others = (; dt = dt, τ0 = τxz_e[1], P0 = P_e)              # other non-differentiable variables needed to evaluate the state functions
+        others = (; dt = dt, τ0 = τxz_e, P0 = P_e)              # other non-differentiable variables needed to evaluate the state functions
         vars = (; ε = ε[2], θ = 0.0)
         x = solve(c, x, vars, others, verbose = false, atol = 1.0e-15, rtol = 1.0e-11, itermax = 10)
         τxz_e = compute_stress_elastic(c, x, others)              # elastic stress components
@@ -185,13 +185,13 @@ function stress_time_invariant_manual_parallel(c, x, τ0, ε; ntime = 200, dt = 
     P_e  = (0.0,)
     t    = 0.0
     for i in 2:ntime
-        others  = (; dt = dt, τ0 = τxx_e[1], P0 = P_e)              # other non-differentiable variables needed to evaluate the state functions
+        others  = (; dt = dt, τ0 = τxx_e, P0 = P_e)              # other non-differentiable variables needed to evaluate the state functions
         vars    = (; ε = ε[1], θ = 0.0) 
         x       = solve(c, x, vars, others, verbose = false)
         τxx_e   = compute_stress_elastic(c, x, others)              # elastic stress components
         τxx[i]  = x[1]                                              # total stress    
 
-        others  = (; dt = dt, τ0 = τxz_e[1], P0 = P_e)              # other non-differentiable variables needed to evaluate the state functions
+        others  = (; dt = dt, τ0 = τxz_e, P0 = P_e)              # other non-differentiable variables needed to evaluate the state functions
         vars    = (; ε = ε[2], θ = 0.0) 
         x       = solve(c, x, vars, others, verbose = false)
         τxz_e   = compute_stress_elastic(c, x, others)              # elastic stress components
@@ -214,14 +214,14 @@ function stress_time_invariant_manual_parallel(c, x, τ0, ε; ntime = 200, dt = 
     t_v = zeros(ntime)
 
     τII_vec[1] = second_invariant(τ0[1][1], τ0[1][2])
-    τII_e = τII_vec[1]
+    τII_e = (τII_vec[1],)
     εII = second_invariant(ε[1], ε[2])
 
     #τxz[1] = τ0[1][2]
     P_e = (0.0,)
     t = 0.0
     for i in 2:ntime
-        others = (; dt = dt, τ0 = τII_e[1], P0 = P_e)              # other non-differentiable variables needed to evaluate the state functions
+        others = (; dt = dt, τ0 = τII_e, P0 = P_e)              # other non-differentiable variables needed to evaluate the state functions
         vars = (; ε = εII, θ = 0.0)
         #xnorm0 = SVector(1e6, 1e-15)
         #xnorm0 = SVector(1, 1)
@@ -323,7 +323,7 @@ errorII = norm(τII_invariants[2:end] .- τII_tot[2:end])
 @info "Invariant  - FullTensor:" errorII / mean(τII_tot)
 
 
-fig, ax, li = scatter(t_v[2:end] / SecYear, τII_tot[2:end] / 1.0e6, color = :blue, label = "numerics, full tensor", linewidth = 3)
+fig, ax, li = scatter(t_v[2:end] / SecYear, τII_tot[2:end] / 1.0e6, color = :blue, label = "numerics, full tensor")
 lines!(ax, t_v[2:end] / SecYear, τII_ana[2:end] / 1.0e6, color = :red, label = "analytics", linewidth = 3)
 lines!(ax, t_v[2:end] / SecYear, τII_invariants[2:end] / 1.0e6, color = :green, label = "invariants, manually", linewidth = 3)
 
