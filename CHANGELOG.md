@@ -24,6 +24,9 @@
   `:τII_subbranch`. Models without such elements keep their layout.
 - `component_partition` and `dissipation_partition` evaluate block elements at
   the physical block strain rate and sub-branch stresses.
+- `initial_guess_x` evaluates element laws at |τ| and |ε| and gives the
+  deviatoric estimates the sign of a scalar `ε`. A negative scalar `ε` no
+  longer throws a `DomainError` for fractional power laws.
 
 ### Added
 

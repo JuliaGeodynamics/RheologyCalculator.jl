@@ -37,6 +37,27 @@ import RheologyCalculator.RheologyModels: second_invariant_2D
     @test gτ[2] > 0
 end
 
+@testset "initial guess for a negative scalar strain rate" begin
+    # Element laws are evaluated at |τ| and |ε|; the estimate takes the sign of ε.
+    # A fractional power of a negative ε would throw a DomainError.
+    η = LinearViscosity(5.0e20)
+    G = IncompressibleElasticity(1.0e10)
+    PL = PowerLawViscosity(2.5e34, 3)
+    others = (; dt = 1.0e10, τ0 = (0.0,))
+    for c in (
+            SeriesModel(PL, ParallelModel(η, G)),
+            SeriesModel(η, ParallelModel(η, SeriesModel(PL, G))),
+        )
+        xnorm0 = normalisation_x(c, 1.0e7, 1.0e-14)
+        gp = initial_guess_x(c, (; ε = 1.0e-14, θ = 0.0), (; τ = 1.0e7), others)
+        gm = initial_guess_x(c, (; ε = -1.0e-14, θ = 0.0), (; τ = 1.0e7), others)
+        @test gm == -gp
+        xp = solve(c, gp, (; ε = 1.0e-14, θ = 0.0), others; xnorm0).x
+        xm = solve(c, gm, (; ε = -1.0e-14, θ = 0.0), others; xnorm0).x
+        @test xm ≈ -xp rtol = 1.0e-12
+    end
+end
+
 @testset "solve reports non-convergence" begin
     c = SeriesModel(
         LinearViscosity(1.0e3),

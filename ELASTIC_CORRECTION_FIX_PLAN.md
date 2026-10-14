@@ -161,7 +161,7 @@ Exit: Step 1 nonlinear cases match the reference **for τ (solve)** in all 12 no
 
 Notes found during Step 4:
 
-- `initial_guess_x` evaluates a power law at a negative scalar ε (`DomainError`), independent of closures. Callers pass the previous solution after reversal; worth a fix with Step 5.
+- [x] `initial_guess_x` evaluated a power law at a negative scalar ε (`DomainError`), independent of closures. Fixed: element laws at |τ|, |ε|, deviatoric estimates signed by scalar ε (`test_initial_guess.jl`).
 - `component_partition` / `dissipation_partition` run on closure models but read shifted unknowns (S23, Step 5).
 - No benchmark taken. Models without state-dependent elements in history blocks keep their layout; their residual gains only a no-op closure pass.
 

@@ -104,7 +104,8 @@ estimate_initial_value(eq::CompositeEquation, vars, args, others) = _estimate_in
 @inline _estimate_initial_value(::F, eq, vars, args, others) where {F} = 0
 # Strain-rate-like unknowns use a harmonic-mean estimate across the element rheologies.
 @inline _estimate_initial_value(::typeof(compute_volumetric_strain_rate), eq, vars, args, others) = _estimate_initial_value_harm(eq.fn, eq.rheology, eq.el_number, vars, args, others)
-@inline _estimate_initial_value(::typeof(compute_strain_rate), eq, vars, args, others) = _estimate_initial_value_harm(eq.fn, eq.rheology, eq.el_number, vars, args, others)
+@inline _estimate_initial_value(::typeof(compute_strain_rate), eq, vars, args, others) =
+    _load_sign(vars) * _estimate_initial_value_harm(eq.fn, eq.rheology, eq.el_number, vars, args, others)
 # Stress-like unknowns use an arithmetic-sum estimate across the element rheologies.
 @inline _estimate_initial_value(::typeof(compute_pressure), eq, vars, args, others) = _estimate_initial_value_arith(eq.fn, eq.rheology, eq.el_number, vars, args, others)
 
@@ -117,23 +118,34 @@ estimate_initial_value(eq::CompositeEquation, vars, args, others) = _estimate_in
 # physical order of magnitude of a branch strain rate.
 @inline function _estimate_initial_value(::typeof(compute_stress), eq, vars, args, others)
     est = _estimate_initial_value_arith(eq.fn, eq.rheology, eq.el_number, vars, args, others)
-    return iszero(est) ? _prescribed_strain_rate(vars) : est
+    return _load_sign(vars) * (iszero(est) ? _prescribed_strain_rate(vars) : est)
 end
 
 # A block strain-rate invariant starts like the block strain rate; a sub-branch
 # stress invariant like the stress of its sub-branch.
 @inline _estimate_initial_value(::typeof(compute_block_strain_rate_invariant), eq, vars, args, others) =
-    _prescribed_strain_rate(vars)
+    _load_sign(vars) * _prescribed_strain_rate(vars)
 
 @inline function _estimate_initial_value(::typeof(compute_subbranch_stress_invariant), eq::CompositeEquation{false, T, F, R, RT, <:BlockClosure{J}}, vars, args, others) where {T, F, R, RT, J}
     sub = eq.rheology.branches[J]
-    return _estimate_initial_value_harm(compute_strain_rate, sub.leafs, eq.el_number[2][J][1], vars, args, others)
+    return _load_sign(vars) * _estimate_initial_value_harm(compute_strain_rate, sub.leafs, eq.el_number[2][J][1], vars, args, others)
 end
 
-# `vars.ε` may be a tensor or an invariant; both reduce here. A composite with no
-# prescribed deviatoric strain rate keeps the previous zero seed.
+# Deviatoric estimates are magnitudes: element laws are evaluated at |τ| and |ε|,
+# which keeps fractional power laws real for a negative scalar ε. The estimate
+# then takes the sign of a scalar ε; a tensor ε has a non-negative invariant.
+@inline _load_sign(vars::NamedTuple) = hasfield(typeof(vars), :ε) ? _load_sign(vars.ε) : 1
+@inline _load_sign(ε::Number) = ifelse(signbit(ε), -1, 1)
+@inline _load_sign(ε) = 1
+
+@inline _abs_field(nt::NamedTuple, ::Val{k}) where {k} =
+    hasfield(typeof(nt), k) ? NamedTuple{(k,)}((abs(getfield(nt, k)),)) : (;)
+@inline _deviatoric_magnitudes(nt::NamedTuple) = merge(nt, _abs_field(nt, Val(:τ)), _abs_field(nt, Val(:ε)))
+
+# `vars.ε` may be a tensor or an invariant; both reduce to a magnitude here. A
+# composite with no prescribed deviatoric strain rate keeps the zero seed.
 @inline _prescribed_strain_rate(vars::NamedTuple) =
-    hasfield(typeof(vars), :ε) ? second_invariant_value(vars.ε) : 0
+    hasfield(typeof(vars), :ε) ? abs(second_invariant_value(vars.ε)) : 0
 
 # Base cases for empty rheology tuples.
 @inline _estimate_initial_value_harm(fn, rheology::Tuple{}, el_number, vars, args, others) = 1
@@ -157,8 +169,8 @@ their stresses, so a stress unknown combines arithmetically.
 
 For each component `i`, history-dependent kwargs (e.g. `τ0`, `P0`) are extracted
 from `others` using `el_number[i]` and merged with `args` and `vars`. The
-combined `NamedTuple` is reduced to scalar invariants by `tensor2invariant`
-before `counterpart(fn)` is called.
+combined `NamedTuple` is reduced to scalar invariants by `tensor2invariant`,
+and `τ` and `ε` to their magnitudes, before `counterpart(fn)` is called.
 
 # Arguments
 - `fn`: the kernel state function whose counterpart supplies the estimate
@@ -187,7 +199,7 @@ component value is zero. Otherwise the combined estimate.
     fn_c = counterpart(fn)
     vals = maptuple(rheology, el_number) do r, n
         args_local = extract_local_kwargs(others, history_kwargs(r), n)
-        weight(fn_c(r, tensor2invariant(merge(args, args_local, vars))))
+        weight(fn_c(r, _deviatoric_magnitudes(tensor2invariant(merge(args, args_local, vars)))))
     end
     return sum(vals)
 end
