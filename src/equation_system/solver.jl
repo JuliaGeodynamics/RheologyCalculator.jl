@@ -162,8 +162,15 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0 = no
         it > 1 && (J = jacobian(c, x, vars, others))
         Δx = backsolve(J, r)
         α = max_feasible_step(x, Δx, nonneg)
+        # `er` is still `Inf` on the first iteration, which would let the line
+        # search accept any finite first step. The first step is compared
+        # against `er0` instead, and may still raise the residual up to tenfold:
+        # a full step across a yield surface from a warm start can do that and
+        # still be the right step, while a step that lands far past the root
+        # raises it by many orders of magnitude. `atol` keeps a start that is
+        # already converged from backtracking on roundoff.
         α, x_next, r, er = _bt_line_search_result(
-            Δx, x, c, vars, others, xnorm, er;
+            Δx, x, c, vars, others, xnorm, it == 1 ? 10 * max(er0, atol) : er;
             α = α, ρ = 0.5, lstol = 0.95, α_min = 0.1
         )
 
