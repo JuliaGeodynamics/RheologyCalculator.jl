@@ -120,7 +120,7 @@ and the final residual norm; [`inspect`](@ref) describes its entries. Its
 Throws [`NonConvergenceError`](@ref) if the iteration ends without meeting
 either tolerance, which includes the case of a residual that became `NaN`.
 The solver also stops early when the Newton update moves no entry of the
-iterate by more than a few ulps for three consecutive iterations. This prevents a
+iterate by more than a few ulps (Unit in the Last Place) for three consecutive iterations. This prevents a
 residual floor that cannot be represented by the selected numeric type from
 consuming the full `itermax` budget.
 """
