@@ -124,4 +124,28 @@ end
         @test err3.reason == :stagnation
         @test err3.iterations < 100
     end
+
+    @testset "an iterate that hops by an ulp counts as stagnant" begin
+        # Warm-started from its own solution without `xnorm0`, this model sits
+        # at a residual of 7.3e-12, just above `atol`, and each Newton step moves
+        # the iterate back and forth by an ulp or two.
+        v1, v2 = LinearViscosity(5.0e19), LinearViscosity(1.0e20)
+        c = SeriesModel(v1, ParallelModel(SeriesModel(v1, v2), v2), ParallelModel(v1, v2))
+        vars = (; ε = 1.0e-15)
+        sol = solve(c, initial_guess_x(c, vars, (; τ = 0.0), (;)), vars, (;))
+
+        err4 = try
+            solve(c, sol.x, vars, (;))
+        catch e
+            e
+        end
+        @test err4 isa NonConvergenceError
+        @test err4.reason == :stagnation
+        @test err4.iterations < 10
+        @test err4.x ≈ sol.x rtol = 1.0e-14
+    end
+
+    @test RheologyCalculator.within_ulps(SA[1.0, 0.0], SA[nextfloat(1.0, 4), 0.0])
+    @test !RheologyCalculator.within_ulps(SA[1.0, 0.0], SA[nextfloat(1.0, 5), 0.0])
+    @test !RheologyCalculator.within_ulps(SA[1.0, 0.0], SA[1.0, 1.0e-300])
 end
