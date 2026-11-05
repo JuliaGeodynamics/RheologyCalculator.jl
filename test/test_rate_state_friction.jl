@@ -55,6 +55,21 @@ end
     @test sol.x[1] ≈ 8.822062639363287e6 rtol = 1.0e-12
 end
 
+@testset "rtol stops only once the Newton step is small" begin
+    # From a 10x seed the starting residual is 2.5e50, so rtol * er0 is still
+    # huge, and without a step test the solve stops at a stress six times too
+    # large.
+    rs = RateStateFriction(0.0, 0.2, 4.0e-9, 0.011, 0.017, 0.05, 0.0, 625.0)
+    c = SeriesModel(IncompressibleElasticity(3.0e10), rs)
+    vars = (; ε = 1.0e-9)
+    others = (; dt = 1.0e6, τ0 = (0.0,), P0 = (0.0,), P = 5.0e7, Ω_old = -5.0)
+    xnorm = normalisation_x(c, 1.0e6, 1.0e-9)
+    x0 = 10 .* initial_guess_x(c, vars, (; τ = 0.0, P = 5.0e7), others)
+
+    @test solve(c, x0, vars, others; xnorm0 = xnorm).x[1] ≈ 8.822062639363287e6 rtol = 1.0e-12
+    @test solve(c, x0, vars, others; xnorm0 = xnorm, stol = Inf).x[1] > 5.0e7
+end
+
 @testset "RateStateFriction state update stays finite" begin
     rs = RateStateFriction(0, 0.5, 4.0e-9, 0.011, 0.015, 0.0047, 0, 500)
     # An overflowed slip rate and a fully relaxed state at dt = 0 both drive
