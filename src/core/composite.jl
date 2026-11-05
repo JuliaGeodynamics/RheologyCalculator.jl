@@ -11,6 +11,15 @@ abstract type AbstractCompositeModel  end
 @inline parallel_state_functions(::AbstractCompositeModel) = ()
 
 """
+    check_series_leaf(r)
+
+Throw if `r` can't be a direct element of a `SeriesModel`.
+Called by the `SeriesModel` constructor; rheologies that only work in a
+`ParallelModel` specialize it.
+"""
+check_series_leaf(r) = nothing
+
+"""
     SeriesModel(elements...)
 
 Build a series composite. Direct rheology elements are stored in `leafs`; nested
@@ -27,6 +36,7 @@ struct SeriesModel{L, B} <: AbstractCompositeModel # not 100% about the subtypin
 
     function SeriesModel(c::Vararg{Any, N}) where {N}
         leafs = series_leafs(c)
+        foreach(check_series_leaf, leafs)
         branches = series_branches(c)
         return new{typeof(leafs), typeof(branches)}(leafs, branches)
     end
