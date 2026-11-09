@@ -36,6 +36,7 @@ Run these from the repository root. `Project.toml` requires Julia 1.12; CI tests
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
 julia --project=. -e 'using Pkg; Pkg.test()'
 julia --project=. -e 'using Pkg; Pkg.test(; coverage=false, test_args=["--allocations-only"])'
+julia --project=. -e 'using Pkg; Pkg.test(; test_args=["--jet-only"])'
 ```
 
 Use `Pkg.test()` to provision test-only dependencies such as Aqua and JET.
