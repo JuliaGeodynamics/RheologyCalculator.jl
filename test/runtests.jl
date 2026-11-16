@@ -11,8 +11,11 @@ function runtests()
     allocations_only = "--allocations-only" in ARGS
     if allocations_only
         test_files = filter(==("test_allocations.jl"), test_files)
-    elseif Base.JLOptions().code_coverage != 0
-        filter!(!=("test_allocations.jl"), test_files)
+    elseif "--jet-only" in ARGS
+        test_files = filter(==("test_jet.jl"), test_files)
+    else
+        filter!(!=("test_jet.jl"), test_files)
+        Base.JLOptions().code_coverage != 0 && filter!(!=("test_allocations.jl"), test_files)
     end
 
     for f in test_files
