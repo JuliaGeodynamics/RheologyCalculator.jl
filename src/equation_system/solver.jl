@@ -1,9 +1,14 @@
 """
-    RCSolution(x::SVector, iterations, residual, jacobian = nothing)
+    RCSolution(x::SVector, iterations, residual, jacobian = nothing; converged = true)
 
 Solution of a local rheological system: the solved values `x`, the number of
 Newton iterations [`solve`](@ref) needed, the final normalized residual norm,
-and the residual Jacobian at the converged iterate.
+the residual Jacobian at the converged iterate, and whether the iteration
+converged.
+
+`converged` is `false` only for a failed [`solve`](@ref) called with
+`throw_on_failure = false`; `x`, `iterations` and `residual` then hold the last
+iterate.
 
 An `RCSolution` is an `AbstractVector`, so it supports positional indexing and
 iteration, and it can be passed straight back into `solve`. It holds numbers
@@ -22,17 +27,19 @@ struct RCSolution{N, T, R, J} <: AbstractVector{T}
     iterations::Int
     residual::R
     jacobian::J
+    converged::Bool
 end
 
-@inline RCSolution(x::SVector{N, T}, iterations, residual, jacobian = nothing) where {N, T} =
-    RCSolution{N, T, typeof(residual), typeof(jacobian)}(x, iterations, residual, jacobian)
+@inline RCSolution(x::SVector{N, T}, iterations, residual, jacobian = nothing; converged::Bool = true) where {N, T} =
+    RCSolution{N, T, typeof(residual), typeof(jacobian)}(x, iterations, residual, jacobian, converged)
 
 Base.size(::RCSolution{N}) where {N} = (N,)
 Base.IndexStyle(::Type{<:RCSolution}) = IndexLinear()
 Base.@propagate_inbounds Base.getindex(sol::RCSolution, i::Int) = sol.x[i]
 
 function Base.show(io::IO, ::MIME"text/plain", sol::RCSolution)
-    println(io, "RCSolution (iterations: ", sol.iterations, ", residual: ", sol.residual, ")")
+    print(io, "RCSolution (iterations: ", sol.iterations, ", residual: ", sol.residual)
+    println(io, sol.converged ? ")" : ", not converged)")
     Base.print_array(io, sol.x)
     return nothing
 end
@@ -114,6 +121,9 @@ of the corrected effective strain-rate tensor.
 - `stol`: relative step tolerance that goes with `rtol`.
 - `itermax`: maximum Newton iterations.
 - `verbose`: print the final iteration count, residual norm, and line-search step.
+- `throw_on_failure`: if `false`, a failed iteration returns its last iterate
+  with `converged = false` instead of throwing, for callers that can't catch
+  exceptions (GPU kernels) or that treat a failure as a rejected trial point.
 
 Returns an [`RCSolution`](@ref) holding the solved vector, the iteration count
 and the final residual norm; [`inspect`](@ref) describes its entries. Its
@@ -122,13 +132,14 @@ and the final residual norm; [`inspect`](@ref) describes its entries. Its
 
 
 Throws [`NonConvergenceError`](@ref) if the iteration ends without meeting
-either tolerance, which includes the case of a residual that became `NaN`.
+either tolerance, which includes the case of a residual that became `NaN`; with
+`throw_on_failure = false` it returns the last iterate instead.
 The solver also stops early when the Newton update moves no entry of the
 iterate by more than a few ulps (Unit in the Last Place) for three consecutive iterations. This prevents a
 residual floor that cannot be represented by the selected numeric type from
 consuming the full `itermax` budget.
 """
-function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0 = nothing, atol::Float64 = 1.0e-12, rtol::Float64 = 1.0e-12, stol::Float64 = 1.0e-8, itermax = 1.0e4, verbose::Bool = false)
+function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0 = nothing, atol::Float64 = 1.0e-12, rtol::Float64 = 1.0e-12, stol::Float64 = 1.0e-8, itermax = 1.0e4, verbose::Bool = false, throw_on_failure::Bool = true)
     # Pre-correct ONLY the direct elastic leafs of the outer composite
     # (simple Maxwell backstress).  Tensor arithmetic is used here so that
     # second_invariant(ε + τ0/(2G·dt)) is evaluated correctly even for
@@ -158,6 +169,7 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0 = no
     α = 1.0e0
     stagnant_iters = 0
     rtol_converged = false
+    stagnated = false
     while er > atol && !rtol_converged
         it += 1
 
@@ -194,9 +206,8 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0 = no
 
         it > itermax && break
 
-        if stagnant_iters ≥ 3
-            throw(NonConvergenceError(it, er, x, :stagnation))
-        end
+        stagnated = stagnant_iters ≥ 3
+        stagnated && break
 
         # ε_corr = effective_strain_rate_correction(c, vars0.ε, others.τ0, others)
         # ε_eff  = vars0.ε .+ ε_corr
@@ -209,8 +220,11 @@ function solve(c::AbstractCompositeModel, x::SVector, vars0, others; xnorm0 = no
     end
     # A NaN residual compares false against both tolerances and so exits the loop
     # by the same door as a converged one; `isfinite` is what separates them.
-    isfinite(er) && (er ≤ atol || rtol_converged) || throw(NonConvergenceError(it, er, x))
-    return RCSolution(x, it, er)
+    converged = !stagnated && isfinite(er) && (er ≤ atol || rtol_converged)
+    if !converged && throw_on_failure
+        throw(NonConvergenceError(it, er, x, stagnated ? :stagnation : :iteration_limit))
+    end
+    return RCSolution(x, it, er; converged)
 end
 
 solve(c::AbstractCompositeModel, sol::RCSolution, vars0, others; kwargs...) = solve(c, sol.x, vars0, others; kwargs...)
@@ -241,7 +255,7 @@ function solve_with_jacobian(c::AbstractCompositeModel, x::SVector, vars0, other
     vars = merge(vars0, (; ε = εII))
     J = jacobian(c, sol.x, vars, others)
 
-    return RCSolution(sol.x, sol.iterations, sol.residual, J)
+    return RCSolution(sol.x, sol.iterations, sol.residual, J; sol.converged)
 end
 
 solve_with_jacobian(c::AbstractCompositeModel, sol::RCSolution, vars0, others; kwargs...) =
@@ -280,18 +294,16 @@ function solve_with_retries(
     current_atol = atol
     current_rtol = rtol
     for attempt in 0:max_retries
-        try
-            return solve(
-                c, current_x, vars, others;
-                atol = current_atol, rtol = current_rtol, kwargs...
-            )
-        catch err
-            err isa NonConvergenceError || rethrow()
-            attempt == max_retries && rethrow()
-            current_x = err.x
-            current_atol *= tolerance_factor
-            current_rtol *= tolerance_factor
-        end
+        # Only the last attempt throws, with the reason of its own failure.
+        sol = solve(
+            c, current_x, vars, others;
+            kwargs..., atol = current_atol, rtol = current_rtol,
+            throw_on_failure = attempt == max_retries
+        )
+        sol.converged && return sol
+        current_x = sol.x
+        current_atol *= tolerance_factor
+        current_rtol *= tolerance_factor
     end
     error("unreachable")
 end

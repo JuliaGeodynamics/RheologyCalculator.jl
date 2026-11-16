@@ -124,6 +124,8 @@ end
         for (c, vars, others, x) in cases
             solve(c, x, vars, others)
             @test (@allocated solve(c, x, vars, others)) == 0
+            solve(c, x, vars, others; throw_on_failure = false)
+            @test (@allocated solve(c, x, vars, others; throw_on_failure = false)) == 0
         end
     end
 

@@ -16,6 +16,7 @@ include("type_stability_fixtures.jl")
             @inferred compute_stress_elastic(c, x, others)
             @inferred compute_pressure_elastic(c, x, others)
             @inferred solve(c, x, vars, others; xnorm0 = xnorm, itermax = 1, verbose = false)
+            @inferred solve(c, x, vars, others; xnorm0 = xnorm, itermax = 1, throw_on_failure = false)
         end
     end
 end
