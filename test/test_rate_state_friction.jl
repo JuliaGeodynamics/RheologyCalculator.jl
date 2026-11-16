@@ -1,10 +1,10 @@
 using RheologyCalculator, Test
 using RheologyCalculator.RheologyModels
-using RheologyCalculator.RheologyModels: RateStateFriction, update_Ω, vars_2D, second_invariant_2D, zero_stress_tensor_2D
+using RheologyCalculator.RheologyModels: RateStateFriction, update_Ω, state_in_step, vars_2D, second_invariant_2D, zero_stress_tensor_2D
 import RheologyCalculator: compute_stress
 
-@testset "RateStateFriction in a parallel branch" begin
-    rs = RateStateFriction(0, 0.5, 4.0e-9, 0.011, 0.015, 0.0047, 0, 500)
+@testset "RateStateFriction in a parallel branch, $state_update state" for state_update in (:explicit, :implicit)
+    rs = RateStateFriction(0, 0.5, 4.0e-9, 0.011, 0.015, 0.0047, 0, 500; state_update)
     G, η, P, dt, Ω_old = 20.0e9, 1.0e12, 50.0e6, 1.0e6, -5.0
     c = SeriesModel(IncompressibleElasticity(G), ParallelModel(rs, LinearViscosity(η)))
     @test x_keys(c) === (:τ, :ε)
@@ -27,6 +27,35 @@ import RheologyCalculator: compute_stress
     @test 0 < x[2] < εII
     @test x[1] ≈ τ_branch(lo) rtol = 1.0e-12
     @test x[2] ≈ lo rtol = 1.0e-12
+end
+
+@testset "RateStateFriction state update option" begin
+    args = (0.0, 0.2, 4.0e-9, 0.011, 0.017, 0.05, 0.0, 625.0)
+    rs = RateStateFriction(args...)
+    rs_implicit = RateStateFriction(args...; state_update = :implicit)
+    @test rs isa RateStateFriction{Float64, :explicit}
+    @test isbits(rs_implicit)
+    @test_throws "state_update must be :explicit or :implicit" RateStateFriction(args...; state_update = :lagged)
+
+    ε, Ω_old, dt = 1.0e-9, -5.0, 1.0e6
+    @test state_in_step(rs, ε, Ω_old, dt) == Ω_old
+    @test state_in_step(rs_implicit, ε, Ω_old, dt) == update_Ω(rs; ε, Ω_old, dt)
+
+    # The explicit law gives the same stress in series and in parallel with a
+    # negligible dashpot; the implicit one evaluates the end-of-step state instead.
+    e = IncompressibleElasticity(3.0e10)
+    vars = (; ε)
+    others = (; dt, τ0 = (0.0,), P0 = (0.0,), P = 5.0e7, Ω_old)
+    function τ_solved(c)
+        x0 = initial_guess_x(c, vars, (; τ = 0.0, P = 5.0e7), others)
+        return solve(c, x0, vars, others; xnorm0 = normalisation_x(c, 1.0e6, ε))[1]
+    end
+    τ_series = τ_solved(SeriesModel(e, rs))
+    @test τ_solved(SeriesModel(e, ParallelModel(rs, LinearViscosity(1.0)))) ≈ τ_series rtol = 1.0e-10
+    @test τ_solved(SeriesModel(e, ParallelModel(rs_implicit, LinearViscosity(1.0)))) < 0.95 * τ_series
+
+    @test_throws "only works in a ParallelModel" τ_solved(SeriesModel(e, rs_implicit))
+    @test RheologyCalculator.check_series_leaf(rs) === nothing
 end
 
 @testset "first Newton step is line-searched" begin

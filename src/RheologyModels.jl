@@ -19,7 +19,7 @@ export compute_stress_elastic, compute_pressure_elastic
 # that defines `compute_viscosity_series` without the import would instead
 # create a function of that name local to this module, leaving the core generic
 # on its fallback for that element.
-import ..RheologyCalculator: series_state_functions, parallel_state_functions,
+import ..RheologyCalculator: series_state_functions, parallel_state_functions, check_series_leaf,
     _isvolumetric, isvolumetric,
     compute_strain_rate, compute_stress, compute_pressure, compute_volumetric_strain_rate,
     compute_plastic_strain_rate, compute_plastic_stress, compute_volumetric_plastic_strain_rate,
