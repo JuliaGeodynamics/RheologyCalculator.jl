@@ -124,7 +124,10 @@ the converged solution, see [Warm-starting from the previous solution](@ref) and
 reached. The exception includes the last iterate, normalized residual, and a
 `reason` field. A `reason` of `:stagnation` indicates that the Newton update
 stopped changing the iterate at floating-point precision; `:iteration_limit`
-indicates that `itermax` was reached first.
+indicates that `itermax` was reached first. With `throw_on_failure = false`,
+`solve` returns the last iterate instead, with `sol.converged == false`. Use
+this inside GPU kernels, which can't catch exceptions, or when a failed point
+just means rejecting a trial step.
 
 Before solving, `validate(c, vars, others)` can check material parameters,
 history fields, and `isbits` compatibility on the host. For repeated local
