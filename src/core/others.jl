@@ -37,6 +37,8 @@ _isvolumetric(c::AbstractCompositeModel) = _isvolumetric(c.leafs, c.branches)
 # same with or without them. Float64 behaviour is unchanged.
 @inline safe_inv(v) = iszero(primal(v)) ? zero(v) : inv(v)
 @inline safe_inv_one(v) = iszero(primal(v)) ? one(v) : inv(v)
+# `true` when the value is exactly zero; sparsity tracers (no primal) override it to `false`.
+@inline iszero_value(v) = iszero(primal(v))
 
 # Value of `x` with every layer of dual partials stripped.
 # `iszero` on a `ForwardDiff.Dual` also tests the partials, so a zero primal
