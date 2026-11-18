@@ -104,7 +104,22 @@ estimate_initial_value(eq::CompositeEquation, vars, args, others) = _estimate_in
 @inline _estimate_initial_value(::F, eq, vars, args, others) where {F} = 0
 # Strain-rate-like unknowns use a harmonic-mean estimate across the element rheologies.
 @inline _estimate_initial_value(::typeof(compute_volumetric_strain_rate), eq, vars, args, others) = _estimate_initial_value_harm(eq.fn, eq.rheology, eq.el_number, vars, args, others)
-@inline _estimate_initial_value(::typeof(compute_strain_rate), eq, vars, args, others) = _estimate_initial_value_harm(eq.fn, eq.rheology, eq.el_number, vars, args, others)
+# Series stress seed. A seed of 1 keeps the Jacobian defined when every element
+# gives zero stress (a power law has dε/dτ ∝ τ^(n-1), singular at τ = 0).
+# With no prescribed strain rate and no elastic history the root is exactly τ = 0,
+# so the seed is 0 there: Newton from 1 only reaches it to round-off.
+@inline function _estimate_initial_value(::typeof(compute_strain_rate), eq, vars, args, others)
+    est = _estimate_initial_value_harm(eq.fn, eq.rheology, eq.el_number, vars, args, others)
+    return _unloaded(eq, vars, args, others) ? zero(est) : est
+end
+
+# True when every element's stress at the seed point is zero and the prescribed strain rate vanishes.
+@inline function _unloaded(eq, vars, args, others)
+    hasfield(typeof(vars), :ε) || return false
+    iszero_value(second_invariant_value(vars.ε)) || return false
+    s = _accumulate_initial_value(safe_inv, eq.fn, eq.rheology, eq.el_number, vars, args, others)
+    return iszero_value(s)
+end
 # Stress-like unknowns use an arithmetic-sum estimate across the element rheologies.
 @inline _estimate_initial_value(::typeof(compute_pressure), eq, vars, args, others) = _estimate_initial_value_arith(eq.fn, eq.rheology, eq.el_number, vars, args, others)
 
